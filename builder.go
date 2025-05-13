@@ -1,4 +1,4 @@
-package integration
+package xqb
 
 import (
 	"github.com/iMohamedSheta/xqb/grammar"

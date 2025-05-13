@@ -1,4 +1,4 @@
-package main
+package xqb
 
 import "github.com/iMohamedSheta/xqb/types"
 

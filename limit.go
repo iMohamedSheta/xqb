@@ -1,4 +1,4 @@
-package main
+package xqb
 
 // Limit adds a LIMIT clause
 func (qb *QueryBuilder) Limit(limit int) *QueryBuilder {
