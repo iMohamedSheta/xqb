@@ -4,7 +4,7 @@ go 1.24.2
 
 require (
 	github.com/go-sql-driver/mysql v1.9.2
-	github.com/iMohamedSheta/xqb v0.0.3
+	github.com/iMohamedSheta/xqb v0.0.4
 	github.com/stretchr/testify v1.10.0
 )
 

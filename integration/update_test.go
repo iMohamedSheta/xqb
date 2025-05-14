@@ -62,7 +62,6 @@ func TestUpdateBasic(t *testing.T) {
 	dbManager := setupTestDBForUpdate(t)
 	defer cleanupTestDB(t, dbManager)
 
-	qb := xqb.Table("test_users")
 	insertTestDataForUpdate(t, dbManager)
 
 	tests := []struct {
@@ -126,6 +125,7 @@ func TestUpdateBasic(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			qb := xqb.Table("test_users")
 			// Reset test data before each test
 			resetTestTable(t, dbManager)
 			insertTestDataForUpdate(t, dbManager)
