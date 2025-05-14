@@ -676,7 +676,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 			name: "Basic update",
 			qb: &types.QueryBuilderData{
 				Table: "users",
-				Bindings: []types.Binding{
+				UpdatedBindings: []types.Binding{
 					{Column: "name", Value: "John Updated"},
 					{Column: "email", Value: "john.updated@example.com"},
 				},
@@ -692,7 +692,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 			name: "Update with multiple conditions",
 			qb: &types.QueryBuilderData{
 				Table: "users",
-				Bindings: []types.Binding{
+				UpdatedBindings: []types.Binding{
 					{Column: "status", Value: "inactive"},
 				},
 				Where: []types.WhereCondition{
@@ -708,7 +708,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 			name: "Update with limit",
 			qb: &types.QueryBuilderData{
 				Table: "users",
-				Bindings: []types.Binding{
+				UpdatedBindings: []types.Binding{
 					{Column: "status", Value: "verified"},
 				},
 				Where: []types.WhereCondition{
@@ -727,6 +727,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 				Where: []types.WhereCondition{
 					{Column: "id", Operator: "=", Value: 1},
 				},
+				UpdatedBindings: nil,
 			},
 			expected: "",
 			bindings: nil,
