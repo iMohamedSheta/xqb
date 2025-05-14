@@ -1,6 +1,11 @@
 package xqb
 
-import "github.com/iMohamedSheta/xqb/types"
+import (
+	"database/sql"
+	"fmt"
+
+	"github.com/iMohamedSheta/xqb/types"
+)
 
 // Aggregate adds an aggregate function
 func (qb *QueryBuilder) Aggregate(function types.AggregateFunction, column string, alias string) *QueryBuilder {
@@ -13,7 +18,7 @@ func (qb *QueryBuilder) Aggregate(function types.AggregateFunction, column strin
 }
 
 // Count adds a COUNT function
-func (qb *QueryBuilder) Count(column string, alias ...string) *QueryBuilder {
+func (qb *QueryBuilder) CountAggregate(column string, alias ...string) *QueryBuilder {
 	al := column + "_count"
 	if len(alias) > 0 {
 		al = alias[0]
@@ -24,6 +29,31 @@ func (qb *QueryBuilder) Count(column string, alias ...string) *QueryBuilder {
 		Alias:    al,
 	})
 	return qb
+}
+
+func (qb *QueryBuilder) Count(column string, tx *sql.Tx) (int64, error) {
+
+	// Save current columns and reset after the operation
+	currentColumns := qb.columns
+	defer func() { qb.columns = currentColumns }()
+
+	qb.columns = []any{fmt.Sprintf("COUNT(%s) as count_value", column)}
+
+	data, err := qb.Execute(tx)
+
+	if err != nil {
+		return 0, err
+	}
+
+	if len(data) != 1 {
+		return 0, fmt.Errorf("expected 1 row, got %d", len(data))
+	}
+
+	count, ok := data[0]["count_value"].(int64)
+	if !ok {
+		return 0, fmt.Errorf("expected count to be uint64, got %T", data[0]["count_value"])
+	}
+	return count, nil
 }
 
 // Sum adds a SUM function

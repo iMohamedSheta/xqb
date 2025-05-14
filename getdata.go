@@ -7,7 +7,6 @@ import (
 )
 
 func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[string]any, map[string]any, error) {
-
 	if page < 1 {
 		page = 1
 	}
@@ -16,6 +15,9 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 	qb.offset = (page - 1) * perPage
 
 	results, err := qb.Execute(nil)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	meta := map[string]any{
 		"per_page":     perPage,
@@ -23,20 +25,32 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 	}
 
 	if withCount {
-		// Use the Count() method to get the total count of records
-		count := 5 // Need to add query that count the total
-
+		// Get total count
+		count, err := qb.Count("*", nil)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		meta["total_count"] = count
-		meta["last_page"] = int(math.Ceil(float64(count) / float64(perPage)))
+		lastPage := int(math.Ceil(float64(count) / float64(perPage)))
 
-		return results, meta, nil
+		var nextPage, prevPage any
+		if page < lastPage {
+			nextPage = page + 1
+		} else {
+			nextPage = nil
+		}
+		if page > 1 {
+			prevPage = page - 1
+		} else {
+			prevPage = nil
+		}
+
+		meta["total_count"] = count
+		meta["last_page"] = lastPage
+		meta["next_page"] = nextPage
+		meta["prev_page"] = prevPage
 	}
 
-	// If no count is needed, just return the results
 	return results, meta, nil
 }
 

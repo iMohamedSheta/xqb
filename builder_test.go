@@ -96,7 +96,7 @@ func TestSelectWithAggregateFunctions(t *testing.T) {
 	qb := Table("orders")
 	qb.Sum("amount", "total_amount")
 	qb.Avg("amount", "average_amount")
-	qb.Count("id", "order_count")
+	qb.CountAggregate("id", "order_count")
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM orders", sql)

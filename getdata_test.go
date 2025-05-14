@@ -2,6 +2,7 @@ package xqb
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -129,8 +130,9 @@ func TestPagination(t *testing.T) {
 				qb.Where(col, "=", val)
 			}
 
-			rows, _, err := qb.Paginate(10, 1, false)
+			rows, meta, err := qb.Paginate(10, 1, true)
 
+			fmt.Printf("rows: %v, meta: %v, err: %v\n", rows, meta, err)
 			if test.wantErr {
 				assert.Error(t, err, "Expected an error but got nil")
 				return
