@@ -13,7 +13,7 @@ func (qb *QueryBuilder) Aggregate(function types.AggregateFunction, column strin
 }
 
 // Count adds a COUNT function
-func (qb *QueryBuilder) Count(column string, alias ...string) (string, []interface{}, error) {
+func (qb *QueryBuilder) Count(column string, alias ...string) *QueryBuilder {
 	al := column + "_count"
 	if len(alias) > 0 {
 		al = alias[0]
@@ -23,7 +23,7 @@ func (qb *QueryBuilder) Count(column string, alias ...string) (string, []interfa
 		Column:   column,
 		Alias:    al,
 	})
-	return qb.ToSQL()
+	return qb
 }
 
 // Sum adds a SUM function
