@@ -178,13 +178,13 @@ func TestInsertWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert (success)
-				_, err := qb.InsertWithTx([]map[string]interface{}{
+				_, err := qb.InsertTx([]map[string]interface{}{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 
 				// Second insert (fail)
-				_, err = qb.InsertWithTx([]map[string]interface{}{
+				_, err = qb.InsertTx([]map[string]interface{}{
 					{"invalid_column": "value"},
 				}, tx)
 				assert.Error(t, err)
@@ -206,14 +206,14 @@ func TestInsertWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert
-				affected, err := qb.InsertWithTx([]map[string]interface{}{
+				affected, err := qb.InsertTx([]map[string]interface{}{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 				assert.Equal(t, int64(1), affected)
 
 				// Second insert
-				affected, err = qb.InsertWithTx([]map[string]interface{}{
+				affected, err = qb.InsertTx([]map[string]interface{}{
 					{"name": "Jane", "age": 25},
 				}, tx)
 				assert.NoError(t, err)
@@ -243,13 +243,13 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert (success)
-				_, err := qb.InsertGetIdWithTx([]map[string]interface{}{
+				_, err := qb.InsertGetIdTx([]map[string]interface{}{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 
 				// Second insert (fail)
-				_, err = qb.InsertGetIdWithTx([]map[string]interface{}{
+				_, err = qb.InsertGetIdTx([]map[string]interface{}{
 					{"invalid_column": "value"},
 				}, tx)
 				assert.Error(t, err)
@@ -271,14 +271,14 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert
-				id, err := qb.InsertGetIdWithTx([]map[string]interface{}{
+				id, err := qb.InsertGetIdTx([]map[string]interface{}{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 				assert.Equal(t, int64(1), id)
 
 				// Second insert
-				id, err = qb.InsertGetIdWithTx([]map[string]interface{}{
+				id, err = qb.InsertGetIdTx([]map[string]interface{}{
 					{"name": "Jane", "age": 25},
 				}, tx)
 				assert.NoError(t, err)

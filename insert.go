@@ -36,8 +36,8 @@ func (qb *QueryBuilder) Insert(data []map[string]interface{}) (int64, error) {
 	return result.RowsAffected()
 }
 
-// InsertWithTx inserts new rows into the database using the provided transaction
-func (qb *QueryBuilder) InsertWithTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
+// InsertTx inserts new rows into the database using the provided transaction
+func (qb *QueryBuilder) InsertTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
 	if tx == nil {
 		return 0, fmt.Errorf("transaction is required")
 	}
@@ -88,8 +88,8 @@ func (qb *QueryBuilder) InsertGetId(data []map[string]interface{}) (int64, error
 	return result.LastInsertId()
 }
 
-// InsertGetIdWithTx inserts new rows and returns LastInsertedID using the provided transaction
-func (qb *QueryBuilder) InsertGetIdWithTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
+// InsertGetIdTx inserts new rows and returns LastInsertedID using the provided transaction
+func (qb *QueryBuilder) InsertGetIdTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
 	if tx == nil {
 		return 0, fmt.Errorf("transaction is required")
 	}

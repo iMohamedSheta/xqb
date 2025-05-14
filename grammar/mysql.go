@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/types"
@@ -127,11 +128,19 @@ func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 		}
 	}
 
-	limitSQL, limitBindings, _ := mg.compileLimitOffsetClause(qb)
+	limitSQL, limitBindings, _ := mg.compileLimitClause(qb)
 	if limitSQL != "" {
 		sql.WriteString(limitSQL)
 		if limitBindings != nil {
 			bindings = append(bindings, limitBindings...)
+		}
+	}
+
+	offsetSQL, offsetBindings, _ := mg.compileOffsetClause(qb)
+	if offsetSQL != "" {
+		sql.WriteString(offsetSQL)
+		if offsetBindings != nil {
+			bindings = append(bindings, offsetBindings...)
 		}
 	}
 
@@ -193,11 +202,75 @@ func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []int
 }
 
 func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	return "", nil, fmt.Errorf("xqb_error_unimplemented_query: UPDATE queries are not implemented yet")
+	if len(qb.Bindings) == 0 {
+		return "", nil, fmt.Errorf("no bindings provided for update operation")
+	}
+
+	// Sort bindings by column name for consistency
+	sort.Slice(qb.Bindings, func(i, j int) bool {
+		return qb.Bindings[i].Column < qb.Bindings[j].Column
+	})
+
+	var setParts []string
+
+	var bindings []interface{}
+	var sql strings.Builder
+
+	for _, binding := range qb.Bindings {
+		setParts = append(setParts, fmt.Sprintf("%s = ?", binding.Column))
+		bindings = append(bindings, binding.Value)
+	}
+
+	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", qb.Table, strings.Join(setParts, ", ")))
+
+	whereSQL, whereBindings, _ := mg.compileWhereClause(qb)
+
+	if whereSQL != "" {
+		sql.WriteString(whereSQL)
+		if whereBindings != nil {
+			bindings = append(bindings, whereBindings...)
+		}
+	}
+
+	limitSQL, limitBindings, _ := mg.compileLimitClause(qb)
+	if limitSQL != "" {
+		sql.WriteString(limitSQL)
+		if limitBindings != nil {
+			bindings = append(bindings, limitBindings...)
+		}
+	}
+
+	return sql.String(), bindings, nil
 }
 
 func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	return "", nil, fmt.Errorf("xqb_error_unimplemented_query: DELETE queries are not implemented yet")
+	if len(qb.Bindings) == 0 {
+		return "", nil, fmt.Errorf("no bindings provided for delete operation this will destroy all data")
+	}
+
+	var bindings []interface{}
+	var sql strings.Builder
+
+	sql.WriteString(fmt.Sprintf("DELETE FROM %s", qb.Table))
+
+	whereSQL, whereBindings, _ := mg.compileWhereClause(qb)
+
+	if whereSQL != "" {
+		sql.WriteString(whereSQL)
+		if whereBindings != nil {
+			bindings = append(bindings, whereBindings...)
+		}
+	}
+
+	limitSQL, limitBindings, _ := mg.compileLimitClause(qb)
+	if limitSQL != "" {
+		sql.WriteString(limitSQL)
+		if limitBindings != nil {
+			bindings = append(bindings, limitBindings...)
+		}
+	}
+
+	return sql.String(), bindings, nil
 }
 
 func (mg *MySQLGrammar) Build(qbd *types.QueryBuilderData) (string, []interface{}, error) {

@@ -18,7 +18,8 @@ type GrammarInterface interface {
 	compileGroupByClause(*types.QueryBuilderData) (string, []interface{}, error)
 	compileHavingClause(*types.QueryBuilderData) (string, []interface{}, error)
 	compileOrderByClause(*types.QueryBuilderData) (string, []interface{}, error)
-	compileLimitOffsetClause(*types.QueryBuilderData) (string, []interface{}, error)
+	compileLimitClause(*types.QueryBuilderData) (string, []interface{}, error)
+	compileOffsetClause(*types.QueryBuilderData) (string, []interface{}, error)
 	compileLockingClause(*types.QueryBuilderData) (string, []interface{}, error)
 	compileCTEs(*types.QueryBuilderData) (string, []interface{}, error)
 

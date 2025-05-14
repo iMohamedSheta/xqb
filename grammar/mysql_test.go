@@ -453,7 +453,12 @@ func TestMySQLGrammar_CompileLimitOffsetClause(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileLimitOffsetClause(tt.qb)
+			limitSql, limitBindings, _ := grammar.compileLimitClause(tt.qb)
+			offsetSql, offsetBindings, _ := grammar.compileOffsetClause(tt.qb)
+
+			sql := limitSql + offsetSql
+			bindings := append(limitBindings, offsetBindings...)
+
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
