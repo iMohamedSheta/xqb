@@ -179,4 +179,5 @@ type QueryBuilderData struct {
 	IsStraightJoin    bool
 	IsCalcFoundRows   bool
 	InsertedValues    []map[string]interface{} // Added for insert operations
+	UpdatedBindings   []Binding                // Added for update operations
 }

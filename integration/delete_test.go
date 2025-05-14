@@ -62,8 +62,6 @@ func TestDeleteBasic(t *testing.T) {
 	dbManager := setupTestDBForDelete(t)
 	defer cleanupTestDB(t, dbManager)
 
-	qb := xqb.Table("test_users")
-
 	tests := []struct {
 		name     string
 		where    map[string]interface{}
@@ -107,7 +105,7 @@ func TestDeleteBasic(t *testing.T) {
 				"invalid_column": "value",
 			},
 			wantRows: 0,
-			wantErr:  false, // No error, just no rows affected
+			wantErr:  true,
 		},
 	}
 
@@ -116,6 +114,9 @@ func TestDeleteBasic(t *testing.T) {
 			// Reset test data before each test
 			resetTestTable(t, dbManager)
 			insertTestDataForDelete(t, dbManager)
+
+			// Create a new query builder instance for each test
+			qb := xqb.Table("test_users")
 
 			// Build where conditions
 			for col, val := range tt.where {

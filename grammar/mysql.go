@@ -216,7 +216,7 @@ func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []int
 	var bindings []interface{}
 	var sql strings.Builder
 
-	for _, binding := range qb.Bindings {
+	for _, binding := range qb.UpdatedBindings {
 		setParts = append(setParts, fmt.Sprintf("%s = ?", binding.Column))
 		bindings = append(bindings, binding.Value)
 	}

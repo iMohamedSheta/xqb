@@ -28,7 +28,7 @@ func (qb *QueryBuilder) update(data map[string]interface{}, tx *sql.Tx) (int64, 
 			Column: column,
 			Value:  value,
 		}
-		qb.bindings = append(qb.bindings, binding)
+		qbData.UpdatedBindings = append(qbData.UpdatedBindings, binding)
 	}
 
 	query, args, err := qb.grammar.Build(qbData)

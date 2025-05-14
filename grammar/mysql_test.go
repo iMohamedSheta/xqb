@@ -663,3 +663,174 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		})
 	}
 }
+
+func TestMySQLGrammar_CompileUpdate(t *testing.T) {
+	tests := []struct {
+		name     string
+		qb       *types.QueryBuilderData
+		expected string
+		bindings []interface{}
+		wantErr  bool
+	}{
+		{
+			name: "Basic update",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "name", Value: "John Updated"},
+					{Column: "email", Value: "john.updated@example.com"},
+				},
+				Where: []types.WhereCondition{
+					{Column: "id", Operator: "=", Value: 1},
+				},
+			},
+			expected: "UPDATE users SET email = ?, name = ? WHERE id = ?",
+			bindings: []interface{}{"john.updated@example.com", "John Updated", 1},
+			wantErr:  false,
+		},
+		{
+			name: "Update with multiple conditions",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "status", Value: "inactive"},
+				},
+				Where: []types.WhereCondition{
+					{Column: "status", Operator: "=", Value: "active"},
+					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
+				},
+			},
+			expected: "UPDATE users SET status = ? WHERE status = ? AND last_login < ?",
+			bindings: []interface{}{"inactive", "active", "2024-01-01"},
+			wantErr:  false,
+		},
+		{
+			name: "Update with limit",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "status", Value: "verified"},
+				},
+				Where: []types.WhereCondition{
+					{Column: "status", Operator: "=", Value: "pending"},
+				},
+				Limit: 10,
+			},
+			expected: "UPDATE users SET status = ? WHERE status = ? LIMIT 10",
+			bindings: []interface{}{"verified", "pending"},
+			wantErr:  false,
+		},
+		{
+			name: "Update with no bindings",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Where: []types.WhereCondition{
+					{Column: "id", Operator: "=", Value: 1},
+				},
+			},
+			expected: "",
+			bindings: nil,
+			wantErr:  true,
+		},
+	}
+
+	grammar := &MySQLGrammar{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sql, bindings, err := grammar.CompileUpdate(tt.qb)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, sql)
+			assert.Equal(t, tt.bindings, bindings)
+		})
+	}
+}
+
+func TestMySQLGrammar_CompileDelete(t *testing.T) {
+	tests := []struct {
+		name     string
+		qb       *types.QueryBuilderData
+		expected string
+		bindings []interface{}
+		wantErr  bool
+	}{
+		{
+			name: "Basic delete",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "id", Value: 1},
+				},
+				Where: []types.WhereCondition{
+					{Column: "id", Operator: "=", Value: 1},
+				},
+			},
+			expected: "DELETE FROM users WHERE id = ?",
+			bindings: []interface{}{1},
+			wantErr:  false,
+		},
+		{
+			name: "Delete with multiple conditions",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "status", Value: "inactive"},
+				},
+				Where: []types.WhereCondition{
+					{Column: "status", Operator: "=", Value: "inactive"},
+					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
+				},
+			},
+			expected: "DELETE FROM users WHERE status = ? AND last_login < ?",
+			bindings: []interface{}{"inactive", "2024-01-01"},
+			wantErr:  false,
+		},
+		{
+			name: "Delete with limit",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Bindings: []types.Binding{
+					{Column: "status", Value: "pending"},
+				},
+				Where: []types.WhereCondition{
+					{Column: "status", Operator: "=", Value: "pending"},
+				},
+				Limit: 10,
+			},
+			expected: "DELETE FROM users WHERE status = ? LIMIT 10",
+			bindings: []interface{}{"pending"},
+			wantErr:  false,
+		},
+		{
+			name: "Delete with no bindings",
+			qb: &types.QueryBuilderData{
+				Table: "users",
+				Where: []types.WhereCondition{
+					{Column: "id", Operator: "=", Value: 1},
+				},
+			},
+			expected: "",
+			bindings: nil,
+			wantErr:  true,
+		},
+	}
+
+	grammar := &MySQLGrammar{}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sql, bindings, err := grammar.CompileDelete(tt.qb)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, sql)
+			assert.Equal(t, tt.bindings, bindings)
+		})
+	}
+}
