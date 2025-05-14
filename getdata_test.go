@@ -132,13 +132,14 @@ func TestPagination(t *testing.T) {
 
 			rows, meta, err := qb.Paginate(10, 1, true)
 
-			fmt.Printf("rows: %v, meta: %v, err: %v\n", rows, meta, err)
+			// fmt.Printf("rows: %v, meta: %v, err: %v\n", rows, meta, err)
 			if test.wantErr {
 				assert.Error(t, err, "Expected an error but got nil")
 				return
 			}
 			assert.NoError(t, err, "Unexpected error")
 			assert.Equal(t, test.data, rows, "Expected rows to be equal")
+			assert.Equal(t, test.wantRows, meta["total_count"], fmt.Sprintf("Expected %v total count but got %v", test.wantRows, meta["total_count"]))
 		})
 	}
 

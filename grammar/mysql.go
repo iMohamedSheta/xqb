@@ -202,7 +202,7 @@ func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []int
 }
 
 func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	if len(qb.Bindings) == 0 {
+	if len(qb.UpdatedBindings) == 0 {
 		return "", nil, fmt.Errorf("no bindings provided for update operation")
 	}
 
