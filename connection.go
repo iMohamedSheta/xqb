@@ -67,9 +67,9 @@ func (m *DBManager) Transaction(fn func(*sql.Tx) error) (err error) {
 			_ = tx.Rollback()
 			switch e := p.(type) {
 			case error:
-				err = fmt.Errorf("transaction panic: %w", e)
+				err = fmt.Errorf("transaction error: %w", e)
 			default:
-				err = fmt.Errorf("transaction panic: %v", p)
+				err = fmt.Errorf("transaction error: %v", p)
 			}
 		}
 	}()
