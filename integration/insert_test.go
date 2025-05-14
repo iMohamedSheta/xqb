@@ -50,7 +50,8 @@ func cleanupTestDB(t *testing.T, dbManager *xqb.DBManager) {
 
 // resetTestTable truncates the test table to ensure a clean state
 func resetTestTable(t *testing.T, dbManager *xqb.DBManager) {
-	_, err := dbManager.db.Exec("TRUNCATE TABLE test_users")
+	db, _ := dbManager.GetDB()
+	_, err := db.Exec("TRUNCATE TABLE test_users")
 	assert.NoError(t, err, "Failed to reset test table")
 }
 
@@ -112,7 +113,8 @@ func TestInsert(t *testing.T) {
 
 				// Verify data was actually inserted
 				var count int
-				err = dbManager.db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
+				db, _ := dbManager.GetDB()
+				err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
 				assert.NoError(t, err)
 				assert.Equal(t, int(tt.wantRows), count)
 			})
@@ -193,7 +195,8 @@ func TestInsertWithTransaction(t *testing.T) {
 
 			// Verify no records were inserted (transaction was rolled back)
 			var count int
-			err = dbManager.db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
+			db, _ := dbManager.GetDB()
+			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
 			assert.NoError(t, err)
 			assert.Equal(t, 0, count)
 		})
@@ -222,7 +225,8 @@ func TestInsertWithTransaction(t *testing.T) {
 
 			// Verify both records were inserted
 			var count int
-			err = dbManager.db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
+			db, _ := dbManager.GetDB()
+			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
 			assert.NoError(t, err)
 			assert.Equal(t, 2, count)
 		})
@@ -256,7 +260,8 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 
 			// Verify no records were inserted (transaction was rolled back)
 			var count int
-			err = dbManager.db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
+			db, _ := dbManager.GetDB()
+			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
 			assert.NoError(t, err)
 			assert.Equal(t, 0, count)
 		})
@@ -285,7 +290,8 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 
 			// Verify both records were inserted
 			var count int
-			err = dbManager.db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
+			db, _ := dbManager.GetDB()
+			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
 			assert.NoError(t, err)
 			assert.Equal(t, 2, count)
 		})
