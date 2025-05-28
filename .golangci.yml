@@ -1,0 +1,20 @@
+run:
+  timeout: 5m
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - gosimple
+    - deadcode
+    - unused
+    - gosec
+
+# Avoid error checks in tests files (e.g. _test.go)
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
