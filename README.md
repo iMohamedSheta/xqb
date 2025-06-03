@@ -353,18 +353,18 @@ qb := xqb.Table("users").
 
 ```go
 qb := xqb.Table("users").
+    Where("id", "=", 1).
     Update(map[string]interface{}{
         "name": "Jane Doe",
-    }).
-    Where("id", "=", 1)
+    })
 ```
 
 ### DELETE Queries
 
 ```go
 qb := xqb.Table("users").
-    Delete().
-    Where("id", "=", 1)
+    Where("id", "=", 1).
+    Delete()
 ```
 
 ## Advanced Features
