@@ -8,7 +8,6 @@ linters:
     - errcheck
     - ineffassign
     - gosimple
-    - deadcode
     - unused
     - gosec
 
