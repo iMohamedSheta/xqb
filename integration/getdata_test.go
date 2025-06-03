@@ -1,4 +1,4 @@
-package xqb
+package integration
 
 import (
 	"database/sql"
@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/iMohamedSheta/xqb"
 	"github.com/stretchr/testify/assert"
 )
 
 // setupTestDB creates a fresh test database connection and table
 // setupTestDBForUpdate creates a fresh test database connection and table with additional columns for update tests
-func setupTestDB(t *testing.T) *DBManager {
+func setupTestDBForGetData(t *testing.T) *xqb.DBManager {
 	// Create a test database connection
 	db, err := sql.Open("mysql", "root:@tcp(localhost:3306)/test_xqb_db")
 	if err != nil {
@@ -41,14 +42,14 @@ func setupTestDB(t *testing.T) *DBManager {
 	}
 
 	// Set up DBManager
-	dbManager := GetDBManager()
+	dbManager := xqb.GetDBManager()
 	dbManager.SetDB(db)
 
 	return dbManager
 }
 
 // insertTestDataForUpdate inserts test data for update operations
-func insertTestDataForTest(t *testing.T, dbManager *DBManager) {
+func insertTestDataForTest(t *testing.T, dbManager *xqb.DBManager) {
 	db, _ := dbManager.GetDB()
 	_, err := db.Exec(`
 		INSERT INTO test_users (name, email, age, status, price) VALUES
@@ -60,30 +61,30 @@ func insertTestDataForTest(t *testing.T, dbManager *DBManager) {
 }
 
 // cleanupTestDB closes the database connection
-func cleanupTestDB(t *testing.T, dbManager *DBManager) {
+func cleanupTestDBForGetData(t *testing.T, dbManager *xqb.DBManager) {
 	if err := dbManager.CloseDB(); err != nil {
 		t.Errorf("Failed to close database: %v", err)
 	}
 }
 
 // resetTestTable truncates the test table to ensure a clean state
-func resetTestTable(t *testing.T, dbManager *DBManager) {
+func resetTestTableForGetData(t *testing.T, dbManager *xqb.DBManager) {
 	db, _ := dbManager.GetDB()
 	_, err := db.Exec("TRUNCATE TABLE test_users")
 	assert.NoError(t, err, "Failed to reset test table")
 }
 
 // testWithCleanTable is a helper function that runs a test with a clean table
-func cleanTable(t *testing.T, dbManager *DBManager) {
-	resetTestTable(t, dbManager)
+func cleanTable(t *testing.T, dbManager *xqb.DBManager) {
+	resetTestTableForGetData(t, dbManager)
 	insertTestDataForTest(t, dbManager)
 }
 
 func TestPagination(t *testing.T) {
-	dbManager := setupTestDB(t)
-	defer cleanupTestDB(t, dbManager)
+	dbManager := setupTestDBForGetData(t)
+	defer cleanupTestDBForGetData(t, dbManager)
 
-	qb := Table("test_users")
+	qb := xqb.Table("test_users")
 
 	expected := []map[string]interface{}{
 		{"name": "John Doe", "email": "john@example.com", "age": int64(30), "price": "100.00", "status": "active"},

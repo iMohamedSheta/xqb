@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// setupTestDB creates a fresh test database connection and table
-func setupTestDB(t *testing.T) *xqb.DBManager {
+// setupTestDBForInsert creates a fresh test database connection and table
+func setupTestDBForInsert(t *testing.T) *xqb.DBManager {
 	// Create a test database connection
 	db, err := sql.Open("mysql", "root:@tcp(localhost:3306)/test_xqb_db")
 	if err != nil {
@@ -42,14 +42,14 @@ func setupTestDB(t *testing.T) *xqb.DBManager {
 }
 
 // cleanupTestDB closes the database connection
-func cleanupTestDB(t *testing.T, dbManager *xqb.DBManager) {
+func cleanupTestDBForInsert(t *testing.T, dbManager *xqb.DBManager) {
 	if err := dbManager.CloseDB(); err != nil {
 		t.Errorf("Failed to close database: %v", err)
 	}
 }
 
 // resetTestTable truncates the test table to ensure a clean state
-func resetTestTable(t *testing.T, dbManager *xqb.DBManager) {
+func resetTestTableForInsert(t *testing.T, dbManager *xqb.DBManager) {
 	db, _ := dbManager.GetDB()
 	_, err := db.Exec("TRUNCATE TABLE test_users")
 	assert.NoError(t, err, "Failed to reset test table")
@@ -57,13 +57,13 @@ func resetTestTable(t *testing.T, dbManager *xqb.DBManager) {
 
 // testWithCleanTable is a helper function that runs a test with a clean table
 func testWithCleanTable(t *testing.T, dbManager *xqb.DBManager, testFn func()) {
-	resetTestTable(t, dbManager)
+	resetTestTableForInsert(t, dbManager)
 	testFn()
 }
 
 func TestInsert(t *testing.T) {
-	dbManager := setupTestDB(t)
-	defer cleanupTestDB(t, dbManager)
+	dbManager := setupTestDBForInsert(t)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -123,8 +123,8 @@ func TestInsert(t *testing.T) {
 }
 
 func TestInsertGetId(t *testing.T) {
-	dbManager := setupTestDB(t)
-	defer cleanupTestDB(t, dbManager)
+	dbManager := setupTestDBForInsert(t)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -169,8 +169,8 @@ func TestInsertGetId(t *testing.T) {
 }
 
 func TestInsertWithTransaction(t *testing.T) {
-	dbManager := setupTestDB(t)
-	defer cleanupTestDB(t, dbManager)
+	dbManager := setupTestDBForInsert(t)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -234,8 +234,8 @@ func TestInsertWithTransaction(t *testing.T) {
 }
 
 func TestInsertGetIdWithTransaction(t *testing.T) {
-	dbManager := setupTestDB(t)
-	defer cleanupTestDB(t, dbManager)
+	dbManager := setupTestDBForInsert(t)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 

@@ -60,7 +60,7 @@ func insertTestDataForUpdate(t *testing.T, dbManager *xqb.DBManager) {
 
 func TestUpdateBasic(t *testing.T) {
 	dbManager := setupTestDBForUpdate(t)
-	defer cleanupTestDB(t, dbManager)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	insertTestDataForUpdate(t, dbManager)
 
@@ -127,7 +127,7 @@ func TestUpdateBasic(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			qb := xqb.Table("test_users")
 			// Reset test data before each test
-			resetTestTable(t, dbManager)
+			resetTestTableForInsert(t, dbManager)
 			insertTestDataForUpdate(t, dbManager)
 
 			// Build where conditions
@@ -154,7 +154,7 @@ func TestUpdateBasic(t *testing.T) {
 
 func TestUpdateWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForUpdate(t)
-	defer cleanupTestDB(t, dbManager)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 

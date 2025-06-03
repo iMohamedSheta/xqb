@@ -60,7 +60,7 @@ func insertTestDataForDelete(t *testing.T, dbManager *xqb.DBManager) {
 
 func TestDeleteBasic(t *testing.T) {
 	dbManager := setupTestDBForDelete(t)
-	defer cleanupTestDB(t, dbManager)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	tests := []struct {
 		name     string
@@ -112,7 +112,7 @@ func TestDeleteBasic(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Reset test data before each test
-			resetTestTable(t, dbManager)
+			resetTestTableForInsert(t, dbManager)
 			insertTestDataForDelete(t, dbManager)
 
 			// Create a new query builder instance for each test
@@ -142,7 +142,7 @@ func TestDeleteBasic(t *testing.T) {
 
 func TestDeleteWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForDelete(t)
-	defer cleanupTestDB(t, dbManager)
+	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
