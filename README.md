@@ -80,6 +80,7 @@ func main() {
     defer dbManager.CloseDB()
 }
 ```
+
 ### Using Transactions
 
 ```go
@@ -89,7 +90,7 @@ dbManager := xqb.GetDBManager()
 err := dbManager.Transaction(func(tx *sql.Tx) error {
     // Create a query builder
     qb := xqb.Table("users")
-    
+
     // Execute your queries within the transaction
     // If any query fails, the entire transaction will be rolled back
     return nil
@@ -227,18 +228,18 @@ prevPage := meta["prev_page"]
 // Chunking large result sets
 err = xqb.Table("users").
     Where("active", "=", true).
-    Chunk(100, func(rows *sql.Rows) error {
+    Chunk(100, func(rows []map[string]any) error {
         // Process 100 records at a time
-        for rows.Next() {
+        for _, row  := range rows {
             // Process each row
         }
         return nil
     })
 
-// Get a single value
+// Get a single value from first record
 value, err := xqb.Table("users").
-    Select("COUNT(*)").
-    Value("COUNT(*)")
+    Where("id", "=", 1).
+    Value("username")
 
 // Check if record exists
 exists, err := xqb.Table("users").
@@ -248,7 +249,7 @@ exists, err := xqb.Table("users").
 // Pluck specific columns
 names, err := xqb.Table("users").
     Select("name").
-    Pluck("name", "id") // Returns map[string]interface{}
+    Pluck("name", "id") // Returns map[string]any
 ```
 
 ### Error Handling
@@ -447,4 +448,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.

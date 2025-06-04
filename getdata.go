@@ -213,3 +213,50 @@ func (qb *QueryBuilder) Value(column string) (interface{}, error) {
 
 	return result[column], nil
 }
+
+// Chunks processes results in batch and calls the closure for each chunk
+func (qb *QueryBuilder) Chunks(chunkSize int, closure func(results []map[string]any) error) error {
+	if chunkSize <= 0 {
+		return fmt.Errorf("chunk size must be greater than 0")
+	}
+
+	// Save current limit and offset, restore after operation
+	currentLimit := qb.limit
+	currentOffset := qb.offset
+
+	defer func() {
+		qb.limit = currentLimit
+		qb.offset = currentOffset
+	}()
+
+	offset := 0
+	qb.limit = chunkSize
+
+	for {
+		qb.offset = offset
+
+		results, err := qb.Execute(nil)
+		if err != nil {
+			return err
+		}
+
+		if len(results) == 0 {
+			break
+		}
+
+		// Process this chunk
+		err = closure(results)
+		if err != nil {
+			return err
+		}
+
+		// If we got fewer results than chunk size, stop
+		if len(results) < chunkSize {
+			break
+		}
+
+		offset += chunkSize
+	}
+
+	return nil
+}
