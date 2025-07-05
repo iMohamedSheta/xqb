@@ -1,4 +1,4 @@
-package grammar
+package mysql
 
 import (
 	"strconv"

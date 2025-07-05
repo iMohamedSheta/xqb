@@ -260,9 +260,3 @@ func (qb *QueryBuilder) Procedure(procedure string, params ...interface{}) *Quer
 	qb.procedureParams = params
 	return qb
 }
-
-// Comment adds a comment to the query
-func (qb *QueryBuilder) Comment(comment string) *QueryBuilder {
-	qb.comment = comment
-	return qb
-}

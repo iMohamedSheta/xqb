@@ -1,4 +1,4 @@
-package grammar
+package mysql
 
 import (
 	"fmt"
@@ -10,7 +10,6 @@ import (
 
 // MySQLGrammar implements MySQL-specific SQL syntax
 type MySQLGrammar struct {
-	BaseGrammar
 }
 
 // CompileSelect generates a SELECT SQL statement for MySQL
@@ -62,8 +61,8 @@ func (mg *MySQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []int
 }
 
 // compileBaseQuery compiles a query without unions
-func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	// Compile each part of the query in order

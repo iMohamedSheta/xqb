@@ -3,17 +3,19 @@ run:
 
 linters:
   enable:
-    - govet
-    - staticcheck
     - errcheck
+    - gofmt
+    - goimports
+    - govet
     - ineffassign
-    - gosimple
+    - staticcheck
     - unused
-    - gosec
 
-# Avoid error checks in tests files (e.g. _test.go)
 issues:
   exclude-rules:
+    - path: tests/
+      linters:
+        - errcheck
     - path: _test\.go
       linters:
         - errcheck
