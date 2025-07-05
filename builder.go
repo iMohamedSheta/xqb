@@ -52,7 +52,7 @@ type QueryBuilder struct {
 // New creates a new QueryBuilder instance
 func New() *QueryBuilder {
 	// Get the driver name from the database connection
-	driverName := "mysql" // Default to MySQL
+	driverName := grammar.DriverMySQL // Default to MySQL
 
 	return &QueryBuilder{
 		queryType:         types.SELECT,

@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"database/sql"
 	"fmt"
 	"testing"
 
@@ -14,7 +13,8 @@ import (
 // setupTestDBForUpdate creates a fresh test database connection and table with additional columns for update tests
 func setupTestDBForGetData(t *testing.T) *xqb.DBManager {
 	// Create a test database connection
-	db, err := sql.Open("mysql", "root:@tcp(localhost:3306)/test_xqb_db")
+	db, err := dbManager.GetDB()
+
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
@@ -40,10 +40,6 @@ func setupTestDBForGetData(t *testing.T) *xqb.DBManager {
 	if err != nil {
 		t.Fatalf("Failed to create test table: %v", err)
 	}
-
-	// Set up DBManager
-	dbManager := xqb.GetDBManager()
-	dbManager.SetDB(db)
 
 	return dbManager
 }

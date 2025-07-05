@@ -12,7 +12,7 @@ import (
 // setupTestDBForUpdate creates a fresh test database connection and table with additional columns for update tests
 func setupTestDBForUpdate(t *testing.T) *xqb.DBManager {
 	// Create a test database connection
-	db, err := sql.Open("mysql", "root:@tcp(localhost:3306)/test_xqb_db")
+	db, err := dbManager.GetDB()
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
@@ -39,10 +39,6 @@ func setupTestDBForUpdate(t *testing.T) *xqb.DBManager {
 		t.Fatalf("Failed to create test table: %v", err)
 	}
 
-	// Set up DBManager
-	dbManager := xqb.GetDBManager()
-	dbManager.SetDB(db)
-
 	return dbManager
 }
 
@@ -60,7 +56,6 @@ func insertTestDataForUpdate(t *testing.T, dbManager *xqb.DBManager) {
 
 func TestUpdateBasic(t *testing.T) {
 	dbManager := setupTestDBForUpdate(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	insertTestDataForUpdate(t, dbManager)
 
@@ -154,7 +149,6 @@ func TestUpdateBasic(t *testing.T) {
 
 func TestUpdateWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForUpdate(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 

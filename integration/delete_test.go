@@ -60,7 +60,6 @@ func insertTestDataForDelete(t *testing.T, dbManager *xqb.DBManager) {
 
 func TestDeleteBasic(t *testing.T) {
 	dbManager := setupTestDBForDelete(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	tests := []struct {
 		name     string
@@ -142,7 +141,6 @@ func TestDeleteBasic(t *testing.T) {
 
 func TestDeleteWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForDelete(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 

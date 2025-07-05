@@ -11,10 +11,9 @@ import (
 
 // setupTestDBForInsert creates a fresh test database connection and table
 func setupTestDBForInsert(t *testing.T) *xqb.DBManager {
-	// Create a test database connection
-	db, err := sql.Open("mysql", "root:@tcp(localhost:3306)/test_xqb_db")
+	db, err := dbManager.GetDB()
 	if err != nil {
-		t.Fatalf("Failed to connect to test database: %v", err)
+		t.Fatalf("Failed to get database connection: %v", err)
 	}
 
 	// Drop and recreate test table to ensure clean state
@@ -34,18 +33,7 @@ func setupTestDBForInsert(t *testing.T) *xqb.DBManager {
 		t.Fatalf("Failed to create test table: %v", err)
 	}
 
-	// Set up DBManager
-	dbManager := xqb.GetDBManager()
-	dbManager.SetDB(db)
-
 	return dbManager
-}
-
-// cleanupTestDB closes the database connection
-func cleanupTestDBForInsert(t *testing.T, dbManager *xqb.DBManager) {
-	if err := dbManager.CloseDB(); err != nil {
-		t.Errorf("Failed to close database: %v", err)
-	}
 }
 
 // resetTestTable truncates the test table to ensure a clean state
@@ -63,7 +51,7 @@ func testWithCleanTable(t *testing.T, dbManager *xqb.DBManager, testFn func()) {
 
 func TestInsert(t *testing.T) {
 	dbManager := setupTestDBForInsert(t)
-	defer cleanupTestDBForInsert(t, dbManager)
+	// defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -124,7 +112,6 @@ func TestInsert(t *testing.T) {
 
 func TestInsertGetId(t *testing.T) {
 	dbManager := setupTestDBForInsert(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -170,7 +157,6 @@ func TestInsertGetId(t *testing.T) {
 
 func TestInsertWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForInsert(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
@@ -235,7 +221,6 @@ func TestInsertWithTransaction(t *testing.T) {
 
 func TestInsertGetIdWithTransaction(t *testing.T) {
 	dbManager := setupTestDBForInsert(t)
-	defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 
