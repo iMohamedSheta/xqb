@@ -99,7 +99,7 @@ func (qb *QueryBuilder) OrWhereRaw(sql string, bindings ...interface{}) *QueryBu
 func (qb *QueryBuilder) WhereNull(column string) *QueryBuilder {
 	qb.where = append(qb.where, types.WhereCondition{
 		Column:    column,
-		Operator:  "IS",
+		Operator:  "IS NULL",
 		Value:     nil,
 		Connector: types.AND,
 	})
@@ -110,7 +110,7 @@ func (qb *QueryBuilder) WhereNull(column string) *QueryBuilder {
 func (qb *QueryBuilder) WhereNotNull(column string) *QueryBuilder {
 	qb.where = append(qb.where, types.WhereCondition{
 		Column:    column,
-		Operator:  "IS NOT",
+		Operator:  "IS NOT NULL",
 		Value:     nil,
 		Connector: types.AND,
 	})

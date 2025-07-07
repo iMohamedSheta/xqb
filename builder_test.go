@@ -317,6 +317,24 @@ func TestHavingWithRawExpressions(t *testing.T) {
 	assert.Equal(t, []interface{}{1000}, bindings)
 }
 
+func TestWhereNull(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNull("deleted_at").ToSQL()
+
+	expected := "SELECT * FROM users WHERE deleted_at IS NULL"
+	assert.Equal(t, expected, sql)
+	assert.Empty(t, bindings)
+}
+
+func TestWhereNotNull(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNotNull("email").ToSQL()
+
+	expected := "SELECT * FROM users WHERE email IS NOT NULL"
+	assert.Equal(t, expected, sql)
+	assert.Empty(t, bindings)
+}
+
 func TestComplexQueryWithExpressions(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.Select(
