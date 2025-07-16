@@ -57,13 +57,13 @@ func TestInsert(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		data     []map[string]interface{}
+		data     []map[string]any
 		wantRows int64
 		wantErr  bool
 	}{
 		{
 			name: "single insert",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				{"name": "John", "age": 30},
 			},
 			wantRows: 1,
@@ -71,7 +71,7 @@ func TestInsert(t *testing.T) {
 		},
 		{
 			name: "multiple insert",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				{"name": "John", "age": 30},
 				{"name": "Jane", "age": 25},
 			},
@@ -80,7 +80,7 @@ func TestInsert(t *testing.T) {
 		},
 		{
 			name: "invalid data",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				{"invalid_column": "value"},
 			},
 			wantRows: 0,
@@ -117,13 +117,13 @@ func TestInsertGetId(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		data    []map[string]interface{}
+		data    []map[string]any
 		wantId  int64
 		wantErr bool
 	}{
 		{
 			name: "single insert",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				{"name": "John", "age": 30},
 			},
 			wantId:  1, // First insert should have ID 1
@@ -131,7 +131,7 @@ func TestInsertGetId(t *testing.T) {
 		},
 		{
 			name: "multiple insert",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				{"name": "John", "age": 30},
 				{"name": "Jane", "age": 25},
 			},
@@ -164,13 +164,13 @@ func TestInsertWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert (success)
-				_, err := qb.InsertTx([]map[string]interface{}{
+				_, err := qb.InsertTx([]map[string]any{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 
 				// Second insert (fail)
-				_, err = qb.InsertTx([]map[string]interface{}{
+				_, err = qb.InsertTx([]map[string]any{
 					{"invalid_column": "value"},
 				}, tx)
 				assert.Error(t, err)
@@ -192,14 +192,14 @@ func TestInsertWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert
-				affected, err := qb.InsertTx([]map[string]interface{}{
+				affected, err := qb.InsertTx([]map[string]any{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 				assert.Equal(t, int64(1), affected)
 
 				// Second insert
-				affected, err = qb.InsertTx([]map[string]interface{}{
+				affected, err = qb.InsertTx([]map[string]any{
 					{"name": "Jane", "age": 25},
 				}, tx)
 				assert.NoError(t, err)
@@ -228,13 +228,13 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert (success)
-				_, err := qb.InsertGetIdTx([]map[string]interface{}{
+				_, err := qb.InsertGetIdTx([]map[string]any{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 
 				// Second insert (fail)
-				_, err = qb.InsertGetIdTx([]map[string]interface{}{
+				_, err = qb.InsertGetIdTx([]map[string]any{
 					{"invalid_column": "value"},
 				}, tx)
 				assert.Error(t, err)
@@ -256,14 +256,14 @@ func TestInsertGetIdWithTransaction(t *testing.T) {
 		testWithCleanTable(t, dbManager, func() {
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First insert
-				id, err := qb.InsertGetIdTx([]map[string]interface{}{
+				id, err := qb.InsertGetIdTx([]map[string]any{
 					{"name": "John", "age": 30},
 				}, tx)
 				assert.NoError(t, err)
 				assert.Equal(t, int64(1), id)
 
 				// Second insert
-				id, err = qb.InsertGetIdTx([]map[string]interface{}{
+				id, err = qb.InsertGetIdTx([]map[string]any{
 					{"name": "Jane", "age": 25},
 				}, tx)
 				assert.NoError(t, err)

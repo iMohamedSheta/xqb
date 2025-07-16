@@ -44,10 +44,10 @@ const (
 type WhereCondition struct {
 	Column    string
 	Operator  string
-	Value     interface{}
+	Value     any
 	Connector WhereConditionEnum
 	Raw       *Expression
-	IsNot     bool
+	// IsNot     bool
 }
 
 // OrderBy represents an ORDER BY clause
@@ -60,7 +60,7 @@ type OrderBy struct {
 type Having struct {
 	Column    string
 	Operator  string
-	Value     interface{}
+	Value     any
 	Connector WhereConditionEnum
 }
 
@@ -89,13 +89,17 @@ type Union struct {
 // Expression represents a raw SQL expression
 type Expression struct {
 	SQL      string
-	Bindings []interface{}
+	Bindings []any
+}
+
+func (expr *Expression) ToSQL() (string, []any, error) {
+	return expr.SQL, expr.Bindings, nil
 }
 
 // CTE represents a Common Table Expression
 type CTE struct {
 	Name       string
-	Query      interface{} // Will be *QueryBuilder
+	Query      any // Will be *QueryBuilder
 	Expression *Expression
 	Recursive  bool
 }
@@ -132,7 +136,7 @@ type ConditionalExpr struct {
 type StringFunction struct {
 	Function string
 	Column   string
-	Params   []interface{}
+	Params   []any
 	Alias    string
 }
 
@@ -140,7 +144,7 @@ type StringFunction struct {
 type DateFunction struct {
 	Function string
 	Column   string
-	Params   []interface{}
+	Params   []any
 	Alias    string
 }
 
@@ -161,7 +165,7 @@ type QueryBuilderData struct {
 	Bindings          []Binding
 	Distinct          bool
 	AggregateFuncs    []AggregateExpr
-	Subqueries        map[string]interface{} // Will be *QueryBuilder
+	Subqueries        map[string]any // Will be *QueryBuilder
 	WithCTEs          []CTE
 	JSONExpressions   []JSONExpression
 	MathExpressions   []MathExpression
@@ -178,6 +182,6 @@ type QueryBuilderData struct {
 	IsHighPriority    bool
 	IsStraightJoin    bool
 	IsCalcFoundRows   bool
-	InsertedValues    []map[string]interface{} // Added for insert operations
-	UpdatedBindings   []Binding                // Added for update operations
+	InsertedValues    []map[string]any // Added for insert operations
+	UpdatedBindings   []Binding        // Added for update operations
 }

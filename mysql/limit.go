@@ -8,8 +8,8 @@ import (
 )
 
 // compileLimitClause compiles the LIMIT clause
-func (mg *MySQLGrammar) compileLimitClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileLimitClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 	if qb.Limit != 0 {
 		sql.WriteString(" LIMIT ")
@@ -19,8 +19,8 @@ func (mg *MySQLGrammar) compileLimitClause(qb *types.QueryBuilderData) (string, 
 }
 
 // compileOffsetClause compiles the OFFSET clause
-func (mg *MySQLGrammar) compileOffsetClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileOffsetClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 	if qb.Offset != 0 {
 		sql.WriteString(" OFFSET ")

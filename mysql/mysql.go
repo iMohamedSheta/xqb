@@ -13,13 +13,13 @@ type MySQLGrammar struct {
 }
 
 // CompileSelect generates a SELECT SQL statement for MySQL
-func (mg *MySQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	// If there are no unions, just compile the base query
 	if len(qb.Unions) == 0 {
 		return mg.compileBaseQuery(qb)
 	}
 
-	var bindings []interface{}
+	var bindings []any
 	var sql strings.Builder
 
 	// Get base query SQL and bindings
@@ -154,7 +154,7 @@ func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
 	if qb.Table == "" {
 		return "", nil, fmt.Errorf("table name is required for insert operation")
 	}
@@ -163,7 +163,7 @@ func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []int
 		return fmt.Sprintf("INSERT INTO %s DEFAULT VALUES", qb.Table), nil, nil
 	}
 
-	var bindings []interface{}
+	var bindings []any
 
 	// Get columns from the first row of values
 	columns := make([]string, 0, len(qb.InsertedValues[0]))
@@ -200,7 +200,7 @@ func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []int
 	return sql, bindings, nil
 }
 
-func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.UpdatedBindings) == 0 {
 		return "", nil, fmt.Errorf("no bindings provided for update operation")
 	}
@@ -212,7 +212,7 @@ func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []int
 
 	var setParts []string
 
-	var bindings []interface{}
+	var bindings []any
 	var sql strings.Builder
 
 	for _, binding := range qb.UpdatedBindings {
@@ -242,12 +242,12 @@ func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []int
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Bindings) == 0 {
 		return "", nil, fmt.Errorf("no bindings provided for delete operation this will destroy all data")
 	}
 
-	var bindings []interface{}
+	var bindings []any
 	var sql strings.Builder
 
 	sql.WriteString(fmt.Sprintf("DELETE FROM %s", qb.Table))
@@ -272,9 +272,9 @@ func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []int
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLGrammar) Build(qbd *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) Build(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
-	var bindings []interface{}
+	var bindings []any
 	var err error
 
 	switch qbd.QueryType {

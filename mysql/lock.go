@@ -7,8 +7,8 @@ import (
 )
 
 // compileLockingClause compiles the locking clause
-func (mg *MySQLGrammar) compileLockingClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if qb.IsForUpdate {

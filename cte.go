@@ -14,7 +14,7 @@ func (qb *QueryBuilder) With(name string, query *QueryBuilder) *QueryBuilder {
 }
 
 // WithExpression adds a Common Table Expression using a raw SQL expression
-func (qb *QueryBuilder) WithExpression(name string, sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithExpression(name string, sql string, bindings ...any) *QueryBuilder {
 	qb.withCTEs = append(qb.withCTEs, types.CTE{
 		Name: name,
 		Expression: &types.Expression{
@@ -36,7 +36,7 @@ func (qb *QueryBuilder) WithRecursive(name string, query *QueryBuilder) *QueryBu
 }
 
 // WithRaw adds a raw Common Table Expression (CTE)
-func (qb *QueryBuilder) WithRaw(name string, sql string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithRaw(name string, sql string, values ...any) *QueryBuilder {
 	rawQuery := &QueryBuilder{
 		queryType: types.SELECT,
 		columns:   []any{sql},
@@ -54,7 +54,7 @@ func (qb *QueryBuilder) WithRaw(name string, sql string, values ...interface{}) 
 }
 
 // WithRecursiveRaw adds a raw recursive Common Table Expression (CTE)
-func (qb *QueryBuilder) WithRecursiveRaw(name string, sql string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) WithRecursiveRaw(name string, sql string, values ...any) *QueryBuilder {
 	rawQuery := &QueryBuilder{
 		queryType: types.SELECT,
 		columns:   []any{sql},

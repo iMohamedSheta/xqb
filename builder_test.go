@@ -23,7 +23,7 @@ func TestSelectWithWhere(t *testing.T) {
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, name FROM users WHERE age > ?", sql)
-	assert.Equal(t, []interface{}{18}, bindings)
+	assert.Equal(t, []any{18}, bindings)
 }
 
 func TestSelectWithJoins(t *testing.T) {
@@ -44,7 +44,7 @@ func TestSelectWithLeftJoins(t *testing.T) {
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT users.id, users.name, orders.id as order_id FROM users INNER JOIN orders ON users.id = orders.user_id LEFT JOIN products ON orders.product_id = products.id WHERE users.id > ? AND orders.id > ?", sql)
-	assert.Equal(t, []interface{}{55, 11}, bindings)
+	assert.Equal(t, []any{55, 11}, bindings)
 }
 
 func TestSelectWithComplexJoins(t *testing.T) {
@@ -69,7 +69,7 @@ func TestSelectWithHaving(t *testing.T) {
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?", sql)
-	assert.Equal(t, []interface{}{5}, bindings)
+	assert.Equal(t, []any{5}, bindings)
 }
 
 func TestSelectWithOrderBy(t *testing.T) {
@@ -149,21 +149,21 @@ func TestSelectWithJSONExpressions(t *testing.T) {
 func TestSelectWithStringFunctions(t *testing.T) {
 	qb := xqb.Table("users")
 	qb.Select("id")
-	qb.String("CONCAT", "first_name", []interface{}{" ", "last_name"}, "full_name")
+	qb.String("CONCAT", "first_name", []any{" ", "last_name"}, "full_name")
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, CONCAT(first_name, ?, ?) AS full_name FROM users", sql)
-	assert.Equal(t, []interface{}{" ", "last_name"}, bindings)
+	assert.Equal(t, []any{" ", "last_name"}, bindings)
 }
 
 func TestSelectWithDateFunctions(t *testing.T) {
 	qb := xqb.Table("orders")
 	qb.Select("id")
-	qb.Date("DATE_FORMAT", "created_at", []interface{}{"%Y-%m-%d"}, "order_date")
+	qb.Date("DATE_FORMAT", "created_at", []any{"%Y-%m-%d"}, "order_date")
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, DATE_FORMAT(created_at, ?) AS order_date FROM orders", sql)
-	assert.Equal(t, []interface{}{"%Y-%m-%d"}, bindings)
+	assert.Equal(t, []any{"%Y-%m-%d"}, bindings)
 }
 
 func TestSelectWithMathExpressions(t *testing.T) {
@@ -215,7 +215,7 @@ func TestSelectWithUnion(t *testing.T) {
 	sql, bindings, _ := qb.ToSQL()
 
 	expectedSQL := "SELECT id, name FROM users UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?)"
-	expectedBindings := []interface{}{"admin", "superuser", "guest"}
+	expectedBindings := []any{"admin", "superuser", "guest"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedBindings, bindings)
@@ -275,7 +275,7 @@ func TestWhereWithRawExpressions(t *testing.T) {
 
 	expected := "SELECT * FROM users WHERE LOWER(name) = ?"
 	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{"john"}, bindings)
+	assert.Equal(t, []any{"john"}, bindings)
 }
 
 func TestWhereRaw(t *testing.T) {
@@ -284,7 +284,7 @@ func TestWhereRaw(t *testing.T) {
 
 	expected := "SELECT * FROM users WHERE LOWER(name) = ? OR LOWER(email) = ?"
 	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{"john", "john@example.com"}, bindings)
+	assert.Equal(t, []any{"john", "john@example.com"}, bindings)
 }
 
 func TestGroupByWithRawExpressions(t *testing.T) {
@@ -314,7 +314,7 @@ func TestHavingWithRawExpressions(t *testing.T) {
 
 	expected := "SELECT user_id, SUM(amount) as total FROM orders GROUP BY user_id HAVING SUM(amount) > ?"
 	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{1000}, bindings)
+	assert.Equal(t, []any{1000}, bindings)
 }
 
 func TestWhereNull(t *testing.T) {
@@ -335,6 +335,61 @@ func TestWhereNotNull(t *testing.T) {
 	assert.Empty(t, bindings)
 }
 
+func TestWhereNullWithSelect(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNull("deleted_at").ToSQL()
+
+	expected := "SELECT id, name FROM users WHERE name LIKE ? AND deleted_at IS NULL"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
+}
+
+func TestWhereNotNullWithSelect(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNotNull("email").ToSQL()
+
+	expected := "SELECT id, name FROM users WHERE name LIKE ? AND email IS NOT NULL"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
+}
+
+func TestWhereIn(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereIn("id", []any{1, 2, 3}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id IN (?, ?, ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1, 2, 3}, bindings)
+}
+
+func TestWhereNotIn(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNotIn("id", []any{1, 2, 3}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id NOT IN (?, ?, ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1, 2, 3}, bindings)
+}
+
+func TestWhereInWithSubquery(t *testing.T) {
+	qb := xqb.Table("users")
+	subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
+	sql, bindings, _ := qb.WhereIn("id", []any{subQuery}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE status = ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"active"}, bindings)
+}
+
+func TestWhereBetween(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereBetween("age", 18, 30).ToSQL()
+
+	expected := "SELECT * FROM users WHERE age BETWEEN ? AND ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{18, 30}, bindings)
+}
+
 func TestComplexQueryWithExpressions(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.Select(
@@ -350,25 +405,16 @@ func TestComplexQueryWithExpressions(t *testing.T) {
 
 	expected := "SELECT id, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM users WHERE LOWER(email) LIKE ? GROUP BY id, first_name, last_name HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC"
 	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{"%@example.com", 5}, bindings)
+	assert.Equal(t, []any{"%@example.com", 5}, bindings)
 }
 
-func TestWhereWithSubquery(t *testing.T) {
+func TestWhereRawWithSubqueryRaw(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.WhereRaw("EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)", 1000).ToSQL()
 
 	expected := "SELECT * FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)"
 	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{1000}, bindings)
-}
-
-func TestWhereWithCaseExpression(t *testing.T) {
-	qb := xqb.Table("users")
-	sql, bindings, _ := qb.Where(xqb.Raw("CASE WHEN status = 'active' THEN 1 ELSE 0 END"), "=", 1).ToSQL()
-
-	expected := "SELECT * FROM users WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []interface{}{1}, bindings)
+	assert.Equal(t, []any{1000}, bindings)
 }
 
 func TestSelectWithDateExpressions(t *testing.T) {

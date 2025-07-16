@@ -7,8 +7,8 @@ import (
 )
 
 // compileWhereClause compiles the WHERE clause
-func (mg *MySQLGrammar) compileWhereClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if len(qb.Where) > 0 {
@@ -34,7 +34,7 @@ func (mg *MySQLGrammar) compileWhereClause(qb *types.QueryBuilderData) (string, 
 					sql.WriteString(condition.Operator)
 					if condition.Value != nil {
 						switch v := condition.Value.(type) {
-						case []interface{}:
+						case []any:
 							// Handle IN and BETWEEN conditions
 							if condition.Operator == "IN" || condition.Operator == "NOT IN" {
 								placeholders := make([]string, len(v))

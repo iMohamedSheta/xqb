@@ -13,12 +13,12 @@ func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
 }
 
 // InsertTx inserts new rows into the database using the provided transaction
-func (qb *QueryBuilder) UpdateTx(data map[string]interface{}, tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) UpdateTx(data map[string]any, tx *sql.Tx) (int64, error) {
 	return qb.update(data, tx)
 }
 
 // core implementation of the update method
-func (qb *QueryBuilder) update(data map[string]interface{}, tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) update(data map[string]any, tx *sql.Tx) (int64, error) {
 
 	qb.queryType = types.UPDATE
 	qbData := qb.GetData()

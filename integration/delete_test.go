@@ -63,14 +63,14 @@ func TestDeleteBasic(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		where    map[string]interface{}
+		where    map[string]any
 		wantRows int64
 		wantErr  bool
 		verifyFn func(*testing.T, *xqb.DBManager)
 	}{
 		{
 			name: "delete single record",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"id": 1,
 			},
 			wantRows: 1,
@@ -85,7 +85,7 @@ func TestDeleteBasic(t *testing.T) {
 		},
 		{
 			name: "delete multiple records",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"status": "active",
 			},
 			wantRows: 2,
@@ -100,7 +100,7 @@ func TestDeleteBasic(t *testing.T) {
 		},
 		{
 			name: "delete with invalid condition",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"invalid_column": "value",
 			},
 			wantRows: 0,

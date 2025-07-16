@@ -7,8 +7,8 @@ import (
 )
 
 // compileFromClause compiles the FROM clause
-func (mg *MySQLGrammar) compileFromClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileFromClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if qb.Table == "" {

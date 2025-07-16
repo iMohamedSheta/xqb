@@ -7,12 +7,12 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}
 
-	var bindings []interface{}
+	var bindings []any
 	var sql strings.Builder
 
 	sql.WriteString("WITH ")

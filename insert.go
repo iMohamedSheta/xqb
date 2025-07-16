@@ -8,7 +8,7 @@ import (
 )
 
 // Insert inserts new rows into the database using the current connection
-func (qb *QueryBuilder) Insert(data []map[string]interface{}) (int64, error) {
+func (qb *QueryBuilder) Insert(data []map[string]any) (int64, error) {
 	dbManager := GetDBManager()
 	if !dbManager.IsDBConnected() {
 		return 0, ErrNoConnection
@@ -37,7 +37,7 @@ func (qb *QueryBuilder) Insert(data []map[string]interface{}) (int64, error) {
 }
 
 // InsertTx inserts new rows into the database using the provided transaction
-func (qb *QueryBuilder) InsertTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) InsertTx(data []map[string]any, tx *sql.Tx) (int64, error) {
 	if tx == nil {
 		return 0, fmt.Errorf("transaction is required")
 	}
@@ -60,7 +60,7 @@ func (qb *QueryBuilder) InsertTx(data []map[string]interface{}, tx *sql.Tx) (int
 }
 
 // InsertGetID inserts new rows and returns LastInsertedID using the current connection
-func (qb *QueryBuilder) InsertGetId(data []map[string]interface{}) (int64, error) {
+func (qb *QueryBuilder) InsertGetId(data []map[string]any) (int64, error) {
 	dbManager := GetDBManager()
 	if !dbManager.IsDBConnected() {
 		return 0, ErrNoConnection
@@ -89,7 +89,7 @@ func (qb *QueryBuilder) InsertGetId(data []map[string]interface{}) (int64, error
 }
 
 // InsertGetIdTx inserts new rows and returns LastInsertedID using the provided transaction
-func (qb *QueryBuilder) InsertGetIdTx(data []map[string]interface{}, tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) InsertGetIdTx(data []map[string]any, tx *sql.Tx) (int64, error) {
 	if tx == nil {
 		return 0, fmt.Errorf("transaction is required")
 	}

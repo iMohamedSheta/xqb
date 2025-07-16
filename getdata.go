@@ -112,7 +112,7 @@ func (qb *QueryBuilder) Execute(tx *sql.Tx) ([]map[string]any, error) {
 func executeQuery(tx *sql.Tx, query string, args ...any) (*sql.Rows, error) {
 	// Flatten args if needed
 	if len(args) == 1 {
-		if a, ok := args[0].([]interface{}); ok {
+		if a, ok := args[0].([]any); ok {
 			args = a
 		}
 	}
@@ -137,7 +137,7 @@ func executeQuery(tx *sql.Tx, query string, args ...any) (*sql.Rows, error) {
 }
 
 // Get executes the query and returns all results
-func (qb *QueryBuilder) Get() ([]map[string]interface{}, error) {
+func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 
 	results, err := qb.Execute(nil)
 
@@ -149,7 +149,7 @@ func (qb *QueryBuilder) Get() ([]map[string]interface{}, error) {
 }
 
 // First returns the first row
-func (qb *QueryBuilder) First() (map[string]interface{}, error) {
+func (qb *QueryBuilder) First() (map[string]any, error) {
 
 	// Save current limit and reset after operation
 	currentLimit := qb.limit
@@ -169,37 +169,8 @@ func (qb *QueryBuilder) First() (map[string]interface{}, error) {
 	return results[0], nil
 }
 
-// PluckMap gets a list of values for two columns where the first column becomes the key and the second becomes the value
-func (qb *QueryBuilder) Pluck(value, key string) (map[string]any, error) {
-	// Save current columns and reset after operation
-	currentColumns := qb.columns
-	defer func() { qb.columns = currentColumns }()
-
-	qb.columns = []any{value, key}
-
-	results, err := qb.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	mappedResults := make(map[string]any)
-
-	for _, row := range results {
-		key, ok := row[key].(string)
-		if !ok {
-			// Try to convert the key to string
-			keyStr := fmt.Sprintf("%v", row[key])
-			mappedResults[keyStr] = row[value]
-			continue
-		}
-		mappedResults[key] = row[value]
-	}
-
-	return mappedResults, nil
-}
-
 // Value gets a single value from first row
-func (qb *QueryBuilder) Value(column string) (interface{}, error) {
+func (qb *QueryBuilder) Value(column string) (any, error) {
 	// Save current columns and reset after operation
 	currentColumns := qb.columns
 	defer func() { qb.columns = currentColumns }()

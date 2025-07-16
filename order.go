@@ -10,7 +10,7 @@ import (
 
 func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	var col string
-	var bindings []interface{}
+	var bindings []any
 
 	switch v := column.(type) {
 	case string:
@@ -37,18 +37,18 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 }
 
 // OrderByRaw adds a raw ORDER BY clause
-func (qb *QueryBuilder) OrderByRaw(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) OrderByRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.OrderBy(Raw(sql, bindings...), "")
 }
 
 // OrderByDesc adds an ORDER BY DESC clause
 func (qb *QueryBuilder) OrderByDesc(column string) *QueryBuilder {
-	return qb.OrderBy(column, "desc")
+	return qb.OrderBy(column, "DESC")
 }
 
 // OrderByAsc adds an ORDER BY ASC clause
 func (qb *QueryBuilder) OrderByAsc(column string) *QueryBuilder {
-	return qb.OrderBy(column, "asc")
+	return qb.OrderBy(column, "ASC")
 }
 
 // Latest orders by the given column in descending order

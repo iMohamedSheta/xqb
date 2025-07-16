@@ -38,7 +38,7 @@ type QueryBuilder struct {
 	useIndex          string
 	ignoreIndex       string
 	procedure         string
-	procedureParams   []interface{}
+	procedureParams   []any
 	isUsingDistinct   bool
 	isForUpdate       bool
 	isLockInShareMode bool
@@ -153,7 +153,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 		Bindings:          qb.bindings,
 		Distinct:          qb.distinct,
 		AggregateFuncs:    qb.aggregateFuncs,
-		Subqueries:        make(map[string]interface{}), // Convert subqueries to interface{}
+		Subqueries:        make(map[string]any), // Convert subqueries to any
 		WithCTEs:          qb.withCTEs,
 		JSONExpressions:   qb.jsonExpressions,
 		MathExpressions:   qb.mathExpressions,
@@ -174,12 +174,12 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 }
 
 // ToSQL compiles the query to SQL
-func (qb *QueryBuilder) ToSQL() (string, []interface{}, error) {
+func (qb *QueryBuilder) ToSQL() (string, []any, error) {
 	return qb.grammar.CompileSelect(qb.GetData())
 }
 
 // Raw creates a new raw SQL expression
-func Raw(sql string, bindings ...interface{}) *types.Expression {
+func Raw(sql string, bindings ...any) *types.Expression {
 	return &types.Expression{
 		SQL:      sql,
 		Bindings: bindings,

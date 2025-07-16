@@ -7,8 +7,8 @@ import (
 )
 
 // compileJoins compiles the JOIN clause
-func (mg *MySQLGrammar) compileJoins(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if len(qb.Joins) > 0 {

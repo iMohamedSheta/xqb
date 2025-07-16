@@ -7,8 +7,8 @@ import (
 )
 
 // compileOrderByClause compiles the ORDER BY clause
-func (mg *MySQLGrammar) compileOrderByClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if len(qb.OrderBy) > 0 {

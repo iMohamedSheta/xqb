@@ -10,7 +10,7 @@ func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
 }
 
 // SelectRaw adds a raw SQL expression to the SELECT clause
-func (qb *QueryBuilder) SelectRaw(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) SelectRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.Select(Raw(sql, bindings...))
 }
 

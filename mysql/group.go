@@ -7,8 +7,8 @@ import (
 )
 
 // compileGroupByClause compiles the GROUP BY clause
-func (mg *MySQLGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if len(qb.GroupBy) > 0 {
@@ -25,8 +25,8 @@ func (mg *MySQLGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string
 }
 
 // compileHavingClause compiles the HAVING clause
-func (mg *MySQLGrammar) compileHavingClause(qb *types.QueryBuilderData) (string, []interface{}, error) {
-	var bindings []interface{}
+func (mg *MySQLGrammar) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
+	var bindings []any
 	var sql strings.Builder
 
 	if len(qb.Having) > 0 {

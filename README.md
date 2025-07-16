@@ -128,7 +128,7 @@ qb := xqb.Table("users").
     Where("active", "=", true)
 
 // Execute the query and get results as map
-results, err := qb.Get() // Returns []map[string]interface{}
+results, err := qb.Get() // Returns []map[string]any
 if err != nil {
     panic(err)
 }
@@ -143,7 +143,7 @@ for _, user := range results {
 }
 
 // Get first row
-user, err := qb.First() // Returns map[string]interface{}
+user, err := qb.First() // Returns map[string]any
 if err != nil {
     if err == sql.ErrNoRows {
         // No user found
@@ -164,7 +164,7 @@ if err != nil {
 ```go
 // Insert a new record
 affected, err := xqb.Table("users").
-    Insert([]map[string]interface{}{
+    Insert([]map[string]any{
         {
             "name":  "John Doe",
             "email": "john@example.com",
@@ -173,7 +173,7 @@ affected, err := xqb.Table("users").
 
 // Get last inserted ID
 lastID, err := xqb.Table("users").
-    InsertGetId([]map[string]interface{}{
+    InsertGetId([]map[string]any{
         {
             "name":  "John Doe",
             "email": "john@example.com",
@@ -182,7 +182,7 @@ lastID, err := xqb.Table("users").
 
 // Update records
 affected, err = xqb.Table("users").
-    Update(map[string]interface{}{
+    Update(map[string]any{
         "name": "Jane Doe",
     }).
     Where("id", "=", 1)
@@ -344,7 +344,7 @@ qb := xqb.Table("users").
 
 ```go
 qb := xqb.Table("users").
-    Insert(map[string]interface{}{
+    Insert(map[string]any{
         "name":  "John Doe",
         "email": "john@example.com",
     })
@@ -355,7 +355,7 @@ qb := xqb.Table("users").
 ```go
 qb := xqb.Table("users").
     Where("id", "=", 1).
-    Update(map[string]interface{}{
+    Update(map[string]any{
         "name": "Jane Doe",
     })
 ```
@@ -397,7 +397,7 @@ qb := xqb.Table("users").
 qb := xqb.Table("users").
     Where("age", ">", 18).
     Where("status", "=", "active").
-    WhereIn("id", []interface{}{1, 2, 3}).
+    WhereIn("id", []any{1, 2, 3}).
     WhereBetween("created_at", "2023-01-01", "2023-12-31")
 ```
 
@@ -416,11 +416,11 @@ type PostgreSQLGrammar struct {
 2. Implement the required interface methods:
 
 ```go
-func (pg *PostgreSQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (pg *PostgreSQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
     // Implement PostgreSQL-specific SELECT compilation
 }
 
-func (pg *PostgreSQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []interface{}, error) {
+func (pg *PostgreSQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
     // Implement PostgreSQL-specific INSERT compilation
 }
 

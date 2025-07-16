@@ -3,7 +3,7 @@ package xqb
 import "github.com/iMohamedSheta/xqb/types"
 
 // Union adds a UNION clause
-func (qb *QueryBuilder) Union(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) Union(sql string, bindings ...any) *QueryBuilder {
 	qb.unions = append(qb.unions, types.Union{
 		Expression: Raw(sql, bindings...),
 		All:        false,
@@ -13,7 +13,7 @@ func (qb *QueryBuilder) Union(sql string, bindings ...interface{}) *QueryBuilder
 }
 
 // UnionAll adds a UNION ALL
-func (qb *QueryBuilder) UnionAll(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) UnionAll(sql string, bindings ...any) *QueryBuilder {
 	qb.unions = append(qb.unions, types.Union{
 		Expression: Raw(sql, bindings...),
 		All:        true,
@@ -23,7 +23,7 @@ func (qb *QueryBuilder) UnionAll(sql string, bindings ...interface{}) *QueryBuil
 }
 
 // ExceptUnion adds a EXCEPT clause
-func (qb *QueryBuilder) ExceptUnion(sql string, all bool, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) ExceptUnion(sql string, all bool, bindings ...any) *QueryBuilder {
 	qb.unions = append(qb.unions, types.Union{
 		Expression: Raw(sql, bindings...),
 		All:        all,
@@ -33,7 +33,7 @@ func (qb *QueryBuilder) ExceptUnion(sql string, all bool, bindings ...interface{
 }
 
 // IntersectUnion adds a INTERSECT clause
-func (qb *QueryBuilder) IntersectUnion(sql string, all bool, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) IntersectUnion(sql string, all bool, bindings ...any) *QueryBuilder {
 	qb.unions = append(qb.unions, types.Union{
 		Expression: Raw(sql, bindings...),
 		All:        all,

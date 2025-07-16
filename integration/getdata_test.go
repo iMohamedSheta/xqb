@@ -82,7 +82,7 @@ func TestPagination(t *testing.T) {
 
 	qb := xqb.Table("test_users")
 
-	expected := []map[string]interface{}{
+	expected := []map[string]any{
 		{"name": "John Doe", "email": "john@example.com", "age": int64(30), "price": "100.00", "status": "active"},
 		{"name": "Jane Smith", "email": "jane@example.com", "age": int64(25), "price": "150.00", "status": "active"},
 		{"name": "Bob Wilson", "email": "bob@example.com", "age": int64(35), "price": "200.00", "status": "inactive"},
@@ -90,10 +90,10 @@ func TestPagination(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		data     []map[string]interface{}
+		data     []map[string]any
 		wantRows int64
 		wantErr  bool
-		where    map[string]interface{}
+		where    map[string]any
 	}{
 		{
 			name:     "paginate all users",
@@ -103,13 +103,13 @@ func TestPagination(t *testing.T) {
 		},
 		{
 			name: "paginate users where status is active",
-			data: []map[string]interface{}{
+			data: []map[string]any{
 				expected[0],
 				expected[1],
 			},
 			wantRows: 2,
 			wantErr:  false,
-			where: map[string]interface{}{
+			where: map[string]any{
 				"status": "active",
 			},
 		},

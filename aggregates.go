@@ -152,7 +152,7 @@ func (qb *QueryBuilder) Conditional(expression string, alias string) *QueryBuild
 }
 
 // String adds a string function
-func (qb *QueryBuilder) String(function string, column string, params []interface{}, alias string) *QueryBuilder {
+func (qb *QueryBuilder) String(function string, column string, params []any, alias string) *QueryBuilder {
 	qb.stringFuncs = append(qb.stringFuncs, types.StringFunction{
 		Function: function,
 		Column:   column,
@@ -164,7 +164,7 @@ func (qb *QueryBuilder) String(function string, column string, params []interfac
 
 // Concat adds a CONCAT function
 func (qb *QueryBuilder) Concat(columns []string, separator string, alias string) *QueryBuilder {
-	params := make([]interface{}, len(columns)+1)
+	params := make([]any, len(columns)+1)
 	params[0] = separator
 	for i, col := range columns {
 		params[i+1] = col
@@ -179,7 +179,7 @@ func (qb *QueryBuilder) Concat(columns []string, separator string, alias string)
 }
 
 // Date adds a date function
-func (qb *QueryBuilder) Date(function string, column string, params []interface{}, alias string) *QueryBuilder {
+func (qb *QueryBuilder) Date(function string, column string, params []any, alias string) *QueryBuilder {
 	qb.dateFuncs = append(qb.dateFuncs, types.DateFunction{
 		Function: function,
 		Column:   column,
@@ -194,7 +194,7 @@ func (qb *QueryBuilder) DateFormat(column string, format string, alias string) *
 	qb.dateFuncs = append(qb.dateFuncs, types.DateFunction{
 		Function: "DATE_FORMAT",
 		Column:   column,
-		Params:   []interface{}{format},
+		Params:   []any{format},
 		Alias:    alias,
 	})
 	return qb
@@ -255,7 +255,7 @@ func (qb *QueryBuilder) CalcFoundRows() *QueryBuilder {
 }
 
 // Procedure adds a PROCEDURE call
-func (qb *QueryBuilder) Procedure(procedure string, params ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) Procedure(procedure string, params ...any) *QueryBuilder {
 	qb.procedure = procedure
 	qb.procedureParams = params
 	return qb

@@ -12,12 +12,12 @@ func TestMySQLGrammar_CompileSelectClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Basic SELECT *",
 			qb: &types.QueryBuilderData{
-				Columns: []interface{}{},
+				Columns: []any{},
 			},
 			expected: "SELECT *",
 			bindings: nil,
@@ -25,7 +25,7 @@ func TestMySQLGrammar_CompileSelectClause(t *testing.T) {
 		{
 			name: "SELECT with columns",
 			qb: &types.QueryBuilderData{
-				Columns: []interface{}{"id", "name", "email"},
+				Columns: []any{"id", "name", "email"},
 			},
 			expected: "SELECT id, name, email",
 			bindings: nil,
@@ -34,7 +34,7 @@ func TestMySQLGrammar_CompileSelectClause(t *testing.T) {
 			name: "SELECT DISTINCT",
 			qb: &types.QueryBuilderData{
 				IsUsingDistinct: true,
-				Columns:         []interface{}{"id", "name"},
+				Columns:         []any{"id", "name"},
 			},
 			expected: "SELECT DISTINCT id, name",
 			bindings: nil,
@@ -65,12 +65,12 @@ func TestMySQLGrammar_CompileSelectClause(t *testing.T) {
 			name: "SELECT with string functions",
 			qb: &types.QueryBuilderData{
 				StringFuncs: []types.StringFunction{
-					{Function: "CONCAT", Column: "first_name", Params: []interface{}{" ", "last_name"}, Alias: "full_name"},
+					{Function: "CONCAT", Column: "first_name", Params: []any{" ", "last_name"}, Alias: "full_name"},
 					{Function: "UPPER", Column: "name", Alias: "upper_name"},
 				},
 			},
 			expected: "SELECT CONCAT(first_name, ?, ?) AS full_name, UPPER(name) AS upper_name",
-			bindings: []interface{}{" ", "last_name"},
+			bindings: []any{" ", "last_name"},
 		},
 	}
 
@@ -90,7 +90,7 @@ func TestMySQLGrammar_CompileFromClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Basic FROM clause",
@@ -144,7 +144,7 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Single INNER JOIN",
@@ -193,7 +193,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Simple WHERE condition",
@@ -203,7 +203,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 				},
 			},
 			expected: " WHERE age > ?",
-			bindings: []interface{}{18},
+			bindings: []any{18},
 		},
 		{
 			name: "Multiple WHERE conditions with AND",
@@ -214,27 +214,27 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 				},
 			},
 			expected: " WHERE age > ? AND active = ?",
-			bindings: []interface{}{18, true},
+			bindings: []any{18, true},
 		},
 		{
 			name: "IN condition",
 			qb: &types.QueryBuilderData{
 				Where: []types.WhereCondition{
-					{Column: "id", Operator: "IN", Value: []interface{}{1, 2, 3}},
+					{Column: "id", Operator: "IN", Value: []any{1, 2, 3}},
 				},
 			},
 			expected: " WHERE id IN (?, ?, ?)",
-			bindings: []interface{}{1, 2, 3},
+			bindings: []any{1, 2, 3},
 		},
 		{
 			name: "BETWEEN condition",
 			qb: &types.QueryBuilderData{
 				Where: []types.WhereCondition{
-					{Column: "age", Operator: "BETWEEN", Value: []interface{}{18, 65}},
+					{Column: "age", Operator: "BETWEEN", Value: []any{18, 65}},
 				},
 			},
 			expected: " WHERE age BETWEEN ? AND ?",
-			bindings: []interface{}{18, 65},
+			bindings: []any{18, 65},
 		},
 		{
 			name: "Raw SQL condition",
@@ -269,7 +269,7 @@ func TestMySQLGrammar_CompileGroupByClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Single GROUP BY column",
@@ -313,7 +313,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Single HAVING condition",
@@ -323,7 +323,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 				},
 			},
 			expected: " HAVING total_amount > ?",
-			bindings: []interface{}{1000},
+			bindings: []any{1000},
 		},
 		{
 			name: "Multiple HAVING conditions",
@@ -334,7 +334,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 				},
 			},
 			expected: " HAVING total_amount > ? AND order_count >= ?",
-			bindings: []interface{}{1000, 5},
+			bindings: []any{1000, 5},
 		},
 		{
 			name: "No HAVING",
@@ -362,7 +362,7 @@ func TestMySQLGrammar_CompileOrderByClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Single ORDER BY column",
@@ -411,7 +411,7 @@ func TestMySQLGrammar_CompileLimitOffsetClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Only LIMIT",
@@ -470,7 +470,7 @@ func TestMySQLGrammar_CompileLockingClause(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "FOR UPDATE",
@@ -515,7 +515,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Simple CTE",
@@ -541,7 +541,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 						Name: "active_users",
 						Expression: &types.Expression{
 							SQL:      "SELECT * FROM users WHERE active = ?",
-							Bindings: []interface{}{true},
+							Bindings: []any{true},
 						},
 					},
 					{
@@ -554,7 +554,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 				},
 			},
 			expected: "WITH active_users AS (SELECT * FROM users WHERE active = ?), user_stats AS (SELECT user_id, SUM(amount) AS total FROM orders GROUP BY user_id)",
-			bindings: []interface{}{true},
+			bindings: []any{true},
 		},
 		{
 			name: "No CTEs",
@@ -582,13 +582,13 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 	}{
 		{
 			name: "Simple SELECT",
 			qb: &types.QueryBuilderData{
 				Table:   "users",
-				Columns: []interface{}{"id", "name", "email"},
+				Columns: []any{"id", "name", "email"},
 			},
 			expected: "SELECT id, name, email FROM users",
 			bindings: nil,
@@ -597,7 +597,7 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 			name: "SELECT with WHERE and ORDER BY",
 			qb: &types.QueryBuilderData{
 				Table:   "users",
-				Columns: []interface{}{"id", "name"},
+				Columns: []any{"id", "name"},
 				Where: []types.WhereCondition{
 					{Column: "active", Operator: "=", Value: true},
 				},
@@ -606,13 +606,13 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 				},
 			},
 			expected: "SELECT id, name FROM users WHERE active = ? ORDER BY name ASC",
-			bindings: []interface{}{true},
+			bindings: []any{true},
 		},
 		{
 			name: "SELECT with UNION",
 			qb: &types.QueryBuilderData{
 				Table:   "active_users",
-				Columns: []interface{}{"id", "name"},
+				Columns: []any{"id", "name"},
 				Unions: []types.Union{
 					{
 						All:  true,
@@ -631,7 +631,7 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 			name: "Complex SELECT with all clauses",
 			qb: &types.QueryBuilderData{
 				Table:   "orders",
-				Columns: []interface{}{"id", "user_id", "amount"},
+				Columns: []any{"id", "user_id", "amount"},
 				Joins: []types.Join{
 					{Type: types.INNER_JOIN, Table: "users", Condition: "orders.user_id = users.id"},
 				},
@@ -649,7 +649,7 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 				Offset: 20,
 			},
 			expected: "SELECT id, user_id, amount FROM orders INNER JOIN users ON orders.user_id = users.id WHERE status = ? GROUP BY user_id HAVING total_amount > ? ORDER BY total_amount DESC LIMIT 10 OFFSET 20",
-			bindings: []interface{}{"pending", 1000},
+			bindings: []any{"pending", 1000},
 		},
 	}
 
@@ -669,7 +669,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 		wantErr  bool
 	}{
 		{
@@ -685,7 +685,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 				},
 			},
 			expected: "UPDATE users SET name = ?, email = ? WHERE id = ?",
-			bindings: []interface{}{"John Updated", "john.updated@example.com", 1},
+			bindings: []any{"John Updated", "john.updated@example.com", 1},
 			wantErr:  false,
 		},
 		{
@@ -701,7 +701,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 				},
 			},
 			expected: "UPDATE users SET status = ? WHERE status = ? AND last_login < ?",
-			bindings: []interface{}{"inactive", "active", "2024-01-01"},
+			bindings: []any{"inactive", "active", "2024-01-01"},
 			wantErr:  false,
 		},
 		{
@@ -717,7 +717,7 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 				Limit: 10,
 			},
 			expected: "UPDATE users SET status = ? WHERE status = ? LIMIT 10",
-			bindings: []interface{}{"verified", "pending"},
+			bindings: []any{"verified", "pending"},
 			wantErr:  false,
 		},
 		{
@@ -756,7 +756,7 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 		name     string
 		qb       *types.QueryBuilderData
 		expected string
-		bindings []interface{}
+		bindings []any
 		wantErr  bool
 	}{
 		{
@@ -771,7 +771,7 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 				},
 			},
 			expected: "DELETE FROM users WHERE id = ?",
-			bindings: []interface{}{1},
+			bindings: []any{1},
 			wantErr:  false,
 		},
 		{
@@ -787,7 +787,7 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 				},
 			},
 			expected: "DELETE FROM users WHERE status = ? AND last_login < ?",
-			bindings: []interface{}{"inactive", "2024-01-01"},
+			bindings: []any{"inactive", "2024-01-01"},
 			wantErr:  false,
 		},
 		{
@@ -803,7 +803,7 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 				Limit: 10,
 			},
 			expected: "DELETE FROM users WHERE status = ? LIMIT 10",
-			bindings: []interface{}{"pending"},
+			bindings: []any{"pending"},
 			wantErr:  false,
 		},
 		{

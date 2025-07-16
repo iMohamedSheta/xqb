@@ -10,7 +10,7 @@ import (
 func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 	for _, column := range columns {
 		var col string
-		var bindings []interface{}
+		var bindings []any
 
 		switch v := column.(type) {
 		case string:
@@ -34,14 +34,14 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 }
 
 // GroupByRaw adds a raw GROUP BY clause
-func (qb *QueryBuilder) GroupByRaw(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) GroupByRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.GroupBy(Raw(sql, bindings...))
 }
 
 // Having adds a HAVING clause
-func (qb *QueryBuilder) Having(column any, operator string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) Having(column any, operator string, value any) *QueryBuilder {
 	var col string
-	var bindings []interface{}
+	var bindings []any
 
 	switch v := column.(type) {
 	case string:
@@ -70,14 +70,14 @@ func (qb *QueryBuilder) Having(column any, operator string, value interface{}) *
 }
 
 // HavingRaw adds a raw HAVING clause
-func (qb *QueryBuilder) HavingRaw(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) HavingRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.Having(Raw(sql, bindings...), "", nil)
 }
 
 // OrHaving adds an OR HAVING clause
-func (qb *QueryBuilder) OrHaving(column any, operator string, value interface{}) *QueryBuilder {
+func (qb *QueryBuilder) OrHaving(column any, operator string, value any) *QueryBuilder {
 	var col string
-	var bindings []interface{}
+	var bindings []any
 
 	switch v := column.(type) {
 	case string:
@@ -106,6 +106,6 @@ func (qb *QueryBuilder) OrHaving(column any, operator string, value interface{})
 }
 
 // OrHavingRaw adds a raw OR HAVING clause
-func (qb *QueryBuilder) OrHavingRaw(sql string, bindings ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) OrHavingRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.OrHaving(Raw(sql, bindings...), "", nil)
 }

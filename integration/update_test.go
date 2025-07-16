@@ -61,18 +61,18 @@ func TestUpdateBasic(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		where    map[string]interface{}
-		updates  map[string]interface{}
+		where    map[string]any
+		updates  map[string]any
 		wantRows int64
 		wantErr  bool
 		verifyFn func(*testing.T, *xqb.DBManager)
 	}{
 		{
 			name: "update single record",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"id": 1,
 			},
-			updates: map[string]interface{}{
+			updates: map[string]any{
 				"name":  "John Updated",
 				"email": "john.updated@example.com",
 			},
@@ -89,10 +89,10 @@ func TestUpdateBasic(t *testing.T) {
 		},
 		{
 			name: "update multiple records",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"status": "active",
 			},
-			updates: map[string]interface{}{
+			updates: map[string]any{
 				"status": "pending",
 			},
 			wantRows: 2,
@@ -107,10 +107,10 @@ func TestUpdateBasic(t *testing.T) {
 		},
 		{
 			name: "update with invalid column",
-			where: map[string]interface{}{
+			where: map[string]any{
 				"id": 1,
 			},
-			updates: map[string]interface{}{
+			updates: map[string]any{
 				"invalid_column": "value",
 			},
 			wantRows: 0,
@@ -158,13 +158,13 @@ func TestUpdateWithTransaction(t *testing.T) {
 
 			err := dbManager.Transaction(func(tx *sql.Tx) error {
 				// First update (success)
-				_, err := qb.Where("id", "=", 1).UpdateTx(map[string]interface{}{
+				_, err := qb.Where("id", "=", 1).UpdateTx(map[string]any{
 					"name": "John Updated",
 				}, tx)
 				assert.NoError(t, err)
 
 				// Second update (fail)
-				_, err = qb.Where("id", "=", 2).UpdateTx(map[string]interface{}{
+				_, err = qb.Where("id", "=", 2).UpdateTx(map[string]any{
 					"invalid_column": "value",
 				}, tx)
 				assert.Error(t, err)

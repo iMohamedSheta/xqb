@@ -5,7 +5,7 @@ import (
 )
 
 // Join adds a JOIN clause Example: qb.Join("users", "users.id = posts.user_id AND users.name = ?", "John")
-func (qb *QueryBuilder) Join(table string, condition string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) Join(table string, condition string, values ...any) *QueryBuilder {
 	join := types.Join{
 		Type:      types.INNER_JOIN,
 		Table:     table,
@@ -25,7 +25,7 @@ func (qb *QueryBuilder) Join(table string, condition string, values ...interface
 }
 
 // LeftJoin adds a LEFT JOIN clause
-func (qb *QueryBuilder) LeftJoin(table string, condition string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) LeftJoin(table string, condition string, values ...any) *QueryBuilder {
 	join := types.Join{
 		Type:      types.LEFT_JOIN,
 		Table:     table,
@@ -46,7 +46,7 @@ func (qb *QueryBuilder) LeftJoin(table string, condition string, values ...inter
 }
 
 // RightJoin adds a RIGHT JOIN clause
-func (qb *QueryBuilder) RightJoin(table string, condition string, values ...interface{}) *QueryBuilder {
+func (qb *QueryBuilder) RightJoin(table string, condition string, values ...any) *QueryBuilder {
 	join := types.Join{
 		Type:      types.RIGHT_JOIN,
 		Table:     table,
