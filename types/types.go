@@ -23,7 +23,7 @@ const (
 	AND WhereConditionEnum = "AND"
 	OR  WhereConditionEnum = "OR"
 
-	INNER_JOIN JoinType = "INNER JOIN"
+	INNER_JOIN JoinType = "JOIN"
 	LEFT_JOIN  JoinType = "LEFT JOIN"
 	RIGHT_JOIN JoinType = "RIGHT JOIN"
 	FULL_JOIN  JoinType = "FULL JOIN"
@@ -75,7 +75,6 @@ type Join struct {
 	Type      JoinType
 	Table     string
 	Condition string
-	On        []WhereCondition
 	Binding   []Binding
 }
 

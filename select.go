@@ -20,6 +20,12 @@ func (qb *QueryBuilder) AddSelect(columns ...any) *QueryBuilder {
 	return qb
 }
 
+// SelectRaw adds a raw SQL expression to the SELECT clause
+func (qb *QueryBuilder) AddSelectRaw(sql string, bindings ...any) *QueryBuilder {
+	qb.AddSelect(Raw(sql, bindings...))
+	return qb
+}
+
 // From specifies the table to select from
 func (qb *QueryBuilder) From(table string) *QueryBuilder {
 	qb.table = table

@@ -32,7 +32,7 @@ func TestSelectWithJoins(t *testing.T) {
 	qb.Join("orders", "users.id = orders.user_id")
 	sql, bindings, _ := qb.ToSQL()
 
-	assert.Equal(t, "SELECT users.id, users.name, orders.id as order_id FROM users INNER JOIN orders ON users.id = orders.user_id", sql)
+	assert.Equal(t, "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id", sql)
 	assert.Empty(t, bindings)
 }
 
@@ -43,7 +43,7 @@ func TestSelectWithLeftJoins(t *testing.T) {
 	qb.LeftJoin("products", "orders.product_id = products.id")
 	sql, bindings, _ := qb.ToSQL()
 
-	assert.Equal(t, "SELECT users.id, users.name, orders.id as order_id FROM users INNER JOIN orders ON users.id = orders.user_id LEFT JOIN products ON orders.product_id = products.id WHERE users.id > ? AND orders.id > ?", sql)
+	assert.Equal(t, "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id LEFT JOIN products ON orders.product_id = products.id WHERE users.id > ? AND orders.id > ?", sql)
 	assert.Equal(t, []any{55, 11}, bindings)
 }
 
@@ -113,7 +113,7 @@ func TestSelectWithCTE(t *testing.T) {
 	sql, bindings, _ := qb.ToSQL()
 
 	expectedSQL := "WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) " +
-		"SELECT users.id, users.name, user_totals.total_spent FROM users INNER JOIN user_totals ON users.id = user_totals.user_id"
+		"SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id"
 	assert.Equal(t, expectedSQL, sql)
 	assert.Empty(t, bindings)
 }
@@ -124,14 +124,14 @@ func TestSelectWithComplexCTE(t *testing.T) {
 	qb.WithExpression("active_users",
 		"WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) "+
 			"SELECT users.id, users.name, user_orders.order_count FROM users "+
-			"INNER JOIN user_orders ON users.id = user_orders.user_id")
+			"JOIN user_orders ON users.id = user_orders.user_id")
 	qb.Select("products.id", "products.name", "active_users.name as buyer")
 	qb.Join("active_users", "products.id = active_users.id")
 	sql, bindings, _ := qb.ToSQL()
 
 	expectedSQL := "WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) " +
-		"SELECT users.id, users.name, user_orders.order_count FROM users INNER JOIN user_orders ON users.id = user_orders.user_id) " +
-		"SELECT products.id, products.name, active_users.name as buyer FROM products INNER JOIN active_users ON products.id = active_users.id"
+		"SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) " +
+		"SELECT products.id, products.name, active_users.name as buyer FROM products JOIN active_users ON products.id = active_users.id"
 	assert.Equal(t, expectedSQL, sql)
 	assert.Empty(t, bindings)
 }

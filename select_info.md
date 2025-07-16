@@ -56,7 +56,7 @@ FROM
     employees e
 
     -- Different types of JOINs
-    INNER JOIN departments d ON e.department_id = d.department_id
+    JOIN departments d ON e.department_id = d.department_id
     LEFT JOIN locations l ON d.location_id = l.location_id
     RIGHT JOIN countries c ON l.country_id = c.country_id
     JOIN regions r ON c.region_id = r.region_id

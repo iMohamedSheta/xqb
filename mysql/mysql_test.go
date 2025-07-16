@@ -147,13 +147,13 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 		bindings []any
 	}{
 		{
-			name: "Single INNER JOIN",
+			name: "Single JOIN",
 			qb: &types.QueryBuilderData{
 				Joins: []types.Join{
-					{Type: "INNER JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
+					{Type: "JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
 				},
 			},
-			expected: " INNER JOIN orders ON users.id = orders.user_id",
+			expected: " JOIN orders ON users.id = orders.user_id",
 			bindings: nil,
 		},
 		{
@@ -161,10 +161,10 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 			qb: &types.QueryBuilderData{
 				Joins: []types.Join{
 					{Type: "LEFT JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
-					{Type: "INNER JOIN", Table: "order_items", Condition: "orders.id = order_items.order_id"},
+					{Type: "JOIN", Table: "order_items", Condition: "orders.id = order_items.order_id"},
 				},
 			},
-			expected: " LEFT JOIN orders ON users.id = orders.user_id INNER JOIN order_items ON orders.id = order_items.order_id",
+			expected: " LEFT JOIN orders ON users.id = orders.user_id JOIN order_items ON orders.id = order_items.order_id",
 			bindings: nil,
 		},
 		{
@@ -648,7 +648,7 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 				Limit:  10,
 				Offset: 20,
 			},
-			expected: "SELECT id, user_id, amount FROM orders INNER JOIN users ON orders.user_id = users.id WHERE status = ? GROUP BY user_id HAVING total_amount > ? ORDER BY total_amount DESC LIMIT 10 OFFSET 20",
+			expected: "SELECT id, user_id, amount FROM orders JOIN users ON orders.user_id = users.id WHERE status = ? GROUP BY user_id HAVING total_amount > ? ORDER BY total_amount DESC LIMIT 10 OFFSET 20",
 			bindings: []any{"pending", 1000},
 		},
 	}

@@ -36,7 +36,7 @@ func Test_Where_Subquery_3(t *testing.T) {
 		Select("users.id", "users.name", "orders.id AS order_id")
 
 	sql, bindings, _ := qb.Where("id", "IN", subQuery).Where("admins.status", "=", "active").ToSQL()
-	expected := "SELECT * FROM admins WHERE id IN (SELECT users.id, users.name, orders.id AS order_id FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.status = ?) AND admins.status = ?"
+	expected := "SELECT * FROM admins WHERE id IN (SELECT users.id, users.name, orders.id AS order_id FROM users JOIN orders ON users.id = orders.user_id WHERE orders.status = ?) AND admins.status = ?"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{"paid", "active"}, bindings)
 }
@@ -54,7 +54,7 @@ func Test_Where_WithRaw_1(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.Join("orders", "users.id = orders.user_id").Where(xqb.Raw("CASE WHEN status = 'active' THEN 1 ELSE 0 END"), "=", 1).ToSQL()
 
-	expected := "SELECT * FROM users INNER JOIN orders ON users.id = orders.user_id WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?"
+	expected := "SELECT * FROM users JOIN orders ON users.id = orders.user_id WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{1}, bindings)
 }
@@ -72,7 +72,7 @@ func Test_OrWhere_SubQuery_2(t *testing.T) {
 	qb := xqb.Table("users")
 	subQuery := xqb.Table("orders").Join("admins", "users.id = admins.user_id").Select("user_id").Where("role", "=", "superadmin").Latest("id")
 	sql, bindings, _ := qb.OrWhere("id", "IN", subQuery).ToSQL()
-	expected := "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders INNER JOIN admins ON users.id = admins.user_id WHERE role = ? ORDER BY id DESC)"
+	expected := "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders JOIN admins ON users.id = admins.user_id WHERE role = ? ORDER BY id DESC)"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{"superadmin"}, bindings)
 }
@@ -88,7 +88,7 @@ func Test_OrWhere_Raw_1(t *testing.T) {
 func Test_OrWhere_Raw_2(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.OrWhere(xqb.Raw("CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END"), "=", 1).Join("orders", "users.id = orders.user_id").ToSQL()
-	expected := "SELECT * FROM users INNER JOIN orders ON users.id = orders.user_id WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = ?"
+	expected := "SELECT * FROM users JOIN orders ON users.id = orders.user_id WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = ?"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{1}, bindings)
 }
