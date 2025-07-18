@@ -1,10 +1,10 @@
 package xqb
 
-import "github.com/iMohamedSheta/xqb/types"
+import "github.com/iMohamedSheta/xqb/shared/enums"
 
 // Select specifies columns to select
 func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
-	qb.queryType = types.SELECT
+	qb.queryType = enums.SELECT
 	qb.columns = columns
 	return qb
 }

@@ -3,7 +3,7 @@ package xqb
 import (
 	"fmt"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // GroupBy sets the GROUP BY clause

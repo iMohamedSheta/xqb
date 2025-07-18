@@ -1,6 +1,6 @@
 package xqb
 
-import "github.com/iMohamedSheta/xqb/types"
+import "github.com/iMohamedSheta/xqb/shared/types"
 
 // Union adds a UNION clause
 func (qb *QueryBuilder) Union(sql string, bindings ...any) *QueryBuilder {

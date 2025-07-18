@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 func (qb *QueryBuilder) whereClause(column any, operator string, value any, connector types.WhereConditionEnum) *QueryBuilder {

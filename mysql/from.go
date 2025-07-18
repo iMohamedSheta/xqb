@@ -3,7 +3,7 @@ package mysql
 import (
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // compileFromClause compiles the FROM clause
@@ -18,20 +18,20 @@ func (mg *MySQLGrammar) compileFromClause(qb *types.QueryBuilderData) (string, [
 	sql.WriteString(" FROM ")
 	sql.WriteString(qb.Table)
 
-	// Add index hints
-	if qb.ForceIndex != "" {
-		sql.WriteString(" FORCE INDEX (")
-		sql.WriteString(qb.ForceIndex)
-		sql.WriteString(")")
-	} else if qb.UseIndex != "" {
-		sql.WriteString(" USE INDEX (")
-		sql.WriteString(qb.UseIndex)
-		sql.WriteString(")")
-	} else if qb.IgnoreIndex != "" {
-		sql.WriteString(" IGNORE INDEX (")
-		sql.WriteString(qb.IgnoreIndex)
-		sql.WriteString(")")
-	}
+	// // Add index hints
+	// if qb.ForceIndex != "" {
+	// 	sql.WriteString(" FORCE INDEX (")
+	// 	sql.WriteString(qb.ForceIndex)
+	// 	sql.WriteString(")")
+	// } else if qb.UseIndex != "" {
+	// 	sql.WriteString(" USE INDEX (")
+	// 	sql.WriteString(qb.UseIndex)
+	// 	sql.WriteString(")")
+	// } else if qb.IgnoreIndex != "" {
+	// 	sql.WriteString(" IGNORE INDEX (")
+	// 	sql.WriteString(qb.IgnoreIndex)
+	// 	sql.WriteString(")")
+	// }
 
 	return sql.String(), bindings, nil
 }

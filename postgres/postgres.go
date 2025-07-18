@@ -3,7 +3,8 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // PostgresGrammar implements PostgreSQL-specific SQL syntax
@@ -37,13 +38,13 @@ func (pg *PostgresGrammar) Build(qbd *types.QueryBuilderData) (string, []any, er
 	var err error
 
 	switch qbd.QueryType {
-	case types.SELECT:
+	case enums.SELECT:
 		sql, bindings, err = pg.CompileSelect(qbd)
-	case types.INSERT:
+	case enums.INSERT:
 		sql, bindings, err = pg.CompileInsert(qbd)
-	case types.UPDATE:
+	case enums.UPDATE:
 		sql, bindings, err = pg.CompileUpdate(qbd)
-	case types.DELETE:
+	case enums.DELETE:
 		sql, bindings, err = pg.CompileDelete(qbd)
 	}
 

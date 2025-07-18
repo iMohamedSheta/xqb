@@ -3,7 +3,7 @@ package mysql
 import (
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // compileOrderByClause compiles the ORDER BY clause

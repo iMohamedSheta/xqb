@@ -3,7 +3,7 @@ package mysql
 import (
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // compileLockingClause compiles the locking clause
@@ -11,9 +11,9 @@ func (mg *MySQLGrammar) compileLockingClause(qb *types.QueryBuilderData) (string
 	var bindings []any
 	var sql strings.Builder
 
-	if qb.IsForUpdate {
+	if qb.IsLockedForUpdate {
 		sql.WriteString(" FOR UPDATE")
-	} else if qb.IsLockInShareMode {
+	} else if qb.IsInSharedLock {
 		sql.WriteString(" LOCK IN SHARE MODE")
 	}
 

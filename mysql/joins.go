@@ -3,7 +3,7 @@ package mysql
 import (
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 func (mg *MySQLGrammar) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {

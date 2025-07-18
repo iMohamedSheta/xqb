@@ -5,7 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // MySQLGrammar implements MySQL-specific SQL syntax
@@ -278,13 +279,13 @@ func (mg *MySQLGrammar) Build(qbd *types.QueryBuilderData) (string, []any, error
 	var err error
 
 	switch qbd.QueryType {
-	case types.SELECT:
+	case enums.SELECT:
 		sql, bindings, err = mg.CompileSelect(qbd)
-	case types.INSERT:
+	case enums.INSERT:
 		sql, bindings, err = mg.CompileInsert(qbd)
-	case types.UPDATE:
+	case enums.UPDATE:
 		sql, bindings, err = mg.CompileUpdate(qbd)
-	case types.DELETE:
+	case enums.DELETE:
 		sql, bindings, err = mg.CompileDelete(qbd)
 	}
 

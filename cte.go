@@ -1,7 +1,8 @@
 package xqb
 
 import (
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // With adds a Common Table Expression (CTE)
@@ -27,7 +28,7 @@ func (qb *QueryBuilder) WithExpression(name string, sql string, bindings ...any)
 
 // WithRecursive adds a recursive Common Table Expression (CTE)
 func (qb *QueryBuilder) WithRecursive(name string, query *QueryBuilder) *QueryBuilder {
-	qb.ctes = append(qb.ctes, types.CTE{
+	qb.withCTEs = append(qb.withCTEs, types.CTE{
 		Name:      name,
 		Query:     query.GetData(),
 		Recursive: true,
@@ -38,7 +39,7 @@ func (qb *QueryBuilder) WithRecursive(name string, query *QueryBuilder) *QueryBu
 // WithRaw adds a raw Common Table Expression (CTE)
 func (qb *QueryBuilder) WithRaw(name string, sql string, values ...any) *QueryBuilder {
 	rawQuery := &QueryBuilder{
-		queryType: types.SELECT,
+		queryType: enums.SELECT,
 		columns:   []any{sql},
 		bindings:  make([]types.Binding, len(values)),
 	}
@@ -46,7 +47,7 @@ func (qb *QueryBuilder) WithRaw(name string, sql string, values ...any) *QueryBu
 		rawQuery.bindings[i] = types.Binding{Value: v}
 	}
 
-	qb.ctes = append(qb.ctes, types.CTE{
+	qb.withCTEs = append(qb.withCTEs, types.CTE{
 		Name:  name,
 		Query: rawQuery.GetData(),
 	})
@@ -56,7 +57,7 @@ func (qb *QueryBuilder) WithRaw(name string, sql string, values ...any) *QueryBu
 // WithRecursiveRaw adds a raw recursive Common Table Expression (CTE)
 func (qb *QueryBuilder) WithRecursiveRaw(name string, sql string, values ...any) *QueryBuilder {
 	rawQuery := &QueryBuilder{
-		queryType: types.SELECT,
+		queryType: enums.SELECT,
 		columns:   []any{sql},
 		bindings:  make([]types.Binding, len(values)),
 	}
@@ -64,7 +65,7 @@ func (qb *QueryBuilder) WithRecursiveRaw(name string, sql string, values ...any)
 		rawQuery.bindings[i] = types.Binding{Value: v}
 	}
 
-	qb.ctes = append(qb.ctes, types.CTE{
+	qb.withCTEs = append(qb.withCTEs, types.CTE{
 		Name:      name,
 		Query:     rawQuery.GetData(),
 		Recursive: true,

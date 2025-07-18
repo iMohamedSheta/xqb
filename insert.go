@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
 )
 
 // Insert inserts new rows into the database using the current connection
@@ -19,7 +19,7 @@ func (qb *QueryBuilder) Insert(data []map[string]any) (int64, error) {
 		return 0, err
 	}
 
-	qb.queryType = types.INSERT
+	qb.queryType = enums.INSERT
 	qbData := qb.GetData()
 	qbData.InsertedValues = data
 
@@ -42,7 +42,7 @@ func (qb *QueryBuilder) InsertTx(data []map[string]any, tx *sql.Tx) (int64, erro
 		return 0, fmt.Errorf("transaction is required")
 	}
 
-	qb.queryType = types.INSERT
+	qb.queryType = enums.INSERT
 	qbData := qb.GetData()
 	qbData.InsertedValues = data
 
@@ -71,7 +71,7 @@ func (qb *QueryBuilder) InsertGetId(data []map[string]any) (int64, error) {
 		return 0, err
 	}
 
-	qb.queryType = types.INSERT
+	qb.queryType = enums.INSERT
 	qbData := qb.GetData()
 	qbData.InsertedValues = data
 
@@ -94,7 +94,7 @@ func (qb *QueryBuilder) InsertGetIdTx(data []map[string]any, tx *sql.Tx) (int64,
 		return 0, fmt.Errorf("transaction is required")
 	}
 
-	qb.queryType = types.INSERT
+	qb.queryType = enums.INSERT
 	qbData := qb.GetData()
 	qbData.InsertedValues = data
 

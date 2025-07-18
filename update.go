@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // updates rows in the database
@@ -20,7 +21,7 @@ func (qb *QueryBuilder) UpdateTx(data map[string]any, tx *sql.Tx) (int64, error)
 // core implementation of the update method
 func (qb *QueryBuilder) update(data map[string]any, tx *sql.Tx) (int64, error) {
 
-	qb.queryType = types.UPDATE
+	qb.queryType = enums.UPDATE
 	qbData := qb.GetData()
 
 	for column, value := range data {

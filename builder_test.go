@@ -94,10 +94,13 @@ func TestSelectWithLimitOffset(t *testing.T) {
 }
 
 func TestSelectWithAggregateFunctions(t *testing.T) {
-	qb := xqb.Table("orders")
-	qb.Sum("amount", "total_amount")
-	qb.Avg("amount", "average_amount")
-	qb.CountAggregate("id", "order_count")
+	qb := xqb.Table("orders").
+		Select(
+			xqb.Sum("amount", "total_amount"),
+			xqb.Avg("amount", "average_amount"),
+			xqb.Count("id", "order_count"),
+		)
+
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM orders", sql)
@@ -138,8 +141,12 @@ func TestSelectWithComplexCTE(t *testing.T) {
 
 func TestSelectWithJSONExpressions(t *testing.T) {
 	qb := xqb.Table("users")
-	qb.Select("id", "name")
-	qb.JSON("metadata", "$.preferences.theme", "theme")
+	// qb.SetDialect("postgres")
+	qb.Select(
+		"id",
+		"name",
+		xqb.JsonExtract("metadata", "preferences.theme", "theme"),
+	)
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, name, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM users", sql)
@@ -148,28 +155,39 @@ func TestSelectWithJSONExpressions(t *testing.T) {
 
 func TestSelectWithStringFunctions(t *testing.T) {
 	qb := xqb.Table("users")
-	qb.Select("id")
-	qb.String("CONCAT", "first_name", []any{" ", "last_name"}, "full_name")
+	qb.Select(
+		"id",
+		xqb.Concat([]string{
+			"first_name",
+			"' '",
+			"last_name",
+		}, "full_name"),
+	)
+	// qb.String("CONCAT", "first_name", []any{" ", "last_name"}, "full_name")
 	sql, bindings, _ := qb.ToSQL()
 
-	assert.Equal(t, "SELECT id, CONCAT(first_name, ?, ?) AS full_name FROM users", sql)
-	assert.Equal(t, []any{" ", "last_name"}, bindings)
+	assert.Equal(t, "SELECT id, CONCAT(first_name, ' ', last_name) AS full_name FROM users", sql)
+	assert.Equal(t, []any(nil), bindings)
 }
 
 func TestSelectWithDateFunctions(t *testing.T) {
 	qb := xqb.Table("orders")
-	qb.Select("id")
-	qb.Date("DATE_FORMAT", "created_at", []any{"%Y-%m-%d"}, "order_date")
+	qb.Select(
+		"id",
+		xqb.DateFormat("created_at", "%Y-%m-%d", "order_date"),
+	)
 	sql, bindings, _ := qb.ToSQL()
 
-	assert.Equal(t, "SELECT id, DATE_FORMAT(created_at, ?) AS order_date FROM orders", sql)
-	assert.Equal(t, []any{"%Y-%m-%d"}, bindings)
+	assert.Equal(t, "SELECT id, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM orders", sql)
+	assert.Equal(t, []any(nil), bindings)
 }
 
 func TestSelectWithMathExpressions(t *testing.T) {
 	qb := xqb.Table("orders")
-	qb.Select("id")
-	qb.Math("amount * 1.1", "total_with_tax")
+	qb.Select(
+		"id",
+		xqb.Math("amount * 1.1", "total_with_tax"),
+	)
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, amount * 1.1 AS total_with_tax FROM orders", sql)
@@ -178,28 +196,25 @@ func TestSelectWithMathExpressions(t *testing.T) {
 
 func TestSelectWithConditionalExpressions(t *testing.T) {
 	qb := xqb.Table("orders")
-	qb.Select("id")
-	qb.Conditional("CASE WHEN status = 'completed' THEN 'done' ELSE 'pending' END", "status_text")
+	qb.Select(
+		"id",
+		xqb.Case().
+			When("status = 'completed'", "'done'").
+			Else("'pending'").
+			As("status_text").
+			End(),
+	)
+
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, CASE WHEN status = 'completed' THEN 'done' ELSE 'pending' END AS status_text FROM orders", sql)
 	assert.Empty(t, bindings)
 }
 
-func TestSelectWithIndexHints(t *testing.T) {
-	qb := xqb.Table("users")
-	qb.Select("id", "name")
-	qb.ForceIndex("idx_name")
-	sql, bindings, _ := qb.ToSQL()
-
-	assert.Equal(t, "SELECT id, name FROM users FORCE INDEX (idx_name)", sql)
-	assert.Empty(t, bindings)
-}
-
 func TestSelectWithLocking(t *testing.T) {
 	qb := xqb.Table("users")
 	qb.Select("id", "name")
-	qb.ForUpdate()
+	qb.LockForUpdate()
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, name FROM users FOR UPDATE", sql)
@@ -231,39 +246,13 @@ func TestSelectWithDistinct(t *testing.T) {
 	assert.Empty(t, bindings)
 }
 
-func TestSelectWithHighPriority(t *testing.T) {
-	qb := xqb.Table("users")
-	qb.Select("id", "name")
-	qb.HighPriority()
-	sql, bindings, _ := qb.ToSQL()
-
-	assert.Equal(t, "SELECT HIGH_PRIORITY id, name FROM users", sql)
-	assert.Empty(t, bindings)
-}
-
-func TestSelectWithStraightJoin(t *testing.T) {
-	qb := xqb.Table("users")
-	qb.Select("id", "name")
-	qb.StraightJoin()
-	sql, bindings, _ := qb.ToSQL()
-
-	assert.Equal(t, "SELECT STRAIGHT_JOIN id, name FROM users", sql)
-	assert.Empty(t, bindings)
-}
-
-func TestSelectWithCalcFoundRows(t *testing.T) {
-	qb := xqb.Table("users")
-	qb.Select("id", "name")
-	qb.CalcFoundRows()
-	sql, bindings, _ := qb.ToSQL()
-
-	assert.Equal(t, "SELECT SQL_CALC_FOUND_ROWS id, name FROM users", sql)
-	assert.Empty(t, bindings)
-}
-
 func TestSelectWithRawExpressions(t *testing.T) {
 	qb := xqb.Table("users")
-	sql, _, _ := qb.Select(xqb.Raw("COUNT(*) as total"), "name", xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name")).ToSQL()
+	sql, _, _ := qb.Select(
+		xqb.Raw("COUNT(*) as total"),
+		"name",
+		xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name"),
+	).ToSQL()
 
 	expected := "SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users"
 	assert.Equal(t, expected, sql)

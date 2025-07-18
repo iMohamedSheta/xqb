@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/enums"
 )
 
 // Delete rows in the database
@@ -19,7 +19,7 @@ func (qb *QueryBuilder) DeleteTx(tx *sql.Tx) (int64, error) {
 
 // core delete execution method
 func (qb *QueryBuilder) delete(tx *sql.Tx) (int64, error) {
-	qb.queryType = types.DELETE
+	qb.queryType = enums.DELETE
 	qbData := qb.GetData()
 
 	query, args, err := qb.grammar.Build(qbData)

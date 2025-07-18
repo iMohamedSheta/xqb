@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iMohamedSheta/xqb/types"
+	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // compileLimitClause compiles the LIMIT clause

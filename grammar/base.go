@@ -1,8 +1,6 @@
 package grammar
 
-import (
-	"github.com/iMohamedSheta/xqb/types"
-)
+import "github.com/iMohamedSheta/xqb/shared/types"
 
 // BaseGrammar provides common functionality for all grammars
 type BaseGrammar struct{}
