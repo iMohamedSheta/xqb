@@ -23,14 +23,14 @@ func main() {
     // Setup database connection
     db, _ := sql.Open("mysql", "user:password@tcp(localhost:3306)/database")
     xqb.AddConnection("default", db)
-    
+
     // Build and execute query
     qb := xqb.Table("users").
         Select("id", "name", "email").
         Where("active", "=", true).
         OrderBy("name", "ASC").
         Limit(10)
-    
+
     results, _ := qb.Get()
     // Process results...
 }
@@ -39,6 +39,7 @@ func main() {
 ## Raw SQL Expressions
 
 ### Raw Function
+
 ```go
 // Raw SQL in SELECT
 qb := xqb.Table("users").
@@ -72,6 +73,7 @@ qb := xqb.Table("orders").
 ```
 
 ### RawDialect Function
+
 ```go
 // Database-specific expressions
 expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
@@ -104,7 +106,7 @@ db, _ := sql.Open("mysql", "dsn")
 xqb.AddConnection("default", db)
 
 // Use specific connection
-qb := xqb.Table("users").WithConnection("default")
+qb := xqb.Table("users").Connection("default").Where("active", "=", true)
 
 // Close connection
 xqb.Close("default")
@@ -114,6 +116,7 @@ xqb.CloseAll()
 ## SELECT Queries
 
 ### Basic Select
+
 ```go
 // Simple select
 qb := xqb.Table("users").
@@ -134,6 +137,7 @@ qb := xqb.Table("users").
 ```
 
 ### Joins
+
 ```go
 // Inner join
 qb := xqb.Table("users").
@@ -168,6 +172,7 @@ qb := xqb.Table("users").
 ```
 
 ### Subquery Joins
+
 ```go
 // Join subquery
 sub := xqb.Table("posts").Where("published", "=", true)
@@ -189,6 +194,7 @@ qb := xqb.Table("users").
 ```
 
 ### Where Conditions
+
 ```go
 // Basic where
 qb := xqb.Table("users").
@@ -243,6 +249,7 @@ qb := xqb.Table("users").
 ```
 
 ### Group By and Having
+
 ```go
 // Group by
 qb := xqb.Table("orders").
@@ -259,6 +266,7 @@ qb := xqb.Table("orders").
 ```
 
 ### Order By
+
 ```go
 // Order by
 qb := xqb.Table("users").
@@ -274,6 +282,7 @@ qb := xqb.Table("users").
 ```
 
 ### Limit and Offset
+
 ```go
 // Limit
 qb := xqb.Table("users").
@@ -290,6 +299,7 @@ qb := xqb.Table("users").
 ```
 
 ### Common Table Expressions (CTE)
+
 ```go
 // Simple CTE
 qb := xqb.Table("users").
@@ -309,6 +319,7 @@ qb := xqb.Table("products").
 ```
 
 ### Locking
+
 ```go
 // Lock for update
 qb := xqb.Table("users").
@@ -459,6 +470,7 @@ affected, _ := xqb.Table("users").
 ```go
 // Execute raw SQL
 result, _ := xqb.Sql("INSERT INTO users (name, email) VALUES (?, ?)", "John", "john@example.com").
+    Connection("secondary_connection").
     Execute()
 
 // Query raw SQL
@@ -479,13 +491,13 @@ err := xqb.Transaction(func(tx *sql.Tx) error {
         InsertGetId([]map[string]any{
             {"name": "John", "email": "john@example.com"},
         })
-    
+
     affected, _ := xqb.Table("profiles").WithTx(tx).
         Where("user_id", "=", lastId).
         Update(map[string]any{
             "bio": "New user",
         })
-    
+
     return nil
 })
 
@@ -510,8 +522,12 @@ results, _ := qb.Get() // Returns []map[string]any
 // Get first result
 user, _ := qb.First() // Returns map[string]any
 
-// Get count
+// aggregate execution
 count, _ := qb.Count("id")
+max, _ := qb.Max("id")
+min, _ := qb.Min("id")
+avg, _ := qb.Avg("id")
+sum, _ := qb.Sum("id")
 
 // Check if exists
 exists, _ := qb.Exists()
@@ -534,4 +550,5 @@ results, meta, _ := qb.Paginate(10, 1, true)
 ```
 
 ## License
+
 This project is licensed under the MIT License - see the LICENSE file for details.

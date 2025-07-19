@@ -1,8 +1,8 @@
 package grammar
 
 import (
-	"github.com/iMohamedSheta/xqb/mysql"
-	"github.com/iMohamedSheta/xqb/postgres"
+	"github.com/iMohamedSheta/xqb/dialects/mysql"
+	"github.com/iMohamedSheta/xqb/dialects/postgres"
 )
 
 type Driver string

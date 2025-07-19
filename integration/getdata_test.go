@@ -45,40 +45,39 @@ func setupTestDBForGetData(t *testing.T) *xqb.DBManager {
 }
 
 // insertTestDataForUpdate inserts test data for update operations
-func insertTestDataForTest(t *testing.T, dbManager *xqb.DBManager) {
-	db, _ := dbManager.GetDB()
-	_, err := db.Exec(`
-		INSERT INTO test_users (name, email, age, status, price) VALUES
-		('John Doe', 'john@example.com', 30, 'active', 100.00),
-		('Jane Smith', 'jane@example.com', 25, 'active', 150.00),
-		('Bob Wilson', 'bob@example.com', 35, 'inactive', 200.00)
-	`)
-	assert.NoError(t, err, "Failed to insert test data")
-}
+// func insertTestDataForTest(t *testing.T, dbManager *xqb.DBManager) {
+// 	db, _ := dbManager.GetDB()
+// 	_, err := db.Exec(`
+// 		INSERT INTO test_users (name, email, age, status, price) VALUES
+// 		('John Doe', 'john@example.com', 30, 'active', 100.00),
+// 		('Jane Smith', 'jane@example.com', 25, 'active', 150.00),
+// 		('Bob Wilson', 'bob@example.com', 35, 'inactive', 200.00)
+// 	`)
+// 	assert.NoError(t, err, "Failed to insert test data")
+// }
 
 // cleanupTestDB closes the database connection
-func cleanupTestDBForGetData(t *testing.T, dbManager *xqb.DBManager) {
-	if err := dbManager.CloseDB(); err != nil {
-		t.Errorf("Failed to close database: %v", err)
-	}
-}
+// func cleanupTestDBForGetData(t *testing.T, dbManager *xqb.DBManager) {
+// 	if err := dbManager.CloseDB(); err != nil {
+// 		t.Errorf("Failed to close database: %v", err)
+// 	}
+// }
 
 // resetTestTable truncates the test table to ensure a clean state
-func resetTestTableForGetData(t *testing.T, dbManager *xqb.DBManager) {
-	db, _ := dbManager.GetDB()
-	_, err := db.Exec("TRUNCATE TABLE test_users")
-	assert.NoError(t, err, "Failed to reset test table")
-}
+// func resetTestTableForGetData(t *testing.T, dbManager *xqb.DBManager) {
+// 	db, _ := dbManager.GetDB()
+// 	_, err := db.Exec("TRUNCATE TABLE test_users")
+// 	assert.NoError(t, err, "Failed to reset test table")
+// }
 
-// testWithCleanTable is a helper function that runs a test with a clean table
-func cleanTable(t *testing.T, dbManager *xqb.DBManager) {
-	resetTestTableForGetData(t, dbManager)
-	insertTestDataForTest(t, dbManager)
-}
+// // testWithCleanTable is a helper function that runs a test with a clean table
+// func cleanTable(t *testing.T, dbManager *xqb.DBManager) {
+// 	resetTestTableForGetData(t, dbManager)
+// 	insertTestDataForTest(t, dbManager)
+// }
 
 func TestPagination(t *testing.T) {
-	dbManager := setupTestDBForGetData(t)
-	defer cleanupTestDBForGetData(t, dbManager)
+	setupTestDBForGetData(t)
 
 	qb := xqb.Table("test_users")
 
@@ -117,8 +116,6 @@ func TestPagination(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-
-			cleanTable(t, dbManager)
 
 			qb := qb.Select("name", "email", "age", "status", "price")
 

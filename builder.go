@@ -32,6 +32,7 @@ type QueryBuilder struct {
 	isLockedForUpdate bool
 	isInSharedLock    bool
 	tx                *sql.Tx
+	errors            []error
 }
 
 // New creates a new QueryBuilder instance
@@ -83,23 +84,24 @@ func (qb *QueryBuilder) Reset() {
 	qb.queryType = enums.SELECT
 	qb.connection = Manager().defaultConnection
 	qb.table = ""
-	qb.columns = []any{}
-	qb.columnAliases = make(map[string]string)
-	qb.where = []types.WhereCondition{}
-	qb.orderBy = []types.OrderBy{}
-	qb.groupBy = []string{}
-	qb.having = []types.Having{}
+	qb.columns = nil
+	qb.columnAliases = nil
+	qb.where = nil
+	qb.orderBy = nil
+	qb.groupBy = nil
+	qb.having = nil
 	qb.limit = 0
 	qb.offset = 0
-	qb.joins = []types.Join{}
-	qb.unions = []types.Union{}
-	qb.bindings = []types.Binding{}
+	qb.joins = nil
+	qb.unions = nil
+	qb.bindings = nil
 	qb.distinct = false
-	qb.subqueries = make(map[string]*QueryBuilder)
-	qb.withCTEs = []types.CTE{}
+	qb.subqueries = nil
+	qb.withCTEs = nil
 	qb.isUsingDistinct = false
 	qb.isLockedForUpdate = false
 	qb.isInSharedLock = false
+	qb.errors = nil
 }
 
 // GetData returns the QueryBuilderData for use by grammars
@@ -124,6 +126,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 		IsUsingDistinct:   qb.isUsingDistinct,
 		IsLockedForUpdate: qb.isLockedForUpdate,
 		IsInSharedLock:    qb.isInSharedLock,
+		Errors:            qb.errors,
 	}
 }
 

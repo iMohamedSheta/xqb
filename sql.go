@@ -19,8 +19,8 @@ func Sql(sql string, args ...any) *SqlQuery {
 	}
 }
 
-// WithConnection - set the connection
-func (s *SqlQuery) WithConnection(connection string) *SqlQuery {
+// Connection - set the connection
+func (s *SqlQuery) Connection(connection string) *SqlQuery {
 	if connection == "" || !Manager().HasConnection(connection) {
 		connection = "default"
 	}

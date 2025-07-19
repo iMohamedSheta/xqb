@@ -25,4 +25,5 @@ type QueryBuilderData struct {
 	IsInSharedLock    bool
 	InsertedValues    []map[string]any // Added for insert operations
 	UpdatedBindings   []Binding        // Added for update operations
+	Errors            []error
 }

@@ -51,7 +51,6 @@ func testWithCleanTable(t *testing.T, dbManager *xqb.DBManager, testFn func()) {
 
 func TestInsert(t *testing.T) {
 	dbManager := setupTestDBForInsert(t)
-	// defer cleanupTestDBForInsert(t, dbManager)
 
 	qb := xqb.Table("test_users")
 

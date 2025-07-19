@@ -17,8 +17,8 @@ func NewTransaction() *TransactionQuery {
 	}
 }
 
-// WithConnection - set the connection
-func (s *TransactionQuery) WithConnection(connection string) *TransactionQuery {
+// Connection - set the connection
+func (s *TransactionQuery) Connection(connection string) *TransactionQuery {
 	if connection == "" || !Manager().HasConnection(connection) {
 		connection = "default"
 	}
@@ -99,7 +99,7 @@ func (t *TransactionQuery) BeginTransaction() error {
 // BeginTransactionWithConnection starts a new transaction and returns it.
 func BeginTransactionWithConnection(connection string) (*TransactionQuery, error) {
 	transaction := NewTransaction()
-	transaction.WithConnection(connection)
+	transaction.Connection(connection)
 	err := transaction.BeginTransaction()
 	if err != nil {
 		return nil, err
