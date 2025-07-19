@@ -36,6 +36,66 @@ func main() {
 }
 ```
 
+## Raw SQL Expressions
+
+### Raw Function
+```go
+// Raw SQL in SELECT
+qb := xqb.Table("users").
+    Select(
+        xqb.Raw("COUNT(*) as total"),
+        "name",
+        xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name"),
+    )
+// SQL: SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users
+
+// Raw SQL in WHERE
+qb := xqb.Table("users").
+    Where(xqb.Raw("LOWER(email)"), "LIKE", "%@example.com")
+// SQL: SELECT * FROM users WHERE LOWER(email) LIKE ?
+
+// Raw SQL in ORDER BY
+qb := xqb.Table("orders").
+    OrderBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"), "ASC")
+// SQL: SELECT * FROM orders ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC
+
+// Raw SQL in GROUP BY
+qb := xqb.Table("orders").
+    GroupBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"))
+// SQL: SELECT * FROM orders GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+
+// Raw SQL in HAVING
+qb := xqb.Table("orders").
+    GroupBy("user_id").
+    Having(xqb.Raw("SUM(amount)"), ">", 1000)
+// SQL: SELECT * FROM orders GROUP BY user_id HAVING SUM(amount) > ?
+```
+
+### RawDialect Function
+```go
+// Database-specific expressions
+expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
+    "mysql":    xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
+    "postgres": xqb.Raw("TO_CHAR(created_at, 'YYYY-MM-DD')"),
+})
+
+qb := xqb.Table("users").
+    Select(expr, "formatted_date")
+// MySQL: SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM users
+// PostgreSQL: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS formatted_date FROM users
+
+// Complex dialect-specific expressions
+jsonExpr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
+    "mysql":    xqb.Raw("JSON_EXTRACT(data, '$.user.email')"),
+    "postgres": xqb.Raw("data->'user'->>'email'"),
+})
+
+qb := xqb.Table("profiles").
+    Select(jsonExpr, "user_email")
+// MySQL: SELECT JSON_EXTRACT(data, '$.user.email') AS user_email FROM profiles
+// PostgreSQL: SELECT data->'user'->>'email' AS user_email FROM profiles
+```
+
 ## Database Connection
 
 ```go
