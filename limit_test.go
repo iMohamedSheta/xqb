@@ -74,7 +74,7 @@ func TestForPageWithWhereAndOrder(t *testing.T) {
 func TestPaginationWithJoins(t *testing.T) {
 	qb := xqb.Table("users").
 		Select("users.id", "profiles.bio").
-		Join("profiles", "profiles.user_id", "=", "users.id").
+		Join("profiles", "profiles.user_id = users.id").
 		OrderBy("users.created_at", "desc").
 		Limit(50).
 		Offset(100)
