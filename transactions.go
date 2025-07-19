@@ -10,6 +10,7 @@ type TransactionQuery struct {
 	tx         *sql.Tx
 }
 
+// NewTransaction - create a new transaction
 func NewTransaction() *TransactionQuery {
 	return &TransactionQuery{
 		connection: "default",
@@ -95,6 +96,7 @@ func (t *TransactionQuery) BeginTransaction() error {
 	return nil
 }
 
+// BeginTransactionWithConnection starts a new transaction and returns it.
 func BeginTransactionWithConnection(connection string) (*TransactionQuery, error) {
 	transaction := NewTransaction()
 	transaction.WithConnection(connection)
@@ -113,6 +115,7 @@ func (t *TransactionQuery) Commit() error {
 	return t.tx.Commit()
 }
 
+// Rollback the transaction
 func (t *TransactionQuery) Rollback() error {
 	if t.tx == nil {
 		return nil
@@ -120,6 +123,7 @@ func (t *TransactionQuery) Rollback() error {
 	return t.tx.Rollback()
 }
 
+// Tx returns the transaction
 func (t *TransactionQuery) Tx() *sql.Tx {
 	return t.tx
 }

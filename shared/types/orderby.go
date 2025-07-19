@@ -4,4 +4,5 @@ package types
 type OrderBy struct {
 	Column    string
 	Direction string
+	Raw       *Expression
 }

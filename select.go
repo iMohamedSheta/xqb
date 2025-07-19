@@ -32,12 +32,6 @@ func (qb *QueryBuilder) From(table string) *QueryBuilder {
 	return qb
 }
 
-// FromRaw adds a raw SQL expression to the FROM clause
-func (qb *QueryBuilder) FromRaw(expression string) *QueryBuilder {
-	qb.table = expression
-	return qb
-}
-
 // FromSubquery uses a subquery as the FROM clause
 func (qb *QueryBuilder) FromSubquery(subquery *QueryBuilder, alias string) *QueryBuilder {
 	qb.subqueries[alias] = subquery

@@ -17,9 +17,17 @@ func (mg *MySQLGrammar) compileOrderByClause(qb *types.QueryBuilderData) (string
 			if i > 0 {
 				sql.WriteString(", ")
 			}
-			sql.WriteString(order.Column)
-			sql.WriteString(" ")
-			sql.WriteString(order.Direction)
+			if order.Raw != nil {
+				sql.WriteString(order.Raw.SQL)
+				bindings = append(bindings, order.Raw.Bindings...)
+			} else {
+				sql.WriteString(order.Column)
+			}
+
+			if order.Direction != "" {
+				sql.WriteString(" ")
+				sql.WriteString(order.Direction)
+			}
 		}
 	}
 

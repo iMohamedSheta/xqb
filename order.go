@@ -10,14 +10,13 @@ import (
 
 func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	var col string
-	var bindings []any
+	var expr *types.Expression
 
 	switch v := column.(type) {
 	case string:
 		col = v
 	case *types.Expression:
-		col = v.SQL
-		bindings = v.Bindings
+		expr = v
 	default:
 		col = fmt.Sprintf("%v", v)
 	}
@@ -25,13 +24,8 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	qb.orderBy = append(qb.orderBy, types.OrderBy{
 		Column:    col,
 		Direction: direction,
+		Raw:       expr,
 	})
-
-	if len(bindings) > 0 {
-		for _, binding := range bindings {
-			qb.bindings = append(qb.bindings, types.Binding{Value: binding})
-		}
-	}
 
 	return qb
 }
@@ -59,9 +53,4 @@ func (qb *QueryBuilder) Latest(column string) *QueryBuilder {
 // Oldest orders by the given column in ascending order
 func (qb *QueryBuilder) Oldest(column string) *QueryBuilder {
 	return qb.OrderByAsc(column)
-}
-
-// InRandomOrder orders the results randomly
-func (qb *QueryBuilder) InRandomOrder() *QueryBuilder {
-	return qb.OrderByRaw("RAND()")
 }
