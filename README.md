@@ -1,280 +1,11 @@
 # XQB Query Builder
 
-XQB is a powerful and flexible SQL query builder for Go that provides a fluent interface for building complex SQL queries. It supports MySQL syntax and can be extended to support other database dialects.
-
-## Features
-
-- Fluent interface for building SQL queries
-- Support for complex queries including:
-  - SELECT, INSERT, UPDATE, DELETE operations
-  - JOINs (INNER, LEFT, RIGHT, CROSS)
-  - WHERE conditions with various operators
-  - GROUP BY and HAVING clauses
-  - ORDER BY with multiple columns
-  - LIMIT and OFFSET
-  - Common Table Expressions (CTEs)
-  - Subqueries
-  - Unions
-  - JSON operations
-  - Aggregate functions
-  - String and Date functions
-  - Mathematical expressions
-  - Conditional expressions
-  - Index hints
-  - Locking clauses
-- Parameter binding for safe SQL execution
-- Extensible grammar system for different database dialects
-- Type-safe query building
+A powerful and flexible SQL query builder for Go with fluent interface for building complex SQL queries.
 
 ## Installation
 
 ```bash
 go get github.com/iMohamedSheta/xqb
-```
-
-## Database Connection
-
-XQB provides a simple database connection manager (`DBManager`) that acts as a bridge between your database connection and the query builder. This design choice follows the principle of separation of concerns:
-
-- The `DBManager` is responsible only for managing the connection instance for the query builder
-- Connection pool configuration and database-specific settings are handled at the database driver level
-- This gives you full control over your database connection while keeping the query builder focused on its primary responsibility
-
-Here's how to set up and use it:
-
-```go
-package main
-
-import (
-    "database/sql"
-    "time"
-    _ "github.com/go-sql-driver/mysql" // Import your database driver
-    "github.com/iMohamedSheta/xqb"
-)
-
-func main() {
-    // Create a database connection
-    db, err := sql.Open("mysql", "user:password@tcp(localhost:3306)/database_name?parseTime=true")
-    if err != nil {
-        panic(err)
-    }
-
-    // Configure connection pool settings
-    // These settings are managed by the database driver, not XQB
-    db.SetMaxOpenConns(25)                // Maximum number of open connections
-    db.SetMaxIdleConns(5)                 // Maximum number of idle connections
-    db.SetConnMaxLifetime(5 * time.Minute) // Maximum lifetime of a connection
-    db.SetConnMaxIdleTime(10 * time.Minute) // Maximum idle time of a connection
-
-    // Set up the connection in XQB
-    // DBManager only manages the connection instance for the query builder
-    dbManager := xqb.GetDBManager()
-    dbManager.SetDB(db)
-
-    // Verify the connection
-    if !dbManager.IsDBConnected() {
-        panic("Database connection failed")
-    }
-
-    // Don't forget to close the connection when done
-    defer dbManager.CloseDB()
-}
-```
-
-### Using Transactions
-
-```go
-dbManager := xqb.GetDBManager()
-
-// Simple transaction
-err := dbManager.Transaction(func(tx *sql.Tx) error {
-    // Create a query builder
-    qb := xqb.Table("users")
-
-    // Execute your queries within the transaction
-    // If any query fails, the entire transaction will be rolled back
-    return nil
-})
-
-// Manual transaction control
-tx, err := dbManager.BeginTransaction()
-if err != nil {
-    panic(err)
-}
-
-// Use the transaction
-// ...
-
-// Commit or rollback
-if err != nil {
-    tx.Rollback()
-} else {
-    tx.Commit()
-}
-```
-
-## Executing Queries
-
-Once you have set up the database connection, you can execute various types of queries. Here are examples of common operations:
-
-### Basic Query Execution
-
-```go
-dbManager := xqb.GetDBManager()
-
-// SELECT query
-qb := xqb.Table("users").
-    Select("id", "name", "email").
-    Where("active", "=", true)
-
-// Execute the query and get results as map
-results, err := qb.Get() // Returns []map[string]any
-if err != nil {
-    panic(err)
-}
-
-// Process the results
-for _, user := range results {
-    // Access fields using map keys
-    id := user["id"]
-    name := user["name"]
-    email := user["email"]
-    // Use the data
-}
-
-// Get first row
-user, err := qb.First() // Returns map[string]any
-if err != nil {
-    if err == sql.ErrNoRows {
-        // No user found
-    } else {
-        panic(err)
-    }
-}
-
-// Get count
-count, err := qb.Count("*", nil)
-if err != nil {
-    panic(err)
-}
-```
-
-### Insert, Update, and Delete Operations
-
-```go
-// Insert a new record
-affected, err := xqb.Table("users").
-    Insert([]map[string]any{
-        {
-            "name":  "John Doe",
-            "email": "john@example.com",
-        },
-    })
-
-// Get last inserted Id
-lastId, err := xqb.Table("users").
-    InsertGetId([]map[string]any{
-        {
-            "name":  "John Doe",
-            "email": "john@example.com",
-        },
-    })
-
-// Update records
-affected, err = xqb.Table("users").
-    Update(map[string]any{
-        "name": "Jane Doe",
-    }).
-    Where("id", "=", 1)
-
-// Delete records
-affected, err = xqb.Table("users").
-    Delete().
-    Where("id", "=", 1)
-```
-
-### Pagination
-
-XQB provides built-in support for pagination:
-
-```go
-// Using the Paginate method
-results, meta, err := xqb.Table("users").
-    Select("id", "name", "email").
-    Where("active", "=", true).
-    OrderBy("id", "DESC").
-    Paginate(10, 1, true) // perPage, page, withCount
-
-if err != nil {
-    panic(err)
-}
-
-// Access paginated results
-for _, user := range results {
-    // Process each user
-}
-
-// Access pagination metadata
-totalCount := meta["total_count"]
-currentPage := meta["current_page"]
-lastPage := meta["last_page"]
-nextPage := meta["next_page"]
-prevPage := meta["prev_page"]
-```
-
-### Advanced Query Execution
-
-```go
-// Chunking large result sets
-err = xqb.Table("users").
-    Where("active", "=", true).
-    Chunk(100, func(rows []map[string]any) error {
-        // Process 100 records at a time
-        for _, row  := range rows {
-            // Process each row
-        }
-        return nil
-    })
-
-// Get a single value from first record
-value, err := xqb.Table("users").
-    Where("id", "=", 1).
-    Value("username")
-
-// Check if record exists
-exists, err := xqb.Table("users").
-    Where("email", "=", "john@example.com").
-    Exists()
-
-// Pluck specific columns
-names, err := xqb.Table("users").
-    Select("name").
-    Pluck("name", "id") // Returns map[string]any
-```
-
-### Error Handling
-
-```go
-// Proper error handling for queries
-qb := xqb.Table("users").
-    Select("id", "name").
-    Where("email", "=", "john@example.com")
-
-user, err := qb.First()
-if err != nil {
-    switch {
-    case err == sql.ErrNoRows:
-        // Handle no results found
-        fmt.Println("User not found")
-    case err != nil:
-        // Handle other errors
-        fmt.Printf("Error executing query: %v\n", err)
-    }
-    return
-}
-
-// Use the user data
-fmt.Printf("Found user: %+v\n", user)
 ```
 
 ## Quick Start
@@ -283,169 +14,464 @@ fmt.Printf("Found user: %+v\n", user)
 package main
 
 import (
-    "fmt"
+    "database/sql"
+    _ "github.com/go-sql-driver/mysql"
     "github.com/iMohamedSheta/xqb"
 )
 
 func main() {
-    // Create a new query builder instance
-    qb := xqb.Table("users")
-
-    // Build a simple SELECT query
-    sql, bindings, err := qb.
+    // Setup database connection
+    db, _ := sql.Open("mysql", "user:password@tcp(localhost:3306)/database")
+    xqb.AddConnection("default", db)
+    
+    // Build and execute query
+    qb := xqb.Table("users").
         Select("id", "name", "email").
         Where("active", "=", true).
         OrderBy("name", "ASC").
-        Limit(10).
-        ToSQL()
-
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Println("SQL:", sql)
-    fmt.Println("Bindings:", bindings)
+        Limit(10)
+    
+    results, _ := qb.Get()
+    // Process results...
 }
 ```
 
-## Basic Usage
-
-### SELECT Queries
+## Database Connection
 
 ```go
-// Simple SELECT
+// Add connection
+db, _ := sql.Open("mysql", "dsn")
+xqb.AddConnection("default", db)
+
+// Use specific connection
+qb := xqb.Table("users").WithConnection("default")
+
+// Close connection
+xqb.Close("default")
+xqb.CloseAll()
+```
+
+## SELECT Queries
+
+### Basic Select
+```go
+// Simple select
 qb := xqb.Table("users").
-    Select("id", "name", "email").
+    Select("id", "name", "email")
+// SQL: SELECT id, name, email FROM users
+
+// Select with conditions
+qb := xqb.Table("users").
+    Select("id", "name").
+    Where("age", ">", 18)
+// SQL: SELECT id, name FROM users WHERE age > ?
+
+// Select distinct
+qb := xqb.Table("users").
+    Select("id", "name").
+    Distinct()
+// SQL: SELECT DISTINCT id, name FROM users
+```
+
+### Joins
+```go
+// Inner join
+qb := xqb.Table("users").
+    Select("users.id", "users.name", "orders.id as order_id").
+    Join("orders", "users.id = orders.user_id")
+// SQL: SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id
+
+// Left join
+qb := xqb.Table("users").
+    LeftJoin("comments", "users.id = comments.user_id")
+// SQL: SELECT * FROM users LEFT JOIN comments ON users.id = comments.user_id
+
+// Right join
+qb := xqb.Table("users").
+    RightJoin("logins", "users.id = logins.user_id")
+// SQL: SELECT * FROM users RIGHT JOIN logins ON users.id = logins.user_id
+
+// Full join
+qb := xqb.Table("users").
+    FullJoin("sessions", "users.id = sessions.user_id")
+// SQL: SELECT * FROM users FULL JOIN sessions ON users.id = sessions.user_id
+
+// Cross join
+qb := xqb.Table("users").
+    CrossJoin("roles")
+// SQL: SELECT * FROM users CROSS JOIN roles
+
+// Join with conditions
+qb := xqb.Table("users").
+    Join("posts", "users.id = posts.user_id AND posts.status = ?", "active")
+// SQL: SELECT * FROM users JOIN posts ON users.id = posts.user_id AND posts.status = ?
+```
+
+### Subquery Joins
+```go
+// Join subquery
+sub := xqb.Table("posts").Where("published", "=", true)
+qb := xqb.Table("users").
+    JoinSub(sub, "p", "users.id = p.user_id")
+// SQL: JOIN (SELECT * FROM posts WHERE published = ?) AS p ON users.id = p.user_id
+
+// Left join subquery
+sub := xqb.Table("comments").Where("active", "=", true)
+qb := xqb.Table("users").
+    LeftJoinSub(sub, "c", "users.id = c.user_id")
+// SQL: LEFT JOIN (SELECT * FROM comments WHERE active = ?) AS c ON users.id = c.user_id
+
+// Cross join subquery
+sub := xqb.Table("plans").Where("expired", "=", false)
+qb := xqb.Table("users").
+    CrossJoinSub(sub, "p")
+// SQL: CROSS JOIN (SELECT * FROM plans WHERE expired = ?) AS p
+```
+
+### Where Conditions
+```go
+// Basic where
+qb := xqb.Table("users").
+    Where("age", ">", 18)
+// SQL: SELECT * FROM users WHERE age > ?
+
+// Multiple conditions
+qb := xqb.Table("users").
+    Where("age", ">", 18).
     Where("active", "=", true)
+// SQL: SELECT * FROM users WHERE age > ? AND active = ?
 
-// SELECT with JOIN
+// OR conditions
+qb := xqb.Table("users").
+    Where("id", "=", 1).
+    OrWhere("email", "=", "admin@example.com")
+// SQL: SELECT * FROM users WHERE id = ? OR email = ?
+
+// IN conditions
+qb := xqb.Table("users").
+    WhereIn("id", []any{1, 2, 3})
+// SQL: SELECT * FROM users WHERE id IN (?, ?, ?)
+
+// BETWEEN conditions
+qb := xqb.Table("users").
+    WhereBetween("age", 18, 65)
+// SQL: SELECT * FROM users WHERE age BETWEEN ? AND ?
+
+// NULL conditions
+qb := xqb.Table("users").
+    WhereNull("deleted_at")
+// SQL: SELECT * FROM users WHERE deleted_at IS NULL
+
+// EXISTS conditions
+subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
+qb := xqb.Table("users").
+    WhereExists(subQuery)
+// SQL: SELECT * FROM users WHERE EXISTS (SELECT user_id FROM orders WHERE status = ?)
+
+// Raw where
+qb := xqb.Table("users").
+    WhereRaw("CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?", 1)
+// SQL: SELECT * FROM users WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?
+
+// Where groups
+qb := xqb.Table("users").
+    Where("id", "=", 1).
+    WhereGroup(func(qb *xqb.QueryBuilder) {
+        qb.WhereNull("deleted_at").OrWhereNull("disabled_at")
+    })
+// SQL: SELECT * FROM users WHERE id = ? AND (deleted_at IS NULL OR disabled_at IS NULL)
+```
+
+### Group By and Having
+```go
+// Group by
 qb := xqb.Table("orders").
-    Select("orders.id", "users.name").
-    Join("users", "orders.user_id = users.id").
-    Where("orders.status", "=", "pending")
+    Select("user_id", "COUNT(*) as order_count").
+    GroupBy("user_id")
+// SQL: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id
 
-// SELECT with GROUP BY and HAVING
+// Having
 qb := xqb.Table("orders").
     Select("user_id", "COUNT(*) as order_count").
     GroupBy("user_id").
     Having("order_count", ">", 5)
-
-// SELECT with subquery
-subquery := xqb.Table("orders").
-    Select("user_id").
-    Where("status", "=", "completed")
-
-qb := xqb.Table("users").
-    Select("id", "name").
-    WhereIn("id", subquery)
+// SQL: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?
 ```
 
-### INSERT Queries
+### Order By
+```go
+// Order by
+qb := xqb.Table("users").
+    Select("id", "name").
+    OrderBy("name", "ASC")
+// SQL: SELECT id, name FROM users ORDER BY name ASC
+
+// Multiple order by
+qb := xqb.Table("users").
+    OrderBy("age", "DESC").
+    OrderBy("name", "ASC")
+// SQL: SELECT * FROM users ORDER BY age DESC, name ASC
+```
+
+### Limit and Offset
+```go
+// Limit
+qb := xqb.Table("users").
+    Select("id", "name").
+    Limit(10)
+// SQL: SELECT id, name FROM users LIMIT 10
+
+// Limit with offset
+qb := xqb.Table("users").
+    Select("id", "name").
+    Limit(10).
+    Offset(20)
+// SQL: SELECT id, name FROM users LIMIT 10 OFFSET 20
+```
+
+### Common Table Expressions (CTE)
+```go
+// Simple CTE
+qb := xqb.Table("users").
+    WithRaw("user_totals", "SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id").
+    Select("users.id", "users.name", "user_totals.total_spent").
+    Join("user_totals", "users.id = user_totals.user_id")
+// SQL: WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id
+
+// Complex CTE
+qb := xqb.Table("products").
+    WithRaw("active_users",
+        "WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) "+
+            "SELECT users.id, users.name, user_orders.order_count FROM users "+
+            "JOIN user_orders ON users.id = user_orders.user_id").
+    Select("products.id", "products.name", "active_users.name as buyer").
+    Join("active_users", "products.id = active_users.id")
+```
+
+### Locking
+```go
+// Lock for update
+qb := xqb.Table("users").
+    Select("id", "name").
+    LockForUpdate()
+// SQL: SELECT id, name FROM users FOR UPDATE
+
+// Shared lock
+qb := xqb.Table("users").
+    Select("id", "name").
+    SharedLock()
+// SQL: SELECT id, name FROM users LOCK IN SHARE MODE
+```
+
+## Aggregate Functions
 
 ```go
+// Basic aggregates
+qb := xqb.Table("orders").
+    Select(
+        xqb.Count("id", "order_count"),
+        xqb.Sum("amount", "total_amount"),
+        xqb.Avg("amount", "average_amount"),
+        xqb.Min("amount", "min_amount"),
+        xqb.Raw("MAX(amount) AS max_amount")
+    )
+// SQL: SELECT COUNT(id) AS order_count, SUM(amount) AS total_amount, AVG(amount) AS average_amount, MIN(amount) AS min_amount, MAX(amount) AS max_amount FROM orders
+```
+
+## String Functions
+
+```go
+// String operations
 qb := xqb.Table("users").
-    Insert(map[string]any{
-        "name":  "John Doe",
-        "email": "john@example.com",
+    Select(
+        xqb.Concat([]string{"first_name", "' '", "last_name"}, "full_name"),
+        xqb.Lower("email", "lower_email"),
+        xqb.Upper("username", "upper_username"),
+        xqb.Length("bio", "bio_length"),
+        xqb.Trim("nickname", "trimmed_nickname"),
+        xqb.Replace("title", "'foo'", "'bar'", "replaced_title"),
+        xqb.Substring("description", 1, 10, "short_desc"),
+    )
+// SQL: SELECT CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM users
+```
+
+## Date Functions
+
+```go
+// Date operations
+qb := xqb.Table("events").
+    Select(
+        xqb.Date("created_at", "created_date"),
+        xqb.DateDiff("end_date", "start_date", "days_between"),
+        xqb.DateAdd("created_at", "1", "DAY", "next_day"),
+        xqb.DateSub("created_at", "1", "MONTH", "prev_month"),
+        xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date"),
+    )
+// SQL: SELECT DATE(created_at) AS created_date, DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM events
+```
+
+## JSON Functions
+
+```go
+// JSON operations
+qb := xqb.Table("users").
+    Select(
+        xqb.JsonExtract("metadata", "preferences.theme", "theme"),
+        xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone"),
+    )
+// SQL: SELECT JSON_EXTRACT(metadata, '$.preferences.theme') AS theme, JSON_UNQUOTE(data, '$.phone') AS phone FROM users
+```
+
+## Math Expressions
+
+```go
+// Math operations
+qb := xqb.Table("orders").
+    Select(
+        xqb.Math("amount * 1.1", "total_with_tax"),
+        xqb.Coalesce([]string{"middle_name", "'N/A'"}, "coalesced_name"),
+    )
+// SQL: SELECT amount * 1.1 AS total_with_tax, COALESCE(middle_name, 'N/A') AS coalesced_name FROM orders
+```
+
+## INSERT Queries
+
+```go
+// Insert single record
+affected, _ := xqb.Table("users").
+    Insert([]map[string]any{
+        {"name": "John Doe", "email": "john@example.com"},
+    })
+
+// Insert multiple records
+affected, _ := xqb.Table("users").
+    Insert([]map[string]any{
+        {"name": "John Doe", "email": "john@example.com"},
+        {"name": "Jane Doe", "email": "jane@example.com"},
+    })
+
+// Insert and get ID
+lastId, _ := xqb.Table("users").
+    InsertGetId([]map[string]any{
+        {"name": "John Doe", "email": "john@example.com"},
     })
 ```
 
-### UPDATE Queries
+## UPDATE Queries
 
 ```go
-qb := xqb.Table("users").
+// Update records
+affected, _ := xqb.Table("users").
     Where("id", "=", 1).
     Update(map[string]any{
         "name": "Jane Doe",
+        "email": "jane@example.com",
+    })
+// SQL: UPDATE users SET name = ?, email = ? WHERE id = ?
+
+// Update with multiple conditions
+affected, _ := xqb.Table("users").
+    Where("active", "=", true).
+    Where("age", ">", 18).
+    Update(map[string]any{
+        "status": "verified",
     })
 ```
 
-### DELETE Queries
+## DELETE Queries
 
 ```go
-qb := xqb.Table("users").
+// Delete records
+affected, _ := xqb.Table("users").
     Where("id", "=", 1).
+    Delete()
+// SQL: DELETE FROM users WHERE id = ?
+
+// Delete with multiple conditions
+affected, _ := xqb.Table("users").
+    Where("active", "=", false).
+    Where("last_login", "<", "2023-01-01").
     Delete()
 ```
 
-## Advanced Features
-
-### Common Table Expressions (CTEs)
+## Raw SQL
 
 ```go
-cte := xqb.Table("orders").
-    Select("user_id", "SUM(amount) as total").
-    GroupBy("user_id")
+// Execute raw SQL
+result, _ := xqb.Sql("INSERT INTO users (name, email) VALUES (?, ?)", "John", "john@example.com").
+    Execute()
 
-qb := xqb.Table("users").
-    With("user_totals", cte).
-    Select("users.*", "user_totals.total").
-    Join("user_totals", "users.id = user_totals.user_id")
+// Query raw SQL
+rows, _ := xqb.Sql("SELECT * FROM users WHERE age > ?", 18).
+    Query()
+
+// Query single row
+row, _ := xqb.Sql("SELECT COUNT(*) FROM users").
+    QueryRow()
 ```
 
-### JSON Operations
+## Transactions
 
 ```go
-qb := xqb.Table("users").
-    Select("id", "JSON_EXTRACT(data, '$.name') as name").
-    Where("JSON_EXTRACT(data, '$.age')", ">", 18)
+// Simple transaction
+err := xqb.Transaction(func(tx *sql.Tx) error {
+    lastId, _ := xqb.Table("users").WithTx(tx).
+        InsertGetId([]map[string]any{
+            {"name": "John", "email": "john@example.com"},
+        })
+    
+    affected, _ := xqb.Table("profiles").WithTx(tx).
+        Where("user_id", "=", lastId).
+        Update(map[string]any{
+            "bio": "New user",
+        })
+    
+    return nil
+})
+
+// Manual transaction
+tx, _ := xqb.BeginTransaction()
+defer tx.Rollback()
+
+lastId, _ := xqb.Table("users").WithTx(tx).
+    InsertGetId([]map[string]any{
+        {"name": "John", "email": "john@example.com"},
+    })
+
+tx.Commit()
 ```
 
-### Complex WHERE Conditions
+## Query Execution
 
 ```go
-qb := xqb.Table("users").
-    Where("age", ">", 18).
-    Where("status", "=", "active").
-    WhereIn("id", []any{1, 2, 3}).
-    WhereBetween("created_at", "2023-01-01", "2023-12-31")
+// Get all results
+results, _ := qb.Get() // Returns []map[string]any
+
+// Get first result
+user, _ := qb.First() // Returns map[string]any
+
+// Get count
+count, _ := qb.Count("id")
+
+// Check if exists
+exists, _ := qb.Exists()
+
+// Get single value
+value, _ := qb.Value("name")
+
+// Pluck specific columns
+names, _ := qb.Pluck("name", "id") // Returns map[string]any
+
+// Chunk large results
+err := qb.Chunk(100, func(rows []map[string]any) error {
+    // Process 100 records at a time
+    return nil
+})
+
+// Pagination
+results, meta, _ := qb.Paginate(10, 1, true)
+// meta contains: total_count, current_page, last_page, next_page, prev_page
 ```
-
-## Adding New Grammar
-
-To add support for a new database dialect, you need to implement the `GrammarInterface`:
-
-1. Create a new grammar struct that embeds `BaseGrammar`:
-
-```go
-type PostgreSQLGrammar struct {
-    BaseGrammar
-}
-```
-
-2. Implement the required interface methods:
-
-```go
-func (pg *PostgreSQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
-    // Implement PostgreSQL-specific SELECT compilation
-}
-
-func (pg *PostgreSQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
-    // Implement PostgreSQL-specific INSERT compilation
-}
-
-// ... implement other required methods
-```
-
-3. Register your grammar:
-
-```go
-func GetGrammar(driverName string) GrammarInterface {
-    switch driverName {
-    case "postgres":
-        return &PostgreSQLGrammar{}
-    case "mysql":
-        return &MySQLGrammar{}
-    default:
-        return &MySQLGrammar{} // Default to MySQL
-    }
-}
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
-
 This project is licensed under the MIT License - see the LICENSE file for details.
