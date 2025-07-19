@@ -36,7 +36,7 @@ func TestTakeAlias(t *testing.T) {
 }
 
 func TestForPage(t *testing.T) {
-	qb := xqb.Table("users").Select("*").ForPage(3, 15) // page 3 = skip 30, take 15
+	qb := xqb.Table("users").Select("*").ForPage(3, 15)
 	sql, _, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT * FROM users LIMIT 15 OFFSET 30", sql)
@@ -62,7 +62,7 @@ func TestForPageWithWhereAndOrder(t *testing.T) {
 		Select("id", "user_id").
 		Where("status", "=", "pending").
 		OrderBy("id", "asc").
-		ForPage(5, 10) // OFFSET = 40, LIMIT = 10
+		ForPage(5, 10)
 
 	sql, bindings, _ := qb.ToSQL()
 
@@ -88,7 +88,7 @@ func TestPaginationWithJoins(t *testing.T) {
 func TestForPageLargePageNumber(t *testing.T) {
 	qb := xqb.Table("logs").
 		Select("*").
-		ForPage(999, 1000) // OFFSET = 998000, LIMIT = 1000
+		ForPage(999, 1000)
 
 	sql, _, _ := qb.ToSQL()
 
