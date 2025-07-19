@@ -1,6 +1,8 @@
 package xqb
 
 import (
+	"database/sql"
+
 	"github.com/iMohamedSheta/xqb/grammar"
 	"github.com/iMohamedSheta/xqb/shared/enums"
 	"github.com/iMohamedSheta/xqb/shared/types"
@@ -8,6 +10,7 @@ import (
 
 // QueryBuilder structure with all possible SELECT components
 type QueryBuilder struct {
+	connection        string
 	grammar           grammar.GrammarInterface
 	queryType         enums.QueryType
 	table             string
@@ -28,6 +31,7 @@ type QueryBuilder struct {
 	isUsingDistinct   bool
 	isLockedForUpdate bool
 	isInSharedLock    bool
+	tx                *sql.Tx
 }
 
 // New creates a new QueryBuilder instance
@@ -58,6 +62,10 @@ func New() *QueryBuilder {
 	}
 }
 
+func Query() *QueryBuilder {
+	return New()
+}
+
 // Table creates a new QueryBuilder instance for a specific table
 func Table(table string) *QueryBuilder {
 	qb := New()
@@ -65,9 +73,15 @@ func Table(table string) *QueryBuilder {
 	return qb
 }
 
+func (qb *QueryBuilder) Table(table string) *QueryBuilder {
+	qb.table = table
+	return qb
+}
+
 // Reset resets the QueryBuilder instance
 func (qb *QueryBuilder) Reset() {
 	qb.queryType = enums.SELECT
+	qb.connection = Manager().defaultConnection
 	qb.table = ""
 	qb.columns = []any{}
 	qb.columnAliases = make(map[string]string)
@@ -120,4 +134,14 @@ func (qb *QueryBuilder) SetDialect(dialect grammar.Driver) {
 // ToSQL compiles the query to SQL
 func (qb *QueryBuilder) ToSQL() (string, []any, error) {
 	return qb.grammar.CompileSelect(qb.GetData())
+}
+
+func (qb *QueryBuilder) WithTx(tx *sql.Tx) *QueryBuilder {
+	qb.tx = tx
+	return qb
+}
+
+func (qb *QueryBuilder) Connection(connection string) *QueryBuilder {
+	qb.connection = connection
+	return qb
 }

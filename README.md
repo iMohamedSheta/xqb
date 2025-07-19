@@ -171,8 +171,8 @@ affected, err := xqb.Table("users").
         },
     })
 
-// Get last inserted ID
-lastID, err := xqb.Table("users").
+// Get last inserted Id
+lastId, err := xqb.Table("users").
     InsertGetId([]map[string]any{
         {
             "name":  "John Doe",

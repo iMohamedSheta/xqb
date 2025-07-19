@@ -1,45 +1,77 @@
 package xqb
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
-// Sql - execute raw sql statement
-func ExecuteSql(sql string, args ...any) (sql.Result, error) {
-	dbManager := GetDBManager()
+type SqlQuery struct {
+	connection string
+	tx         *sql.Tx
+	sql        string
+	args       []any
+}
 
-	if !dbManager.IsDBConnected() {
-		return nil, ErrNoConnection
+func Sql(sql string, args ...any) *SqlQuery {
+	return &SqlQuery{
+		connection: "default",
+		sql:        sql,
+		args:       args,
+	}
+}
+
+// WithConnection - set the connection
+func (s *SqlQuery) WithConnection(connection string) *SqlQuery {
+	if connection == "" || !Manager().HasConnection(connection) {
+		connection = "default"
+	}
+	s.connection = connection
+	return s
+}
+
+// WithTx - set the transaction
+func (s *SqlQuery) WithTx(tx *sql.Tx) *SqlQuery {
+	s.tx = tx
+	return s
+}
+
+// ExecuteSql - execute raw sql statement
+func (s *SqlQuery) Execute() (sql.Result, error) {
+	if s.tx != nil {
+		return s.tx.Exec(s.sql, s.args...)
 	}
 
-	db, err := dbManager.GetDB()
+	db, err := Connection(s.connection)
 	if err != nil {
 		return nil, err
 	}
 
-	return db.Exec(sql, args...)
+	return db.Exec(s.sql, s.args...)
 }
 
 // QuerySql - query raw sql statement
-func QuerySql(sql string, args ...any) (*sql.Rows, error) {
-	dbManager := GetDBManager()
-	if !dbManager.IsDBConnected() {
-		return nil, ErrNoConnection
+func (s *SqlQuery) Query() (*sql.Rows, error) {
+	if s.tx != nil {
+		return s.tx.Query(s.sql, s.args...)
 	}
-	db, err := dbManager.GetDB()
+
+	db, err := Connection(s.connection)
 	if err != nil {
 		return nil, err
 	}
-	return db.Query(sql, args...)
+
+	return db.Query(s.sql, s.args...)
 }
 
 // QueryRowSql  - query raw sql statement and return one row
-func QueryRowSql(sql string, args ...any) (*sql.Row, error) {
-	dbManager := GetDBManager()
-	if !dbManager.IsDBConnected() {
-		return nil, ErrNoConnection
+func (s *SqlQuery) QueryRow() (*sql.Row, error) {
+	if s.tx != nil {
+		return s.tx.QueryRow(s.sql, s.args...), nil
 	}
-	db, err := dbManager.GetDB()
+
+	db, err := Connection(s.connection)
 	if err != nil {
 		return nil, err
 	}
-	return db.QueryRow(sql, args...), nil
+
+	return db.QueryRow(s.sql, s.args...), nil
 }

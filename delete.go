@@ -9,16 +9,11 @@ import (
 
 // Delete rows in the database
 func (qb *QueryBuilder) Delete() (int64, error) {
-	return qb.delete(nil)
-}
-
-// Delete rows in the database with transaction
-func (qb *QueryBuilder) DeleteTx(tx *sql.Tx) (int64, error) {
-	return qb.delete(tx)
+	return qb.delete()
 }
 
 // core delete execution method
-func (qb *QueryBuilder) delete(tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) delete() (int64, error) {
 	qb.queryType = enums.DELETE
 	qbData := qb.GetData()
 
@@ -29,28 +24,21 @@ func (qb *QueryBuilder) delete(tx *sql.Tx) (int64, error) {
 
 	var result sql.Result
 
-	if tx != nil {
-		result, err = tx.Exec(query, args...)
+	if qb.tx != nil {
+		result, err = qb.tx.Exec(query, args...)
 		if err != nil {
-			return 0, fmt.Errorf("update failed:  %w", err)
+			return 0, fmt.Errorf("delete failed:  %w", err)
 		}
 
 	} else {
-		dbManager := GetDBManager()
-		if !dbManager.IsDBConnected() {
-			return 0, ErrNoConnection
-		}
-
-		db, err := dbManager.GetDB()
-
+		db, err := Connection(qb.connection)
 		if err != nil {
 			return 0, err
 		}
 
 		result, err = db.Exec(query, args...)
-
 		if err != nil {
-			return 0, fmt.Errorf("update failed: %w", err)
+			return 0, fmt.Errorf("delete failed: %w", err)
 		}
 	}
 

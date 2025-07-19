@@ -6,4 +6,5 @@ type Having struct {
 	Operator  string
 	Value     any
 	Connector WhereConditionEnum
+	Raw       *Expression
 }

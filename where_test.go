@@ -386,3 +386,128 @@ func Test_WhereExpr_ComplexBothSides(t *testing.T) {
 	assert.Equal(t, "SELECT * FROM users WHERE (LOWER(username)) = (LOWER(?))", sql)
 	assert.Equal(t, []any{"Mohamed"}, bindings)
 }
+
+func TestWhereWithRawExpressions(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Where(xqb.Raw("LOWER(name)"), "=", "john").ToSQL()
+
+	expected := "SELECT * FROM users WHERE LOWER(name) = ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"john"}, bindings)
+}
+
+func TestWhereRaw(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereRaw("LOWER(name) = ? OR LOWER(email) = ?", "john", "john@example.com").ToSQL()
+
+	expected := "SELECT * FROM users WHERE LOWER(name) = ? OR LOWER(email) = ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"john", "john@example.com"}, bindings)
+}
+
+func TestWhereNull(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNull("deleted_at").ToSQL()
+
+	expected := "SELECT * FROM users WHERE deleted_at IS NULL"
+	assert.Equal(t, expected, sql)
+	assert.Empty(t, bindings)
+}
+
+func TestWhereNotNull(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNotNull("email").ToSQL()
+
+	expected := "SELECT * FROM users WHERE email IS NOT NULL"
+	assert.Equal(t, expected, sql)
+	assert.Empty(t, bindings)
+}
+
+func TestWhereNullWithSelect(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNull("deleted_at").ToSQL()
+
+	expected := "SELECT id, name FROM users WHERE name LIKE ? AND deleted_at IS NULL"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
+}
+
+func TestWhereNotNullWithSelect(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNotNull("email").ToSQL()
+
+	expected := "SELECT id, name FROM users WHERE name LIKE ? AND email IS NOT NULL"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
+}
+
+func TestWhereIn(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereIn("id", []any{1, 2, 3}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id IN (?, ?, ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1, 2, 3}, bindings)
+}
+
+func TestWhereNotIn(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereNotIn("id", []any{1, 2, 3}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id NOT IN (?, ?, ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1, 2, 3}, bindings)
+}
+
+func TestWhereInWithSubquery(t *testing.T) {
+	qb := xqb.Table("users")
+	subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
+	sql, bindings, _ := qb.WhereIn("id", []any{subQuery}).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders WHERE status = ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{"active"}, bindings)
+}
+
+func TestWhereBetween(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereBetween("age", 18, 30).ToSQL()
+
+	expected := "SELECT * FROM users WHERE age BETWEEN ? AND ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{18, 30}, bindings)
+}
+
+func TestWhereRawWithSubqueryRaw(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.WhereRaw("EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)", 1000).ToSQL()
+
+	expected := "SELECT * FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1000}, bindings)
+}
+
+func Test_WhereGroup(t *testing.T) {
+	qb := xqb.Table("orders")
+	sql, _, _ := qb.WhereGroup(func(qb *xqb.QueryBuilder) {
+		qb.Where("email", "=", "mohamed@mail.com").
+			OrWhere("username", "=", "mohamed")
+	}).WhereGroup(func(qb *xqb.QueryBuilder) {
+		qb.Where("uuid", "=", "bbee7431-454d-4a8a-9435-961d191de2a7").OrWhere("user_id", "=", 4)
+	}).OrWhereGroup(func(qb *xqb.QueryBuilder) {
+		qb.Where("username", "=", "ahmed").Where("user_id", "=", 6)
+	}).ToSQL()
+
+	expected := "SELECT * FROM orders WHERE (email = ? OR username = ?) AND (uuid = ? OR user_id = ?) OR (username = ? AND user_id = ?)"
+	assert.Equal(t, expected, sql)
+
+}
+
+func Test_Where_Is_Null(t *testing.T) {
+	qb := xqb.Table("users")
+	sql, bindings, _ := qb.Where("id", "=", 1).Where("deleted_at", "IS NULL", nil).ToSQL()
+
+	expected := "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{1}, bindings)
+}

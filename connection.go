@@ -8,108 +8,112 @@ import (
 )
 
 var (
-	ErrNoConnection = errors.New("no database connection established")
+	errNoConnection = errors.New("no database connection established")
 )
-
-// DBManager handles database connection management
-type DBManager struct {
-	db *sql.DB
-	mu sync.RWMutex
-}
 
 var (
-	dbManagerInstance *DBManager
-	dbManagerOnce     sync.Once
+	managerInstance *DBManager
+	managerOnce     sync.Once
 )
 
-// GetDBManager returns the singleton instance of DBManager
-func GetDBManager() *DBManager {
-	dbManagerOnce.Do(func() {
-		dbManagerInstance = &DBManager{}
-	})
-	return dbManagerInstance
+// DBManager handles multiple named database connections
+type DBManager struct {
+	defaultConnection string
+	connections       map[string]*sql.DB
+	mu                sync.RWMutex
 }
 
-// SetDB sets the database connection (sql.DB)
-func (m *DBManager) SetDB(db *sql.DB) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.db = db
-}
-
-// GetDB returns the current database connection (sql.DB)
-func (m *DBManager) GetDB() (*sql.DB, error) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	if m.db == nil {
-		return nil, ErrNoConnection
-	}
-	return m.db, nil
-}
-
-// Transaction executes a function within a transaction.
-// If the function returns an error, the transaction is rolled back.
-// If the function returns nil, the transaction is committed.
-func (m *DBManager) Transaction(fn func(*sql.Tx) error) (err error) {
-	db, err := m.GetDB()
-	if err != nil {
-		return err
-	}
-
-	tx, err := db.Begin()
-	if err != nil {
-		return err
-	}
-
-	// Convert panic to error
-	defer func() {
-		if p := recover(); p != nil {
-			_ = tx.Rollback()
-			switch e := p.(type) {
-			case error:
-				err = fmt.Errorf("transaction error: %w", e)
-			default:
-				err = fmt.Errorf("transaction error: %v", p)
-			}
+// db returns the singleton DBManage instance
+func Manager() *DBManager {
+	managerOnce.Do(func() {
+		managerInstance = &DBManager{
+			connections: make(map[string]*sql.DB),
 		}
-	}()
-
-	// Execute the function
-	if err := fn(tx); err != nil {
-		_ = tx.Rollback()
-		return err
-	}
-
-	// Commit the transaction
-	return tx.Commit()
+	})
+	return managerInstance
 }
 
-// BeginTransaction starts a new transaction and returns it.
-func (m *DBManager) BeginTransaction() (*sql.Tx, error) {
-	db, err := m.GetDB()
-	if err != nil {
-		return nil, err
-	}
-	return db.Begin()
-}
-
-// CloseDB closes the database connection
-func (m *DBManager) CloseDB() error {
+// setConnection sets a named DB connection
+func (m *DBManager) SetConnection(name string, db *sql.DB) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-
-	if m.db == nil {
-		return nil
-	}
-
-	err := m.db.Close()
-	m.db = nil
-	return err
+	m.connections[name] = db
 }
 
-// IsDBConnected checks if there is an active database connection
-func (m *DBManager) IsDBConnected() bool {
+// connection returns a *sql.DB by name
+func (m *DBManager) connection(name string) (*sql.DB, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return m.db != nil
+	db, ok := m.connections[name]
+	if !ok || db == nil {
+		return nil, fmt.Errorf("%w: %s", errNoConnection, name)
+	}
+	return db, nil
+}
+
+// closeConnection closes and removes a named DB connection
+func (m *DBManager) CloseConnection(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.connections[name]; ok {
+		if m.connections[name] != nil {
+			_ = m.connections[name].Close()
+		}
+		delete(m.connections, name)
+	}
+
+	return nil
+}
+
+// hasConnection checks if a connection exists
+func (m *DBManager) HasConnection(name string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.connections[name]
+	return ok
+}
+
+// Connection returns a *sql.DB connection by name
+func Connection(name string) (*sql.DB, error) {
+	dbManager := Manager()
+	if name == "default" || name == "" || !dbManager.HasConnection(name) {
+		name = dbManager.defaultConnection
+	}
+	return dbManager.connection(name)
+}
+
+func (m *DBManager) SetDefaultConnection(name string) {
+	if name == "" || !m.HasConnection(name) {
+		name = "default"
+	}
+	m.defaultConnection = name
+}
+
+func AddConnection(name string, db *sql.DB) {
+	Manager().SetConnection(name, db)
+}
+
+func HasConnection(name string) bool {
+	return Manager().HasConnection(name)
+}
+
+func SetDefault(name string) {
+	Manager().SetDefaultConnection(name)
+}
+
+func Close(name string) error {
+	return Manager().CloseConnection(name)
+}
+
+func CloseAll() error {
+	return Manager().CloseAllConnections()
+}
+
+func (m *DBManager) CloseAllConnections() error {
+	for name := range m.connections {
+		if err := m.CloseConnection(name); err != nil {
+			return err
+		}
+	}
+	return nil
 }

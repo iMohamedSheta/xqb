@@ -2,7 +2,7 @@
 -- Comprehensive MySQL SELECT query showcasing various features
 SELECT
     -- Basic column selection with aliases
-    e.employee_id AS "Employee ID",
+    e.employee_id AS "Employee Id",
     CONCAT_WS(' ', e.first_name, e.last_name) AS "Full Name",
 
     -- Arithmetic operations
@@ -124,7 +124,7 @@ UNION
 
 -- Second query part of the UNION
 SELECT
-    e.employee_id AS "Employee ID",
+    e.employee_id AS "Employee Id",
     CONCAT_WS(' ', e.first_name, e.last_name) AS "Full Name",
     -- Include all other columns to match first query's structure
     -- ...

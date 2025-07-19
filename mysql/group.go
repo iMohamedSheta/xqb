@@ -23,27 +23,3 @@ func (mg *MySQLGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string
 
 	return sql.String(), bindings, nil
 }
-
-// compileHavingClause compiles the HAVING clause
-func (mg *MySQLGrammar) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
-	var bindings []any
-	var sql strings.Builder
-
-	if len(qb.Having) > 0 {
-		sql.WriteString(" HAVING ")
-		for i, having := range qb.Having {
-			if i > 0 {
-				sql.WriteString(" ")
-				sql.WriteString(string(having.Connector))
-				sql.WriteString(" ")
-			}
-			sql.WriteString(having.Column)
-			sql.WriteString(" ")
-			sql.WriteString(having.Operator)
-			sql.WriteString(" ?")
-			bindings = append(bindings, having.Value)
-		}
-	}
-
-	return sql.String(), bindings, nil
-}

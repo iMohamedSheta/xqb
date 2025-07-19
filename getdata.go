@@ -14,7 +14,7 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 	qb.limit = perPage
 	qb.offset = (page - 1) * perPage
 
-	results, err := qb.Execute(nil)
+	results, err := qb.Execute()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -26,7 +26,7 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 
 	if withCount {
 		// Get total count
-		count, err := qb.Count("*", nil)
+		count, err := qb.Count("*")
 		if err != nil {
 			return nil, nil, err
 		}
@@ -54,7 +54,7 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 	return results, meta, nil
 }
 
-func (qb *QueryBuilder) Execute(tx *sql.Tx) ([]map[string]any, error) {
+func (qb *QueryBuilder) Execute() ([]map[string]any, error) {
 
 	qbData := qb.GetData()
 	query, args, err := qb.grammar.Build(qbData)
@@ -62,7 +62,7 @@ func (qb *QueryBuilder) Execute(tx *sql.Tx) ([]map[string]any, error) {
 		return nil, err
 	}
 
-	rows, err := executeQuery(tx, query, args)
+	rows, err := Sql(query, args...).WithTx(qb.tx).Query()
 
 	if err != nil {
 		return nil, err
@@ -109,37 +109,10 @@ func (qb *QueryBuilder) Execute(tx *sql.Tx) ([]map[string]any, error) {
 	return results, nil
 }
 
-func executeQuery(tx *sql.Tx, query string, args ...any) (*sql.Rows, error) {
-	// Flatten args if needed
-	if len(args) == 1 {
-		if a, ok := args[0].([]any); ok {
-			args = a
-		}
-	}
-
-	if tx != nil {
-		return tx.Query(query, args...)
-	}
-
-	dbManager := GetDBManager()
-
-	if !dbManager.IsDBConnected() {
-		return nil, ErrNoConnection
-	}
-
-	db, err := dbManager.GetDB()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return db.Query(query, args...)
-}
-
 // Get executes the query and returns all results
 func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 
-	results, err := qb.Execute(nil)
+	results, err := qb.Execute()
 
 	if err != nil {
 		return nil, err
@@ -206,7 +179,7 @@ func (qb *QueryBuilder) Chunks(chunkSize int, closure func(results []map[string]
 	for {
 		qb.offset = offset
 
-		results, err := qb.Execute(nil)
+		results, err := qb.Execute()
 		if err != nil {
 			return err
 		}

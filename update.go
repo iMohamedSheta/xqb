@@ -10,16 +10,11 @@ import (
 
 // updates rows in the database
 func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
-	return qb.update(data, nil)
-}
-
-// InsertTx inserts new rows into the database using the provided transaction
-func (qb *QueryBuilder) UpdateTx(data map[string]any, tx *sql.Tx) (int64, error) {
-	return qb.update(data, tx)
+	return qb.update(data)
 }
 
 // core implementation of the update method
-func (qb *QueryBuilder) update(data map[string]any, tx *sql.Tx) (int64, error) {
+func (qb *QueryBuilder) update(data map[string]any) (int64, error) {
 
 	qb.queryType = enums.UPDATE
 	qbData := qb.GetData()
@@ -39,20 +34,14 @@ func (qb *QueryBuilder) update(data map[string]any, tx *sql.Tx) (int64, error) {
 
 	var result sql.Result
 
-	if tx != nil {
-		result, err = tx.Exec(query, args...)
+	if qb.tx != nil {
+		result, err = qb.tx.Exec(query, args...)
 		if err != nil {
 			return 0, fmt.Errorf("update failed:  %w", err)
 		}
 
 	} else {
-		dbManager := GetDBManager()
-		if !dbManager.IsDBConnected() {
-			return 0, ErrNoConnection
-		}
-
-		db, err := dbManager.GetDB()
-
+		db, err := Connection(qb.connection)
 		if err != nil {
 			return 0, err
 		}

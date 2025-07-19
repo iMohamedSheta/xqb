@@ -39,39 +39,6 @@ func TestMySQLGrammar_CompileSelectClause(t *testing.T) {
 			expected: "SELECT DISTINCT id, name",
 			bindings: nil,
 		},
-		// {
-		// 	name: "SELECT with aggregate functions",
-		// 	qb: &types.QueryBuilderData{
-		// 		AggregateFuncs: []types.AggregateExpr{
-		// 			{Function: types.COUNT, Column: "*", Alias: "total"},
-		// 			{Function: types.SUM, Column: "amount", Alias: "total_amount"},
-		// 		},
-		// 	},
-		// 	expected: "SELECT COUNT(*) AS total, SUM(amount) AS total_amount",
-		// 	bindings: nil,
-		// },
-		// {
-		// 	name: "SELECT with JSON expressions",
-		// 	qb: &types.QueryBuilderData{
-		// 		JSONExpressions: []types.JSONExpression{
-		// 			{Column: "data", Path: "$.name", Alias: "user_name"},
-		// 			{Function: "JSON_UNQUOTE", Column: "data", Path: "$.email", Alias: "user_email"},
-		// 		},
-		// 	},
-		// 	expected: "SELECT JSON_EXTRACT(data, '$.name') AS user_name, JSON_UNQUOTE(data, '$.email') AS user_email",
-		// 	bindings: nil,
-		// },
-		// {
-		// 	name: "SELECT with string functions",
-		// 	qb: &types.QueryBuilderData{
-		// 		StringFuncs: []types.StringFunction{
-		// 			{Function: "CONCAT", Column: "first_name", Params: []any{" ", "last_name"}, Alias: "full_name"},
-		// 			{Function: "UPPER", Column: "name", Alias: "upper_name"},
-		// 		},
-		// 	},
-		// 	expected: "SELECT CONCAT(first_name, ?, ?) AS full_name, UPPER(name) AS upper_name",
-		// 	bindings: []any{" ", "last_name"},
-		// },
 	}
 
 	grammar := &MySQLGrammar{}
@@ -100,24 +67,6 @@ func TestMySQLGrammar_CompileFromClause(t *testing.T) {
 			expected: " FROM users",
 			bindings: nil,
 		},
-		// {
-		// 	name: "FROM with FORCE INDEX",
-		// 	qb: &types.QueryBuilderData{
-		// 		Table:      "users",
-		// 		ForceIndex: "idx_email",
-		// 	},
-		// 	expected: " FROM users FORCE INDEX (idx_email)",
-		// 	bindings: nil,
-		// },
-		// {
-		// 	name: "FROM with USE INDEX",
-		// 	qb: &types.QueryBuilderData{
-		// 		Table:    "users",
-		// 		UseIndex: "idx_name",
-		// 	},
-		// 	expected: " FROM users USE INDEX (idx_name)",
-		// 	bindings: nil,
-		// },
 		{
 			name: "Empty table name",
 			qb: &types.QueryBuilderData{

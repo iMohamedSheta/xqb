@@ -126,7 +126,7 @@ func TestInsertGetId(t *testing.T) {
 			data: []map[string]any{
 				{"name": "John", "age": 30},
 			},
-			wantId:  1, // First insert should have ID 1
+			wantId:  1, // First insert should have Id 1
 			wantErr: false,
 		},
 		{
@@ -135,7 +135,7 @@ func TestInsertGetId(t *testing.T) {
 				{"name": "John", "age": 30},
 				{"name": "Jane", "age": 25},
 			},
-			wantId:  1, // First insert in this test should have ID 1
+			wantId:  1, // First insert in this test should have Id 1
 			wantErr: false,
 		},
 	}

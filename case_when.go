@@ -1,7 +1,6 @@
 package xqb
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/types"
@@ -9,6 +8,7 @@ import (
 
 type CaseWhen struct {
 	cases      []string
+	bindings   []any
 	elseResult string
 	alias      string
 }
@@ -19,14 +19,17 @@ func Case() *CaseWhen {
 }
 
 // When adds a WHEN condition to the CASE expression.
-func (c *CaseWhen) When(condition string, result string) *CaseWhen {
-	c.cases = append(c.cases, fmt.Sprintf("WHEN %s THEN %s", condition, result))
+func (c *CaseWhen) When(condition string, result any, bindings ...any) *CaseWhen {
+	c.cases = append(c.cases, "WHEN "+condition+" THEN ?")
+	c.bindings = append(c.bindings, bindings...)
+	c.bindings = append(c.bindings, result)
 	return c
 }
 
 // Else adds an ELSE result to the CASE expression.
-func (c *CaseWhen) Else(result string) *CaseWhen {
-	c.elseResult = fmt.Sprintf("ELSE %s", result)
+func (c *CaseWhen) Else(result any) *CaseWhen {
+	c.elseResult = "ELSE ?"
+	c.bindings = append(c.bindings, result)
 	return c
 }
 
@@ -38,7 +41,12 @@ func (c *CaseWhen) As(alias string) *CaseWhen {
 
 // End builds the final CASE WHEN SQL expression.
 func (c *CaseWhen) End() *types.Expression {
-	raw := "CASE " + strings.Join(c.cases, " ") + " "
+	var raw string
+	if len(c.cases) == 0 {
+		raw = "CASE "
+	} else {
+		raw = "CASE " + strings.Join(c.cases, " ") + " "
+	}
 	if c.elseResult != "" {
 		raw += c.elseResult + " "
 	}
@@ -46,5 +54,5 @@ func (c *CaseWhen) End() *types.Expression {
 	if c.alias != "" {
 		raw += " AS " + c.alias
 	}
-	return Raw(raw)
+	return Raw(raw, c.bindings...)
 }

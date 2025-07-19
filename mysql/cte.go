@@ -20,6 +20,9 @@ func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, 
 		if i > 0 {
 			sql.WriteString(", ")
 		}
+		if cte.Recursive {
+			sql.WriteString("RECURSIVE ")
+		}
 		sql.WriteString(cte.Name)
 		sql.WriteString(" AS (")
 
