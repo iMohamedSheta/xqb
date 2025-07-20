@@ -3,6 +3,8 @@ package xqb
 import (
 	"database/sql"
 	"fmt"
+
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 )
 
 // BeginTx starts a transaction using the default connection.
@@ -13,7 +15,7 @@ func BeginTx() (*sql.Tx, error) {
 // BeginTxOn starts a transaction using the specified connection.
 func BeginTxOn(connection string) (*sql.Tx, error) {
 	if !DBManager().HasConnection(connection) {
-		return nil, fmt.Errorf("%w: invalid connection %s", ErrNoConnection, connection)
+		return nil, fmt.Errorf("%w: invalid connection %s", xqbErr.ErrNoConnection, connection)
 	}
 
 	db, err := DBManager().Connection(connection)
@@ -46,9 +48,9 @@ func TransactionOn(connection string, fn func(*sql.Tx) error) (err error) {
 			_ = tx.Rollback()
 			switch e := p.(type) {
 			case error:
-				err = fmt.Errorf("%w: %v", ErrTransactionFailed, e)
+				err = fmt.Errorf("%w: %v", xqbErr.ErrTransactionFailed, e)
 			default:
-				err = fmt.Errorf("%w: panic %v", ErrTransactionFailed, p)
+				err = fmt.Errorf("%w: panic %v", xqbErr.ErrTransactionFailed, p)
 			}
 		}
 	}()

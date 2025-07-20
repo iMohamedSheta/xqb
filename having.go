@@ -59,7 +59,7 @@ func (qb *QueryBuilder) havingClause(column any, operator string, value any, con
 		col = fmt.Sprintf("%v", v)
 	}
 
-	qb.having = append(qb.having, types.Having{
+	qb.having = append(qb.having, &types.Having{
 		Column:    col,
 		Operator:  operator,
 		Value:     value,

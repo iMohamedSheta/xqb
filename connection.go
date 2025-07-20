@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 )
 
 var (
@@ -120,7 +122,7 @@ func (m *DBM) CloseAllConnections() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("%w: %s", ErrClosingConnection, errors.Join(errs...))
+		return fmt.Errorf("%w: %s", xqbErr.ErrClosingConnection, errors.Join(errs...))
 	}
 
 	return nil
@@ -130,7 +132,7 @@ func (m *DBM) CloseAllConnections() error {
 func (m *DBM) CloseConnection(name string) error {
 	err := m.closeConnection(name)
 	if err != nil {
-		return fmt.Errorf("%w: failed to close connection %s - %s", ErrClosingConnection, name, err)
+		return fmt.Errorf("%w: failed to close connection %s - %s", xqbErr.ErrClosingConnection, name, err)
 	}
 	return nil
 }

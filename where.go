@@ -53,13 +53,13 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 
 	// Add bindings
 	for _, b := range bindings {
-		qb.bindings = append(qb.bindings, types.Binding{Value: b})
+		qb.bindings = append(qb.bindings, &types.Binding{Value: b})
 	}
 	if raw != nil {
 		qb.bindings = append(qb.bindings, toBindings(raw.Bindings)...)
 	}
 
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    col,
 		Operator:  operator,
 		Value:     value,
@@ -78,16 +78,16 @@ func (qb *QueryBuilder) OrWhere(column any, operator string, value any) *QueryBu
 	return qb.whereClause(column, operator, value, types.OR)
 }
 
-func toBindings(vals []any) []types.Binding {
-	bs := make([]types.Binding, len(vals))
+func toBindings(vals []any) []*types.Binding {
+	bs := make([]*types.Binding, len(vals))
 	for i, v := range vals {
-		bs[i] = types.Binding{Value: v}
+		bs[i] = &types.Binding{Value: v}
 	}
 	return bs
 }
 
 func (qb *QueryBuilder) whereColumnClause(column, operator string, value any, connector types.WhereConditionEnum) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Value:     value,
@@ -107,7 +107,7 @@ func (qb *QueryBuilder) OrWhereValue(column string, operator string, value any) 
 
 func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
 	subSQL, subBindings, _ := sub.ToSQL()
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.AND,
@@ -121,7 +121,7 @@ func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuild
 
 func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
 	subSQL, subBindings, _ := sub.ToSQL()
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.OR,
@@ -134,7 +134,7 @@ func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBui
 }
 
 func (qb *QueryBuilder) WhereExpr(column string, operator string, expr *types.Expression) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.AND,
@@ -147,7 +147,7 @@ func (qb *QueryBuilder) WhereExpr(column string, operator string, expr *types.Ex
 }
 
 func (qb *QueryBuilder) OrWhereExpr(column string, operator string, expr *types.Expression) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.OR,
@@ -160,7 +160,7 @@ func (qb *QueryBuilder) OrWhereExpr(column string, operator string, expr *types.
 }
 
 func (qb *QueryBuilder) whereRawClause(sql string, bindings []any, connector types.WhereConditionEnum) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Raw: &types.Expression{
 			SQL:      sql,
 			Bindings: bindings,
@@ -183,7 +183,7 @@ func (qb *QueryBuilder) OrWhereRaw(sql string, bindings ...any) *QueryBuilder {
 
 // WhereNull adds a WHERE NULL condition
 func (qb *QueryBuilder) WhereNull(column string) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  "IS NULL",
 		Value:     nil,
@@ -194,7 +194,7 @@ func (qb *QueryBuilder) WhereNull(column string) *QueryBuilder {
 
 // OrWhereNull adds an OR WHERE NULL condition
 func (qb *QueryBuilder) OrWhereNull(column string) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  "IS NULL",
 		Value:     nil,
@@ -205,7 +205,7 @@ func (qb *QueryBuilder) OrWhereNull(column string) *QueryBuilder {
 
 // WhereNotNull adds a WHERE NOT NULL condition
 func (qb *QueryBuilder) WhereNotNull(column string) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  "IS NOT NULL",
 		Value:     nil,
@@ -216,7 +216,7 @@ func (qb *QueryBuilder) WhereNotNull(column string) *QueryBuilder {
 
 // OrWhereNotNull adds an OR WHERE NOT NULL condition
 func (qb *QueryBuilder) OrWhereNotNull(column string) *QueryBuilder {
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  "IS NOT NULL",
 		Value:     nil,
@@ -235,7 +235,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 		switch v := value.(type) {
 		case *QueryBuilder:
 			subSQL, subBindings, _ := v.ToSQL()
-			qb.where = append(qb.where, types.WhereCondition{
+			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
 				Value:     nil,
@@ -248,7 +248,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 			return qb
 
 		case *types.Expression:
-			qb.where = append(qb.where, types.WhereCondition{
+			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
 				Value:     nil,
@@ -263,7 +263,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	}
 
 	// Regular IN clause with simple values
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Value:     values,
@@ -271,7 +271,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	})
 
 	for _, val := range values {
-		qb.bindings = append(qb.bindings, types.Binding{Value: val})
+		qb.bindings = append(qb.bindings, &types.Binding{Value: val})
 	}
 
 	return qb
@@ -322,7 +322,7 @@ func (qb *QueryBuilder) whereBetweenClause(column string, min, max any, operator
 	if minExpr, ok := min.(*types.Expression); ok {
 		if maxExpr, ok := max.(*types.Expression); ok {
 			combined := fmt.Sprintf("%s %s %s %s %s", column, operator, minExpr.SQL, connector, maxExpr.SQL)
-			qb.where = append(qb.where, types.WhereCondition{
+			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
 				Value:     nil,
@@ -336,13 +336,13 @@ func (qb *QueryBuilder) whereBetweenClause(column string, min, max any, operator
 		}
 	}
 
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Value:     []any{min, max},
 		Connector: connector,
 	})
-	qb.bindings = append(qb.bindings, types.Binding{Value: min}, types.Binding{Value: max})
+	qb.bindings = append(qb.bindings, &types.Binding{Value: min}, &types.Binding{Value: max})
 	return qb
 }
 
@@ -381,7 +381,7 @@ func (qb *QueryBuilder) whereExistsClause(value ToSql, operator string, connecto
 		return qb
 	}
 
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    operator,
 		Operator:  "",
 		Value:     nil,
@@ -417,9 +417,7 @@ func (qb *QueryBuilder) OrWhereNotExists(subquery ToSql) *QueryBuilder {
 
 func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
 	// Create a temporary builder to capture the conditions in the group
-	groupBuilder := &QueryBuilder{
-		where: []types.WhereCondition{},
-	}
+	groupBuilder := &QueryBuilder{}
 
 	// Execute the function to populate the group builder's conditions
 	fn(groupBuilder)
@@ -466,7 +464,7 @@ func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector ty
 	sql.WriteString(")")
 
 	// Add the group as a raw expression to the main builder
-	qb.where = append(qb.where, types.WhereCondition{
+	qb.where = append(qb.where, &types.WhereCondition{
 		Raw: &types.Expression{
 			SQL:      sql.String(),
 			Bindings: groupBindings,

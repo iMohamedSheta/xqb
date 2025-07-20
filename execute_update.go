@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -12,7 +13,7 @@ import (
 func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
 	result, err := qb.update(data)
 	if err != nil {
-		return 0, fmt.Errorf("%w [Update]: Invalid query sql query error %v", ErrInvalidExecutedQuerySyntax, err)
+		return 0, fmt.Errorf("%w [Update]: Invalid query sql query error %v", xqbErr.ErrInvalidExecutedQuerySyntax, err)
 	}
 
 	return result.RowsAffected()
@@ -25,7 +26,7 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 	qbData := qb.GetData()
 
 	for column, value := range data {
-		binding := types.Binding{
+		binding := &types.Binding{
 			Column: column,
 			Value:  value,
 		}
@@ -34,7 +35,7 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 
 	query, args, err := qb.grammar.Build(qbData)
 	if err != nil {
-		return nil, fmt.Errorf("%w [Update]: Failed to build the sql, %v", ErrInvalidQuery, err)
+		return nil, fmt.Errorf("%w [Update]: Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
 	}
 
 	return Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()

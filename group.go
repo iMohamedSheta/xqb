@@ -26,7 +26,7 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 
 		if len(bindings) > 0 {
 			for _, binding := range bindings {
-				qb.bindings = append(qb.bindings, types.Binding{Value: binding})
+				qb.bindings = append(qb.bindings, &types.Binding{Value: binding})
 			}
 		}
 	}

@@ -13,21 +13,19 @@ type QueryBuilder struct {
 	connection        string
 	grammar           grammar.GrammarInterface
 	queryType         enums.QueryType
-	table             string
+	table             *types.Table
 	columns           []any
-	columnAliases     map[string]string
-	where             []types.WhereCondition
-	orderBy           []types.OrderBy
+	where             []*types.WhereCondition
+	orderBy           []*types.OrderBy
 	groupBy           []string
-	having            []types.Having
+	having            []*types.Having
 	limit             int
 	offset            int
-	joins             []types.Join
-	unions            []types.Union
-	bindings          []types.Binding
+	joins             []*types.Join
+	unions            []*types.Union
+	bindings          []*types.Binding
 	distinct          bool
-	subqueries        map[string]*QueryBuilder
-	withCTEs          []types.CTE
+	withCTEs          []*types.CTE
 	isUsingDistinct   bool
 	isLockedForUpdate bool
 	isInSharedLock    bool
@@ -43,20 +41,18 @@ func New() *QueryBuilder {
 	return &QueryBuilder{
 		queryType:         enums.SELECT,
 		columns:           []any{},
-		columnAliases:     make(map[string]string),
-		where:             []types.WhereCondition{},
-		orderBy:           []types.OrderBy{},
+		where:             nil,
+		orderBy:           nil,
 		groupBy:           []string{},
-		having:            []types.Having{},
+		having:            nil,
 		limit:             0,
 		offset:            0,
-		joins:             []types.Join{},
-		unions:            []types.Union{},
-		bindings:          []types.Binding{},
+		joins:             nil,
+		unions:            nil,
+		bindings:          nil,
 		grammar:           grammar.GetGrammar(driverName),
 		distinct:          false,
-		subqueries:        make(map[string]*QueryBuilder),
-		withCTEs:          []types.CTE{},
+		withCTEs:          nil,
 		isUsingDistinct:   false,
 		isLockedForUpdate: false,
 		isInSharedLock:    false,
@@ -70,12 +66,12 @@ func Query() *QueryBuilder {
 // Table creates a new QueryBuilder instance for a specific table
 func Table(table string) *QueryBuilder {
 	qb := New()
-	qb.table = table
+	qb.table = &types.Table{Name: table}
 	return qb
 }
 
 func (qb *QueryBuilder) Table(table string) *QueryBuilder {
-	qb.table = table
+	qb.table = &types.Table{Name: table}
 	return qb
 }
 
@@ -83,9 +79,8 @@ func (qb *QueryBuilder) Table(table string) *QueryBuilder {
 func (qb *QueryBuilder) Reset() {
 	qb.queryType = enums.SELECT
 	qb.connection = DBManager().GetDefaultConnectionName()
-	qb.table = ""
+	qb.table = nil
 	qb.columns = nil
-	qb.columnAliases = nil
 	qb.where = nil
 	qb.orderBy = nil
 	qb.groupBy = nil
@@ -96,7 +91,6 @@ func (qb *QueryBuilder) Reset() {
 	qb.unions = nil
 	qb.bindings = nil
 	qb.distinct = false
-	qb.subqueries = nil
 	qb.withCTEs = nil
 	qb.isUsingDistinct = false
 	qb.isLockedForUpdate = false
@@ -110,7 +104,6 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 		QueryType:         qb.queryType,
 		Table:             qb.table,
 		Columns:           qb.columns,
-		ColumnAliases:     qb.columnAliases,
 		Where:             qb.where,
 		OrderBy:           qb.orderBy,
 		GroupBy:           qb.groupBy,
@@ -121,7 +114,6 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 		Unions:            qb.unions,
 		Bindings:          qb.bindings,
 		Distinct:          qb.distinct,
-		Subqueries:        make(map[string]any),
 		WithCTEs:          qb.withCTEs,
 		IsUsingDistinct:   qb.isUsingDistinct,
 		IsLockedForUpdate: qb.isLockedForUpdate,
@@ -137,6 +129,19 @@ func (qb *QueryBuilder) SetDialect(dialect grammar.Driver) {
 // ToSQL compiles the query to SQL
 func (qb *QueryBuilder) ToSQL() (string, []any, error) {
 	return qb.grammar.CompileSelect(qb.GetData())
+}
+
+// To Expression compiles the query to SQL and returns the Expression
+func (qb *QueryBuilder) ToRawExpr() *types.Expression {
+	sql, bindings, err := qb.ToSQL()
+	if err != nil {
+		qb.errors = append(qb.errors, err)
+		return nil
+	}
+	return &types.Expression{
+		SQL:      sql,
+		Bindings: bindings,
+	}
 }
 
 func (qb *QueryBuilder) WithTx(tx *sql.Tx) *QueryBuilder {

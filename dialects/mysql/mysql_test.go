@@ -62,7 +62,7 @@ func TestMySQLGrammar_CompileFromClause(t *testing.T) {
 		{
 			name: "Basic FROM clause",
 			qb: &types.QueryBuilderData{
-				Table: "users",
+				Table: &types.Table{Name: "users"},
 			},
 			expected: " FROM users",
 			bindings: nil,
@@ -70,7 +70,7 @@ func TestMySQLGrammar_CompileFromClause(t *testing.T) {
 		{
 			name: "Empty table name",
 			qb: &types.QueryBuilderData{
-				Table: "",
+				Table: &types.Table{Name: ""},
 			},
 			expected: "",
 			bindings: nil,
@@ -98,7 +98,7 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 		{
 			name: "Single JOIN",
 			qb: &types.QueryBuilderData{
-				Joins: []types.Join{
+				Joins: []*types.Join{
 					{Type: "JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
 				},
 			},
@@ -108,7 +108,7 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 		{
 			name: "Multiple JOINs",
 			qb: &types.QueryBuilderData{
-				Joins: []types.Join{
+				Joins: []*types.Join{
 					{Type: "LEFT JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
 					{Type: "JOIN", Table: "order_items", Condition: "orders.id = order_items.order_id"},
 				},
@@ -119,7 +119,7 @@ func TestMySQLGrammar_CompileJoins(t *testing.T) {
 		{
 			name: "No joins",
 			qb: &types.QueryBuilderData{
-				Joins: []types.Join{},
+				Joins: []*types.Join{},
 			},
 			expected: "",
 			bindings: nil,
@@ -147,7 +147,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		{
 			name: "Simple WHERE condition",
 			qb: &types.QueryBuilderData{
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "age", Operator: ">", Value: 18},
 				},
 			},
@@ -157,7 +157,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		{
 			name: "Multiple WHERE conditions with AND",
 			qb: &types.QueryBuilderData{
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "age", Operator: ">", Value: 18},
 					{Connector: "AND", Column: "active", Operator: "=", Value: true},
 				},
@@ -168,7 +168,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		{
 			name: "IN condition",
 			qb: &types.QueryBuilderData{
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "id", Operator: "IN", Value: []any{1, 2, 3}},
 				},
 			},
@@ -178,7 +178,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		{
 			name: "BETWEEN condition",
 			qb: &types.QueryBuilderData{
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "age", Operator: "BETWEEN", Value: []any{18, 65}},
 				},
 			},
@@ -188,7 +188,7 @@ func TestMySQLGrammar_CompileWhereClause(t *testing.T) {
 		{
 			name: "Raw SQL condition",
 			qb: &types.QueryBuilderData{
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{
 						Raw: &types.Expression{
 							SQL:      "EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id)",
@@ -267,7 +267,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 		{
 			name: "Single HAVING condition",
 			qb: &types.QueryBuilderData{
-				Having: []types.Having{
+				Having: []*types.Having{
 					{Column: "total_amount", Operator: ">", Value: 1000},
 				},
 			},
@@ -277,7 +277,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 		{
 			name: "Multiple HAVING conditions",
 			qb: &types.QueryBuilderData{
-				Having: []types.Having{
+				Having: []*types.Having{
 					{Column: "total_amount", Operator: ">", Value: 1000},
 					{Connector: types.AND, Column: "order_count", Operator: ">=", Value: 5},
 				},
@@ -288,7 +288,7 @@ func TestMySQLGrammar_CompileHavingClause(t *testing.T) {
 		{
 			name: "No HAVING",
 			qb: &types.QueryBuilderData{
-				Having: []types.Having{},
+				Having: []*types.Having{},
 			},
 			expected: "",
 			bindings: nil,
@@ -316,7 +316,7 @@ func TestMySQLGrammar_CompileOrderByClause(t *testing.T) {
 		{
 			name: "Single ORDER BY column",
 			qb: &types.QueryBuilderData{
-				OrderBy: []types.OrderBy{
+				OrderBy: []*types.OrderBy{
 					{Column: "created_at", Direction: "DESC"},
 				},
 			},
@@ -326,7 +326,7 @@ func TestMySQLGrammar_CompileOrderByClause(t *testing.T) {
 		{
 			name: "Multiple ORDER BY columns",
 			qb: &types.QueryBuilderData{
-				OrderBy: []types.OrderBy{
+				OrderBy: []*types.OrderBy{
 					{Column: "status", Direction: "ASC"},
 					{Column: "created_at", Direction: "DESC"},
 				},
@@ -337,7 +337,7 @@ func TestMySQLGrammar_CompileOrderByClause(t *testing.T) {
 		{
 			name: "No ORDER BY",
 			qb: &types.QueryBuilderData{
-				OrderBy: []types.OrderBy{},
+				OrderBy: []*types.OrderBy{},
 			},
 			expected: "",
 			bindings: nil,
@@ -469,7 +469,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 		{
 			name: "Simple CTE",
 			qb: &types.QueryBuilderData{
-				WithCTEs: []types.CTE{
+				WithCTEs: []*types.CTE{
 					{
 						Name: "user_orders",
 						Expression: &types.Expression{
@@ -485,7 +485,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 		{
 			name: "Multiple CTEs",
 			qb: &types.QueryBuilderData{
-				WithCTEs: []types.CTE{
+				WithCTEs: []*types.CTE{
 					{
 						Name: "active_users",
 						Expression: &types.Expression{
@@ -508,7 +508,7 @@ func TestMySQLGrammar_CompileCTEs(t *testing.T) {
 		{
 			name: "No CTEs",
 			qb: &types.QueryBuilderData{
-				WithCTEs: []types.CTE{},
+				WithCTEs: []*types.CTE{},
 			},
 			expected: "",
 			bindings: nil,
@@ -536,7 +536,7 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		{
 			name: "Simple SELECT",
 			qb: &types.QueryBuilderData{
-				Table:   "users",
+				Table:   &types.Table{Name: "users"},
 				Columns: []any{"id", "name", "email"},
 			},
 			expected: "SELECT id, name, email FROM users",
@@ -545,12 +545,12 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		{
 			name: "SELECT with WHERE and ORDER BY",
 			qb: &types.QueryBuilderData{
-				Table:   "users",
+				Table:   &types.Table{Name: "users"},
 				Columns: []any{"id", "name"},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "active", Operator: "=", Value: true},
 				},
-				OrderBy: []types.OrderBy{
+				OrderBy: []*types.OrderBy{
 					{Column: "name", Direction: "ASC"},
 				},
 			},
@@ -560,9 +560,9 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		{
 			name: "SELECT with UNION",
 			qb: &types.QueryBuilderData{
-				Table:   "active_users",
+				Table:   &types.Table{Name: "active_users"},
 				Columns: []any{"id", "name"},
-				Unions: []types.Union{
+				Unions: []*types.Union{
 					{
 						All:  true,
 						Type: types.UnionTypeUnion,
@@ -579,19 +579,19 @@ func TestMySQLGrammar_CompileSelect(t *testing.T) {
 		{
 			name: "Complex SELECT with all clauses",
 			qb: &types.QueryBuilderData{
-				Table:   "orders",
+				Table:   &types.Table{Name: "orders"},
 				Columns: []any{"id", "user_id", "amount"},
-				Joins: []types.Join{
+				Joins: []*types.Join{
 					{Type: types.INNER_JOIN, Table: "users", Condition: "orders.user_id = users.id"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "status", Operator: "=", Value: "pending"},
 				},
 				GroupBy: []string{"user_id"},
-				Having: []types.Having{
+				Having: []*types.Having{
 					{Column: "total_amount", Operator: ">", Value: 1000},
 				},
-				OrderBy: []types.OrderBy{
+				OrderBy: []*types.OrderBy{
 					{Column: "total_amount", Direction: "DESC"},
 				},
 				Limit:  10,
@@ -624,12 +624,12 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 		{
 			name: "Basic update",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				UpdatedBindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				UpdatedBindings: []*types.Binding{
 					{Column: "name", Value: "John Updated"},
 					{Column: "email", Value: "john.updated@example.com"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "id", Operator: "=", Value: 1},
 				},
 			},
@@ -640,11 +640,11 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 		{
 			name: "Update with multiple conditions",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				UpdatedBindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				UpdatedBindings: []*types.Binding{
 					{Column: "status", Value: "inactive"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "status", Operator: "=", Value: "active"},
 					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
 				},
@@ -656,11 +656,11 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 		{
 			name: "Update with limit",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				UpdatedBindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				UpdatedBindings: []*types.Binding{
 					{Column: "status", Value: "verified"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "status", Operator: "=", Value: "pending"},
 				},
 				Limit: 10,
@@ -672,8 +672,8 @@ func TestMySQLGrammar_CompileUpdate(t *testing.T) {
 		{
 			name: "Update with no bindings",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				Where: []types.WhereCondition{
+				Table: &types.Table{Name: "users"},
+				Where: []*types.WhereCondition{
 					{Column: "id", Operator: "=", Value: 1},
 				},
 				UpdatedBindings: nil,
@@ -711,11 +711,11 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 		{
 			name: "Basic delete",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				Bindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				Bindings: []*types.Binding{
 					{Column: "id", Value: 1},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "id", Operator: "=", Value: 1},
 				},
 			},
@@ -726,11 +726,11 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 		{
 			name: "Delete with multiple conditions",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				Bindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				Bindings: []*types.Binding{
 					{Column: "status", Value: "inactive"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "status", Operator: "=", Value: "inactive"},
 					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
 				},
@@ -742,11 +742,11 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 		{
 			name: "Delete with limit",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				Bindings: []types.Binding{
+				Table: &types.Table{Name: "users"},
+				Bindings: []*types.Binding{
 					{Column: "status", Value: "pending"},
 				},
-				Where: []types.WhereCondition{
+				Where: []*types.WhereCondition{
 					{Column: "status", Operator: "=", Value: "pending"},
 				},
 				Limit: 10,
@@ -758,8 +758,8 @@ func TestMySQLGrammar_CompileDelete(t *testing.T) {
 		{
 			name: "Delete with no bindings",
 			qb: &types.QueryBuilderData{
-				Table: "users",
-				Where: []types.WhereCondition{
+				Table: &types.Table{Name: "users"},
+				Where: []*types.WhereCondition{
 					{Column: "id", Operator: "=", Value: 1},
 				},
 			},

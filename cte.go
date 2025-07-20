@@ -25,7 +25,7 @@ func (qb *QueryBuilder) WithRecursiveRaw(name string, sql string, values ...any)
 }
 
 func (qb *QueryBuilder) with(name string, data *types.QueryBuilderData, recursive bool) *QueryBuilder {
-	qb.withCTEs = append(qb.withCTEs, types.CTE{
+	qb.withCTEs = append(qb.withCTEs, &types.CTE{
 		Name:      name,
 		Query:     data,
 		Recursive: recursive,
@@ -34,7 +34,7 @@ func (qb *QueryBuilder) with(name string, data *types.QueryBuilderData, recursiv
 }
 
 func (qb *QueryBuilder) withExpr(name string, sql string, recursive bool, bindings ...any) *QueryBuilder {
-	qb.withCTEs = append(qb.withCTEs, types.CTE{
+	qb.withCTEs = append(qb.withCTEs, &types.CTE{
 		Name: name,
 		Expression: &types.Expression{
 			SQL:      sql,

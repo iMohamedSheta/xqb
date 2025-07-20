@@ -45,7 +45,7 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 		}
 	}
 
-	qb.joins = append(qb.joins, types.Join{
+	qb.joins = append(qb.joins, &types.Join{
 		Type:      joinType,
 		Table:     tableSQL,
 		Condition: conditionSQL,

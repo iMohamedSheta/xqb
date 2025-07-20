@@ -156,7 +156,6 @@ func Test_Select_WithStringFunctions(t *testing.T) {
 			"last_name",
 		}, "full_name"),
 	)
-	// qb.String("CONCAT", "first_name", []any{" ", "last_name"}, "full_name")
 	sql, bindings, _ := qb.ToSQL()
 
 	assert.Equal(t, "SELECT id, CONCAT(first_name, ' ', last_name) AS full_name FROM users", sql)
@@ -199,9 +198,9 @@ func Test_Select_WithLocking(t *testing.T) {
 
 func Test_Select_WithUnion(t *testing.T) {
 	qb := xqb.Table("users").Select("id", "name")
-	qb.Union("SELECT id, name FROM users WHERE type = ?", "admin")
-	qb.Union("SELECT id, name FROM users WHERE type = ?", "superuser")
-	qb.Union("SELECT id, name FROM users WHERE type = ?", "guest")
+	qb.UnionRaw("SELECT id, name FROM users WHERE type = ?", "admin")
+	qb.UnionRaw("SELECT id, name FROM users WHERE type = ?", "superuser")
+	qb.UnionRaw("SELECT id, name FROM users WHERE type = ?", "guest")
 
 	sql, bindings, _ := qb.ToSQL()
 
@@ -249,7 +248,7 @@ func Test_Select_WithDateExpressions(t *testing.T) {
 	assert.Equal(t, expected, sql)
 }
 
-func Test_ComplexSelectWithExpressions(t *testing.T) {
+func Test_Select_WithExpressions(t *testing.T) {
 	qb := xqb.Table("users")
 	sql, bindings, _ := qb.Select(
 		"id",
@@ -265,4 +264,65 @@ func Test_ComplexSelectWithExpressions(t *testing.T) {
 	expected := "SELECT id, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM users WHERE LOWER(email) LIKE ? GROUP BY id, first_name, last_name HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{"%@example.com", 5}, bindings)
+}
+
+func Test_Select_WithSubQuery(t *testing.T) {
+	subSql, subBindings, _ := xqb.Table("payments").
+		Select("id", "amount", "created_at").
+		Where("payments.user_id", "=", 15).
+		ToSQL()
+
+	qb := xqb.Table("users").
+		Select("id", "name", xqb.Raw("("+subSql+") AS payments", subBindings...)).
+		Where("id", "=", 15)
+
+	sql, bindings, _ := qb.ToSQL()
+
+	expected := "SELECT id, name, (SELECT id, amount, created_at FROM payments WHERE payments.user_id = ?) AS payments FROM users WHERE id = ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{15, 15}, bindings)
+}
+
+func Test_Select_WithSubQuery_(t *testing.T) {
+	sub := xqb.Table("payments").
+		Select("id", "amount", "created_at").
+		Where("payments.user_id", "=", 15)
+
+	sub2 := xqb.Table("admins").
+		Select("id", "amount", "created_at").
+		Where("admins.user_id", "=", 15)
+
+	qb := xqb.Table("users").
+		Select("id", "name").
+		SelectSub(sub, "payments").
+		SelectSub(sub2, "admins").
+		Where("id", "=", 15)
+
+	sql, bindings, _ := qb.ToSQL()
+
+	expected := "SELECT id, name, " +
+		"(SELECT id, amount, created_at FROM payments WHERE payments.user_id = ?) AS payments, " +
+		"(SELECT id, amount, created_at FROM admins WHERE admins.user_id = ?) AS admins " +
+		"FROM users WHERE id = ?"
+
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{15, 15, 15}, bindings)
+}
+func Test_FromSubquery(t *testing.T) {
+	sub := xqb.Table("orders").
+		Select("user_id", xqb.Raw("COUNT(*) AS order_count")).
+		Where("user_id", "=", 25).
+		GroupBy("user_id")
+
+	qb := xqb.New().
+		Select("u.id", "u.name", "o.order_count").
+		FromSubquery(sub, "o").
+		Join("users u", "u.id = o.user_id").
+		Where("u.id", "=", 25)
+
+	sql, bindings, _ := qb.ToSQL()
+
+	expected := "SELECT u.id, u.name, o.order_count FROM (SELECT user_id, COUNT(*) AS order_count FROM orders WHERE user_id = ? GROUP BY user_id) AS o JOIN users u ON u.id = o.user_id WHERE u.id = ?"
+	assert.Equal(t, expected, sql)
+	assert.Equal(t, []any{25, 25}, bindings)
 }

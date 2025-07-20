@@ -1,11 +1,26 @@
 package xqb
 
-import "github.com/iMohamedSheta/xqb/shared/enums"
+import (
+	"github.com/iMohamedSheta/xqb/shared/enums"
+	"github.com/iMohamedSheta/xqb/shared/types"
+)
 
 // Select specifies columns to select
 func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
 	qb.queryType = enums.SELECT
 	qb.columns = columns
+	return qb
+}
+
+// SelectSub add sub queries to select
+func (qb *QueryBuilder) SelectSub(subQuery *QueryBuilder, alias string) *QueryBuilder {
+	sql, bindings, err := subQuery.ToSQL()
+	if err != nil {
+		qb.errors = append(qb.errors, err)
+		return qb
+	}
+	qb.queryType = enums.SELECT
+	qb.columns = append(qb.columns, Raw("("+sql+") AS "+alias, bindings...))
 	return qb
 }
 
@@ -28,24 +43,22 @@ func (qb *QueryBuilder) AddSelectRaw(sql string, bindings ...any) *QueryBuilder 
 
 // From specifies the table to select from
 func (qb *QueryBuilder) From(table string) *QueryBuilder {
-	qb.table = table
+	qb.table = &types.Table{
+		Name: table,
+	}
 	return qb
 }
 
 // FromSubquery uses a subquery as the FROM clause
-func (qb *QueryBuilder) FromSubquery(subquery *QueryBuilder, alias string) *QueryBuilder {
-	qb.subqueries[alias] = subquery
+func (qb *QueryBuilder) FromSubquery(subQuery *QueryBuilder, alias string) *QueryBuilder {
+	raw := subQuery.ToRawExpr()
+	raw.SQL = "(" + raw.SQL + ")" + " AS " + alias
+	qb.table = &types.Table{Raw: raw}
 	return qb
 }
 
 // Distinct adds DISTINCT to the query
 func (qb *QueryBuilder) Distinct() *QueryBuilder {
 	qb.isUsingDistinct = true
-	return qb
-}
-
-// Alias sets an alias for a column
-func (qb *QueryBuilder) Alias(column string, alias string) *QueryBuilder {
-	qb.columnAliases[column] = alias
 	return qb
 }

@@ -1,4 +1,4 @@
-package xqb
+package errors
 
 import "errors"
 

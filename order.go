@@ -21,7 +21,7 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 		col = fmt.Sprintf("%v", v)
 	}
 
-	qb.orderBy = append(qb.orderBy, types.OrderBy{
+	qb.orderBy = append(qb.orderBy, &types.OrderBy{
 		Column:    col,
 		Direction: direction,
 		Raw:       expr,

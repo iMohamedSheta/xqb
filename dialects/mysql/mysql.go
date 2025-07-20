@@ -156,12 +156,12 @@ func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 }
 
 func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
-	if qb.Table == "" {
+	if qb.Table.Name == "" {
 		return "", nil, fmt.Errorf("table name is required for insert operation")
 	}
 
 	if len(qb.InsertedValues) == 0 {
-		return fmt.Sprintf("INSERT INTO %s DEFAULT VALUES", qb.Table), nil, nil
+		return fmt.Sprintf("INSERT INTO %s DEFAULT VALUES", qb.Table.Name), nil, nil
 	}
 
 	var bindings []any
@@ -193,7 +193,7 @@ func (mg *MySQLGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any
 
 	// Build the final SQL
 	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-		qb.Table,
+		qb.Table.Name,
 		columnStr,
 		strings.Join(valueStrings, ", "),
 	)
@@ -221,7 +221,7 @@ func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 		bindings = append(bindings, binding.Value)
 	}
 
-	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", qb.Table, strings.Join(setParts, ", ")))
+	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", qb.Table.Name, strings.Join(setParts, ", ")))
 
 	whereSQL, whereBindings, _ := mg.compileWhereClause(qb)
 
@@ -251,7 +251,7 @@ func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []any
 	var bindings []any
 	var sql strings.Builder
 
-	sql.WriteString(fmt.Sprintf("DELETE FROM %s", qb.Table))
+	sql.WriteString(fmt.Sprintf("DELETE FROM %s", qb.Table.Name))
 
 	whereSQL, whereBindings, _ := mg.compileWhereClause(qb)
 
