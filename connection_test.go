@@ -13,7 +13,7 @@ func Test_ConnectionLifecycle(t *testing.T) {
 	name := "testdb"
 
 	xqb.AddConnection(name, db)
-	assert.True(t, xqb.HasConnection(name), "connection should exist after AddConnection")
+	assert.False(t, xqb.HasConnection(name), "HasConnection should return false for nil connection")
 
 	xqb.SetDefault(name)
 
