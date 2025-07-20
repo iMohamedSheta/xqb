@@ -10,11 +10,16 @@ import (
 
 // updates rows in the database
 func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
-	return qb.update(data)
+	result, err := qb.update(data)
+	if err != nil {
+		return 0, fmt.Errorf("%w [Update]: Invalid query sql query error %v", ErrInvalidExecutedQuerySyntax, err)
+	}
+
+	return result.RowsAffected()
 }
 
 // core implementation of the update method
-func (qb *QueryBuilder) update(data map[string]any) (int64, error) {
+func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 
 	qb.queryType = enums.UPDATE
 	qbData := qb.GetData()
@@ -29,29 +34,8 @@ func (qb *QueryBuilder) update(data map[string]any) (int64, error) {
 
 	query, args, err := qb.grammar.Build(qbData)
 	if err != nil {
-		return 0, err
+		return nil, fmt.Errorf("%w [Update]: Failed to build the sql, %v", ErrInvalidQuery, err)
 	}
 
-	var result sql.Result
-
-	if qb.tx != nil {
-		result, err = qb.tx.Exec(query, args...)
-		if err != nil {
-			return 0, fmt.Errorf("update failed:  %w", err)
-		}
-
-	} else {
-		db, err := Connection(qb.connection)
-		if err != nil {
-			return 0, err
-		}
-
-		result, err = db.Exec(query, args...)
-
-		if err != nil {
-			return 0, fmt.Errorf("update failed: %w", err)
-		}
-	}
-
-	return result.RowsAffected()
+	return Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
 }

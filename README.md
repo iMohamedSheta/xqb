@@ -501,14 +501,22 @@ err := xqb.Transaction(func(tx *sql.Tx) error {
     return nil
 })
 
-// Manual transaction
-tx, _ := xqb.BeginTransaction()
-defer tx.Rollback()
+// Transaction on specific connection
+// Note: You can use any connection in the DBManager
+err := xqb.TransactionOn("connection_name", func(tx *sql.Tx) error {
+  //...
+})
 
-lastId, _ := xqb.Table("users").WithTx(tx).
+// Manual transaction
+tx, _ := xqb.BeginTx() || xqb.BeginTxOn("connection_name")
+
+lastId, err := xqb.Table("users").WithTx(tx).
     InsertGetId([]map[string]any{
         {"name": "John", "email": "john@example.com"},
     })
+if err != nil {
+    tx.Rollback()
+}
 
 tx.Commit()
 ```

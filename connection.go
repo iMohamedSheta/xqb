@@ -12,21 +12,21 @@ var (
 )
 
 var (
-	managerInstance *DBManager
+	managerInstance *DBM
 	managerOnce     sync.Once
 )
 
 // DBManager handles multiple named database connections
-type DBManager struct {
+type DBM struct {
 	defaultConnection string
 	connections       map[string]*sql.DB
 	mu                sync.RWMutex
 }
 
 // db returns the singleton DBManage instance
-func Manager() *DBManager {
+func DBManager() *DBM {
 	managerOnce.Do(func() {
-		managerInstance = &DBManager{
+		managerInstance = &DBM{
 			connections: make(map[string]*sql.DB),
 		}
 	})
@@ -34,86 +34,120 @@ func Manager() *DBManager {
 }
 
 // setConnection sets a named DB connection
-func (m *DBManager) SetConnection(name string, db *sql.DB) {
+func (m *DBM) SetConnection(name string, db *sql.DB) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.connections[name] = db
 }
 
 // connection returns a *sql.DB by name
-func (m *DBManager) connection(name string) (*sql.DB, error) {
+func (m *DBM) Connection(name string) (*sql.DB, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	db, ok := m.connections[name]
 	if !ok || db == nil {
-		return nil, fmt.Errorf("%w: %s", errNoConnection, name)
+		return nil, fmt.Errorf("%w: connection %s was not found in the xqb DBManager", errNoConnection, name)
 	}
 	return db, nil
 }
 
-// closeConnection closes and removes a named DB connection
-func (m *DBManager) CloseConnection(name string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if _, ok := m.connections[name]; ok {
-		if m.connections[name] != nil {
-			_ = m.connections[name].Close()
+// hasConnection checks if a connection exists
+func (m *DBM) HasConnection(name string) bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	db, ok := m.connections[name]
+	if !ok || db == nil {
+		return false
+	}
+	return true
+}
+
+// GetDefaultConnection returns the default connection
+func (m *DBM) GetDefaultConnection() (*sql.DB, error) {
+	return m.Connection(m.defaultConnection)
+}
+
+// GetDefaultConnectionName returns the default connection name
+func (m *DBM) GetDefaultConnectionName() string {
+	return m.defaultConnection
+}
+
+// GetDefaultConnection returns the default connection
+func GetDefaultConnection() (*sql.DB, error) {
+	return DBManager().GetDefaultConnection()
+}
+
+// Connection returns a *sql.DB connection by name
+func GetConnection(name string) (*sql.DB, error) {
+	return DBManager().Connection(name)
+}
+
+func (m *DBM) SetDefaultConnection(name string) error {
+	if !m.HasConnection(name) {
+		return fmt.Errorf("%w: connection  %s was not found in xqb DBManager", errNoConnection, name)
+	}
+
+	m.defaultConnection = name
+	return nil
+}
+
+func AddConnection(name string, db *sql.DB) {
+	DBManager().SetConnection(name, db)
+}
+
+func HasConnection(name string) bool {
+	return DBManager().HasConnection(name)
+}
+
+func SetDefault(name string) error {
+	return DBManager().SetDefaultConnection(name)
+}
+
+func Close(name string) error {
+	return DBManager().CloseConnection(name)
+}
+
+func CloseAll() error {
+	return DBManager().CloseAllConnections()
+}
+
+func (m *DBM) CloseAllConnections() error {
+	var errs []error
+	for name := range m.connections {
+		if err := m.closeConnection(name); err != nil {
+			errs = append(errs, fmt.Errorf("connection %s - %s ", name, err))
 		}
-		delete(m.connections, name)
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("%w: %s", ErrClosingConnection, errors.Join(errs...))
 	}
 
 	return nil
 }
 
-// hasConnection checks if a connection exists
-func (m *DBManager) HasConnection(name string) bool {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	_, ok := m.connections[name]
-	return ok
-}
-
-// Connection returns a *sql.DB connection by name
-func Connection(name string) (*sql.DB, error) {
-	dbManager := Manager()
-	if name == "default" || name == "" || !dbManager.HasConnection(name) {
-		name = dbManager.defaultConnection
+// CloseConnection closes a named database connection and returns xqb.ErrClosingConnection if the connection could not be closed
+func (m *DBM) CloseConnection(name string) error {
+	err := m.closeConnection(name)
+	if err != nil {
+		return fmt.Errorf("%w: failed to close connection %s - %s", ErrClosingConnection, name, err)
 	}
-	return dbManager.connection(name)
+	return nil
 }
 
-func (m *DBManager) SetDefaultConnection(name string) {
-	if name == "" || !m.HasConnection(name) {
-		name = "default"
-	}
-	m.defaultConnection = name
-}
-
-func AddConnection(name string, db *sql.DB) {
-	Manager().SetConnection(name, db)
-}
-
-func HasConnection(name string) bool {
-	return Manager().HasConnection(name)
-}
-
-func SetDefault(name string) {
-	Manager().SetDefaultConnection(name)
-}
-
-func Close(name string) error {
-	return Manager().CloseConnection(name)
-}
-
-func CloseAll() error {
-	return Manager().CloseAllConnections()
-}
-
-func (m *DBManager) CloseAllConnections() error {
-	for name := range m.connections {
-		if err := m.CloseConnection(name); err != nil {
-			return err
+// closeConnection closes a named database connection and returns any error encountered closing the connection
+func (m *DBM) closeConnection(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.connections[name]; ok {
+		if m.connections[name] != nil {
+			err := m.connections[name].Close()
+			if err != nil {
+				return err
+			}
 		}
+		delete(m.connections, name)
 	}
+
 	return nil
 }

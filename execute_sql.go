@@ -21,7 +21,7 @@ func Sql(sql string, args ...any) *SqlQuery {
 
 // Connection - set the connection
 func (s *SqlQuery) Connection(connection string) *SqlQuery {
-	if connection == "" || !Manager().HasConnection(connection) {
+	if connection == "" || !DBManager().HasConnection(connection) {
 		connection = "default"
 	}
 	s.connection = connection
@@ -40,7 +40,7 @@ func (s *SqlQuery) Execute() (sql.Result, error) {
 		return s.tx.Exec(s.sql, s.args...)
 	}
 
-	db, err := Connection(s.connection)
+	db, err := GetConnection(s.connection)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *SqlQuery) Query() (*sql.Rows, error) {
 		return s.tx.Query(s.sql, s.args...)
 	}
 
-	db, err := Connection(s.connection)
+	db, err := GetConnection(s.connection)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func (s *SqlQuery) QueryRow() (*sql.Row, error) {
 		return s.tx.QueryRow(s.sql, s.args...), nil
 	}
 
-	db, err := Connection(s.connection)
+	db, err := GetConnection(s.connection)
 	if err != nil {
 		return nil, err
 	}

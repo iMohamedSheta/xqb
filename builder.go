@@ -82,7 +82,7 @@ func (qb *QueryBuilder) Table(table string) *QueryBuilder {
 // Reset resets the QueryBuilder instance
 func (qb *QueryBuilder) Reset() {
 	qb.queryType = enums.SELECT
-	qb.connection = Manager().defaultConnection
+	qb.connection = DBManager().GetDefaultConnectionName()
 	qb.table = ""
 	qb.columns = nil
 	qb.columnAliases = nil

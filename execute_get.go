@@ -14,7 +14,7 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 		return nil, fmt.Errorf("%w [Get]: Failed to build the sql, %v", ErrInvalidQuery, err)
 	}
 
-	rows, err := Sql(query, args...).WithTx(qb.tx).Query()
+	rows, err := Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Query()
 	if err != nil {
 		return nil, fmt.Errorf("%w [Get]: Invalid query sql query error %v", ErrInvalidExecutedQuerySyntax, err)
 	}

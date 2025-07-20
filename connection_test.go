@@ -17,10 +17,10 @@ func Test_ConnectionLifecycle(t *testing.T) {
 
 	xqb.SetDefault(name)
 
-	_, err := xqb.Connection(name)
+	_, err := xqb.GetConnection(name)
 	assert.Error(t, err, "getting nil connection should error")
 
-	_, err = xqb.Connection("")
+	_, err = xqb.GetConnection("")
 	assert.Error(t, err, "getting default nil connection should error")
 
 	err = xqb.Close(name)
@@ -29,7 +29,7 @@ func Test_ConnectionLifecycle(t *testing.T) {
 }
 
 func Test_ConnectionErrors(t *testing.T) {
-	_, err := xqb.Connection("nonexistent")
+	_, err := xqb.GetConnection("nonexistent")
 	assert.Error(t, err, "getting non-existent connection should error")
 
 	err = xqb.Close("nonexistent")

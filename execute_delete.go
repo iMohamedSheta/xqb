@@ -31,7 +31,7 @@ func (qb *QueryBuilder) delete() (int64, error) {
 		}
 
 	} else {
-		db, err := Connection(qb.connection)
+		db, err := GetConnection(qb.connection)
 		if err != nil {
 			return 0, err
 		}

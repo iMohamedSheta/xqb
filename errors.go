@@ -16,7 +16,7 @@ var (
 	ErrPlaceholderMismatch = errors.New("xqb - placeholders and bindings count mismatch")
 
 	// No database connection available
-	ErrNoConnection = errors.New("xqb - no database connection available to execute query")
+	ErrNoConnection = errors.New("xqb - database connection not available to execute query")
 
 	// Query building failed due to invalid query
 	ErrInvalidQuery = errors.New("xqb - invalid query build error")
@@ -32,4 +32,10 @@ var (
 
 	// Invalid result type
 	ErrInvalidResultType = errors.New("xqb - invalid result type")
+
+	// Closing connection failed
+	ErrClosingConnection = errors.New("xqb - closing connection failed")
+
+	// Transaction failed
+	ErrTransactionFailed = errors.New("xqb - transaction failed")
 )
