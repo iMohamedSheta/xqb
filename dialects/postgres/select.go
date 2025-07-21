@@ -33,7 +33,7 @@ func (pg *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (stri
 				columns = append(columns, v.SQL)
 				bindings = append(bindings, v.Bindings...)
 			case *types.DialectExpression:
-				sqlStr, sqlBindings, err := v.ToSQL("mysql")
+				sqlStr, sqlBindings, err := v.ToSQL(Dialect)
 				if err != nil {
 					return "", nil, err
 				}

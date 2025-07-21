@@ -10,6 +10,10 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
+const (
+	Dialect = "mysql"
+)
+
 // MySQLDialect implements MySQL-specific SQL syntax
 type MySQLDialect struct {
 }

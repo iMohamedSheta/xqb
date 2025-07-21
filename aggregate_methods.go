@@ -88,15 +88,6 @@ func JsonExtract(column string, path string, alias string) *types.DialectExpress
 	}
 }
 
-// JSONFunc - builds a custom JSON function call with arguments and alias.
-func JSONFunc(fnName string, args []string, alias string) *types.Expression {
-	raw := fmt.Sprintf("%s(%s)", fnName, strings.Join(args, ", "))
-	if alias != "" {
-		raw += " AS " + alias
-	}
-	return Raw(raw)
-}
-
 // Math - returns a raw mathematical SQL expression with alias.
 func Math(rawExpr string, alias string) *types.Expression {
 	if alias != "" {
@@ -114,31 +105,61 @@ func Date(column string, alias string) *types.Expression {
 	return Raw(raw)
 }
 
-// Date - formats a column as a DATE with optional alias.
-func DateDiff(a, b, alias string) *types.Expression {
-	raw := fmt.Sprintf("DATEDIFF(%s, %s)", a, b)
+// DateDiff - calculates the number of days between two dates with optional alias.
+func DateDiff(a, b, alias string) *types.DialectExpression {
+	mysql := fmt.Sprintf("DATEDIFF(%s, %s)", a, b)
+	pg := fmt.Sprintf("(%s - %s)", a, b) // This returns an interval
+
 	if alias != "" {
-		raw += " AS " + alias
+		mysql = fmt.Sprintf("%s AS %s", mysql, alias)
+		pg = fmt.Sprintf("%s AS %s", pg, alias)
 	}
-	return Raw(raw)
+
+	return &types.DialectExpression{
+		Default: "mysql",
+		Dialects: map[string]*types.Expression{
+			"mysql":    Raw(mysql),
+			"postgres": Raw(pg),
+		},
+	}
 }
 
 // DateAdd - returns a DATE_ADD expression using interval and unit.
-func DateAdd(date, interval, unit, alias string) *types.Expression {
-	raw := fmt.Sprintf("DATE_ADD(%s, INTERVAL %s %s)", date, interval, unit)
+func DateAdd(date, interval, unit, alias string) *types.DialectExpression {
+	mysqlSQL := fmt.Sprintf("DATE_ADD(%s, INTERVAL %s %s)", date, interval, unit)
+	pgSQL := fmt.Sprintf("%s + INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+
 	if alias != "" {
-		raw += " AS " + alias
+		mysqlSQL = fmt.Sprintf("%s AS %s", mysqlSQL, alias)
+		pgSQL = fmt.Sprintf("%s AS %s", pgSQL, alias)
 	}
-	return Raw(raw)
+
+	return &types.DialectExpression{
+		Default: "mysql",
+		Dialects: map[string]*types.Expression{
+			"mysql":    Raw(mysqlSQL),
+			"postgres": Raw(pgSQL),
+		},
+	}
 }
 
 // DateSub - returns a DATE_SUB expression using interval and unit.
-func DateSub(date, interval, unit, alias string) *types.Expression {
-	raw := fmt.Sprintf("DATE_SUB(%s, INTERVAL %s %s)", date, interval, unit)
+func DateSub(date, interval, unit, alias string) *types.DialectExpression {
+	mysqlSQL := fmt.Sprintf("DATE_SUB(%s, INTERVAL %s %s)", date, interval, unit)
+	pgSQL := fmt.Sprintf("%s - INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+
 	if alias != "" {
-		raw += " AS " + alias
+		mysqlSQL = fmt.Sprintf("%s AS %s", mysqlSQL, alias)
+		pgSQL = fmt.Sprintf("%s AS %s", pgSQL, alias)
 	}
-	return Raw(raw)
+
+	return &types.DialectExpression{
+		Default: "mysql",
+		Dialects: map[string]*types.Expression{
+			"mysql":    Raw(mysqlSQL),
+			"postgres": Raw(pgSQL),
+		},
+	}
 }
 
 // DateFormat - returns a DATE_FORMAT expression with format and alias.

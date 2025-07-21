@@ -30,8 +30,6 @@ func (pg *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []
 	// Build column names string
 	columnStr := strings.Join(columns, ", ")
 
-	// Build values strings ($1, $2, $3), ($4, $5, $6)
-	placeholderNum := 1
 	valueStrings := make([]string, len(qb.InsertedValues))
 	for i, row := range qb.InsertedValues {
 		placeholders := make([]string, len(columns))
@@ -40,8 +38,7 @@ func (pg *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []
 			if value == nil {
 				placeholders[j] = "NULL"
 			} else {
-				placeholders[j] = fmt.Sprintf("$%d", placeholderNum)
-				placeholderNum++
+				placeholders[j] = "?"
 				bindings = append(bindings, value)
 			}
 		}

@@ -10,32 +10,48 @@ import (
 )
 
 func Test_Aggregate(t *testing.T) {
-	qb := xqb.Table("users")
-	sql, binding, _ := qb.Select(
-		xqb.Sum("price", "total_price"),
-		"username",
-		"email",
-	).Where("id", "=", 15).
-		Limit(1).
-		ToSQL()
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect)
+		sql, binding, err := qb.Select(
+			xqb.Sum("price", "total_price"),
+			"username",
+			"email",
+		).Where("id", "=", 15).Limit(1).
+			ToSQL()
 
-	assert.Equal(t, "SELECT SUM(price) AS total_price, username, email FROM users WHERE id = ? LIMIT 1", sql)
-	assert.Equal(t, []any{15}, binding)
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "SELECT SUM(price) AS total_price, username, email FROM users WHERE id = ? LIMIT 1",
+			dialects.DriverPostgres: "SELECT SUM(price) AS total_price, username, email FROM users WHERE id = $1 LIMIT 1",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{15}, binding)
+		assert.NoError(t, err)
+
+	})
 }
 
 func Test_DialectExpr(t *testing.T) {
-	qb := xqb.Table("users")
-	sql, binding, _ := qb.Select(
-		xqb.Sum("price", "total_price"),
-		xqb.DateFormat("created_at", "%Y-%m-%d", "created_at"),
-		"username",
-		"email",
-	).Where("id", "=", 15).
-		Limit(1).
-		ToSQL()
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect)
+		sql, binding, err := qb.Select(
+			xqb.Sum("price", "total_price"),
+			xqb.DateFormat("created_at", "%Y-%m-%d", "created_at"),
+			"username",
+			"email",
+		).Where("id", "=", 15).
+			Limit(1).
+			ToSQL()
 
-	assert.Equal(t, "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, username, email FROM users WHERE id = ? LIMIT 1", sql)
-	assert.Equal(t, []any{15}, binding)
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, username, email FROM users WHERE id = ? LIMIT 1",
+			dialects.DriverPostgres: "SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, username, email FROM users WHERE id = $1 LIMIT 1",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{15}, binding)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_CountExpression(t *testing.T) {
@@ -43,21 +59,31 @@ func Test_CountExpression(t *testing.T) {
 	assert.Equal(t, "COUNT(id) AS total_users", expr.SQL)
 }
 
-func Test_JsonExtract_MySQL(t *testing.T) {
-	expr := xqb.JsonExtract("data", "user.name", "username")
-	sql := expr.Dialects["mysql"].SQL
-	assert.Equal(t, "JSON_EXTRACT(data, '$.user.name') AS username", sql)
-}
-
-func Test_JsonExtract_Postgres(t *testing.T) {
-	expr := xqb.JsonExtract("data", "user.name", "username")
-	sql := expr.Dialects["postgres"].SQL
-	assert.Equal(t, "data->'user'->>'name' AS username", sql)
+func Test_JsonExtract(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		expr := xqb.JsonExtract("data", "user.name", "username")
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "JSON_EXTRACT(data, '$.user.name') AS username",
+			dialects.DriverPostgres: "data->'user'->>'name' AS username",
+		}
+		assert.Equal(t, expectedSql[dialect], expr.Dialects[string(dialect)].SQL)
+	})
 }
 
 func Test_DateFunctions(t *testing.T) {
-	assert.Equal(t, "DATE(created_at) AS date_only", xqb.Date("created_at", "date_only").SQL)
-	assert.Equal(t, "DATEDIFF(end_date, start_date) AS diff", xqb.DateDiff("end_date", "start_date", "diff").SQL)
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		assert.Equal(t, "DATE(created_at) AS date_only", xqb.Date("created_at", "date_only").SQL)
+		dialectExpr := xqb.DateDiff("end_date", "start_date", "diff")
+
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "DATEDIFF(end_date, start_date) AS diff",
+			dialects.DriverPostgres: "(end_date - start_date) AS diff",
+		}
+		expr := dialectExpr.Dialects[string(dialect)]
+
+		assert.Equal(t, expectedSql[dialect], expr.SQL)
+		assert.Empty(t, expr.Bindings)
+	})
 }
 
 func Test_StringFunctions(t *testing.T) {
@@ -81,32 +107,35 @@ func Test_Coalesce(t *testing.T) {
 }
 
 func Test_QueryBuilder_Locks(t *testing.T) {
-	sql, b, _ := xqb.Table("users").LockForUpdate().ToSQL()
-	assert.Equal(t, "SELECT * FROM users FOR UPDATE", sql)
-	assert.Equal(t, []any(nil), b)
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		sql, b, err := xqb.Table("users").LockForUpdate().ToSQL()
+		assert.Equal(t, "SELECT * FROM users FOR UPDATE", sql)
+		assert.Equal(t, []any(nil), b)
+		assert.NoError(t, err)
 
-	qb := xqb.Table("users").SharedLock()
+		qb := xqb.Table("users").SharedLock()
 
-	sql, b, _ = qb.ToSQL()
-	assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE", sql)
-	assert.Equal(t, []any(nil), b)
+		sql, b, _ = qb.ToSQL()
+		assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE", sql)
+		assert.Equal(t, []any(nil), b)
 
-	qb = xqb.Table("users").SharedLock().NoWaitLocked()
-	sql, b, _ = qb.ToSQL()
-	assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE NOWAIT", sql)
-	assert.Equal(t, []any(nil), b)
+		qb = xqb.Table("users").SharedLock().NoWaitLocked()
+		sql, b, _ = qb.ToSQL()
+		assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE NOWAIT", sql)
+		assert.Equal(t, []any(nil), b)
 
-	qb = xqb.Table("users").LockForUpdate().SkipLocked()
-	sql, b, _ = qb.ToSQL()
-	assert.Equal(t, "SELECT * FROM users FOR UPDATE SKIP LOCKED", sql)
-	assert.Equal(t, []any(nil), b)
+		qb = xqb.Table("users").LockForUpdate().SkipLocked()
+		sql, b, _ = qb.ToSQL()
+		assert.Equal(t, "SELECT * FROM users FOR UPDATE SKIP LOCKED", sql)
+		assert.Equal(t, []any(nil), b)
 
-	qb = xqb.Table("users")
-	qb.SetDialect(dialects.DriverPostgres)
-	qb.Where("id", "=", 15).LockNoKeyUpdate().SkipLocked()
-	sql, b, _ = qb.ToSQL()
-	assert.Equal(t, "SELECT * FROM users WHERE id = ? FOR NO KEY UPDATE SKIP LOCKED", sql)
-	assert.Equal(t, []any{15}, b)
+		qb = xqb.Table("users")
+		qb.SetDialect(dialects.DriverPostgres)
+		qb.Where("id", "=", 15).LockNoKeyUpdate().SkipLocked()
+		sql, b, _ = qb.ToSQL()
+		assert.Equal(t, "SELECT * FROM users WHERE id = $1 FOR NO KEY UPDATE SKIP LOCKED", sql)
+		assert.Equal(t, []any{15}, b)
+	})
 }
 
 func Test_Upper(t *testing.T) {
@@ -125,18 +154,32 @@ func Test_Trim(t *testing.T) {
 }
 
 func Test_DateAdd(t *testing.T) {
-	expr := xqb.DateAdd("created_at", "7", "DAY", "next_week")
-	assert.Equal(t, "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week", expr.SQL)
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		dialectExpr := xqb.DateAdd("created_at", "7", "DAY", "next_week")
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week",
+			dialects.DriverPostgres: "created_at + INTERVAL '7 day' AS next_week",
+		}
+
+		expr := dialectExpr.Dialects[string(dialect)]
+
+		assert.Equal(t, expectedSql[dialect], expr.SQL)
+		assert.Empty(t, expr.Bindings)
+	})
 }
 
 func Test_DateSub(t *testing.T) {
-	expr := xqb.DateSub("created_at", "1", "MONTH", "last_month")
-	assert.Equal(t, "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month", expr.SQL)
-}
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		dialectExpr := xqb.DateSub("created_at", "1", "MONTH", "last_month")
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month",
+			dialects.DriverPostgres: "created_at - INTERVAL '1 month' AS last_month",
+		}
 
-func Test_JSONFunc(t *testing.T) {
-	expr := xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.email'"}, "email")
-	assert.Equal(t, "JSON_UNQUOTE(data, '$.email') AS email", expr.SQL)
+		expr := dialectExpr.Dialects[string(dialect)]
+		assert.Equal(t, expectedSql[dialect], expr.SQL)
+		assert.Empty(t, expr.Bindings)
+	})
 }
 
 func Test_Substring(t *testing.T) {
@@ -145,71 +188,100 @@ func Test_Substring(t *testing.T) {
 }
 
 func Test_QueryBuilder_Upper_Length_Trim(t *testing.T) {
-	qb := xqb.Table("users")
-	sql, bindings, _ := qb.Select(
-		xqb.Upper("name", "upper_name"),
-		xqb.Length("bio", "bio_length"),
-		xqb.Trim("username", "trimmed_username"),
-	).Where("active", "=", true).ToSQL()
-	assert.Equal(t, "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM users WHERE active = ?", sql)
-	assert.Equal(t, []any{true}, bindings)
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect)
+		sql, bindings, err := qb.Select(
+			xqb.Upper("name", "upper_name"),
+			xqb.Length("bio", "bio_length"),
+			xqb.Trim("username", "trimmed_username"),
+		).Where("active", "=", true).ToSQL()
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM users WHERE active = ?",
+			dialects.DriverPostgres: "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM users WHERE active = $1",
+		}
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{true}, bindings)
+	})
 }
 
 func Test_QueryBuilder_DateAdd_DateSub(t *testing.T) {
-	qb := xqb.Table("events")
-	sql, bindings, _ := qb.Select(
-		xqb.DateAdd("event_date", "1", "DAY", "tomorrow"),
-		xqb.DateSub("event_date", "7", "DAY", "last_week"),
-	).Where("status", "=", "open").ToSQL()
-	assert.Equal(t, "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM events WHERE status = ?", sql)
-	assert.Equal(t, []any{"open"}, bindings)
-}
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		qb := xqb.Table("events").SetDialect(dialect)
+		sql, bindings, err := qb.Select(
+			xqb.DateAdd("event_date", "1", "DAY", "tomorrow"),
+			xqb.DateSub("event_date", "7", "DAY", "last_week"),
+		).Where("status", "=", "open").ToSQL()
 
-func Test_QueryBuilder_JSONFunc_Substring(t *testing.T) {
-	qb := xqb.Table("profiles")
-	sql, bindings, _ := qb.Select(
-		xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.email'"}, "email"),
-		xqb.Substring("bio", 1, 20, "short_bio"),
-	).Where("id", "=", 42).ToSQL()
-	assert.Equal(t, "SELECT JSON_UNQUOTE(data, '$.email') AS email, SUBSTRING(bio, 1, 20) AS short_bio FROM profiles WHERE id = ?", sql)
-	assert.Equal(t, []any{42}, bindings)
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL:    "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM events WHERE status = ?",
+			dialects.DriverPostgres: "SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM events WHERE status = $1",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{"open"}, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_QueryBuilder_AggregateMethods(t *testing.T) {
-	qb := xqb.Table("test_table")
-	sql, bindings, _ := qb.Select(
-		xqb.Count("id", "total_count"),
-		xqb.Sum("amount", "total_amount"),
-		xqb.Avg("score", "avg_score"),
-		xqb.Min("age", "min_age"),
-		xqb.Max("salary", "max_salary"),
-		xqb.JsonExtract("data", "user.email", "user_email"),
-		xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone"),
-		xqb.Math("price * quantity", "total_price"),
-		xqb.Date("created_at", "created_date"),
-		xqb.DateDiff("end_date", "start_date", "days_between"),
-		xqb.DateAdd("created_at", "1", "DAY", "next_day"),
-		xqb.DateSub("created_at", "1", "MONTH", "prev_month"),
-		xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date"),
-		xqb.Coalesce([]string{"middle_name", "'N/A'"}, "coalesced_name"),
-		xqb.Concat([]string{"first_name", "' '", "last_name"}, "full_name"),
-		xqb.Lower("email", "lower_email"),
-		xqb.Upper("username", "upper_username"),
-		xqb.Length("bio", "bio_length"),
-		xqb.Trim("nickname", "trimmed_nickname"),
-		xqb.Replace("title", "'foo'", "'bar'", "replaced_title"),
-		xqb.Substring("description", 1, 10, "short_desc"),
-	).Where("active", "=", true).ToSQL()
+	forEachDialect(t, func(t *testing.T, dialect dialects.Driver) {
+		qb := xqb.Table("test_table").SetDialect(dialect)
+		sql, bindings, err := qb.Select(
+			xqb.Count("id", "total_count"),
+			xqb.Sum("amount", "total_amount"),
+			xqb.Avg("score", "avg_score"),
+			xqb.Min("age", "min_age"),
+			xqb.Max("salary", "max_salary"),
+			xqb.JsonExtract("data", "user.email", "user_email"),
+			xqb.Math("price * quantity", "total_price"),
+			xqb.Date("created_at", "created_date"),
+			xqb.DateDiff("end_date", "start_date", "days_between"),
+			xqb.DateAdd("created_at", "1", "DAY", "next_day"),
+			xqb.DateSub("created_at", "1", "MONTH", "prev_month"),
+			xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date"),
+			xqb.Coalesce([]string{"middle_name", "'N/A'"}, "coalesced_name"),
+			xqb.Concat([]string{"first_name", "' '", "last_name"}, "full_name"),
+			xqb.Lower("email", "lower_email"),
+			xqb.Upper("username", "upper_username"),
+			xqb.Length("bio", "bio_length"),
+			xqb.Trim("nickname", "trimmed_nickname"),
+			xqb.Replace("title", "'foo'", "'bar'", "replaced_title"),
+			xqb.Substring("description", 1, 10, "short_desc"),
+		).Where("active", "=", true).ToSQL()
 
-	expected := "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.email') AS user_email, JSON_UNQUOTE(data, '$.phone') AS phone, price * quantity AS total_price, DATE(created_at) AS created_date, DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM test_table WHERE active = ?"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []any{true}, bindings)
+		expectedSql := map[dialects.Driver]string{
+			dialects.DriverMySQL: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
+				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.email') AS user_email, " +
+				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
+				"DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, " +
+				"DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
+				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
+				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM test_table WHERE active = ?",
+			dialects.DriverPostgres: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
+				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, data->'user'->>'email' AS user_email, " +
+				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
+				"(end_date - start_date) AS days_between, created_at + INTERVAL '1 day' AS next_day, created_at - INTERVAL '1 month' AS prev_month, " +
+				"TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
+				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
+				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM test_table WHERE active = $1",
+		}
 
-	// Also check Postgres SQL for DateFormat and JsonExtract
-	dialectExprDateFormat := xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date")
-	assert.Equal(t, "TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date", dialectExprDateFormat.Dialects["postgres"].SQL)
-	dialectExprJsonExtract := xqb.JsonExtract("data", "user.email", "user_email")
-	assert.Equal(t, "data->'user'->>'email' AS user_email", dialectExprJsonExtract.Dialects["postgres"].SQL)
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{true}, bindings)
+		assert.NoError(t, err)
+
+		// Also check Postgres SQL for DateFormat and JsonExtract
+		dialectExprDateFormat := xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date")
+		expectedSql = map[dialects.Driver]string{
+			dialects.DriverMySQL:    "DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
+			dialects.DriverPostgres: "TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date",
+		}
+
+		assert.Equal(t, expectedSql[dialect], dialectExprDateFormat.Dialects[string(dialect)].SQL)
+		assert.Empty(t, dialectExprDateFormat.Dialects[string(dialect)].Bindings)
+	})
 }
 
 func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
@@ -227,8 +299,6 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 		xqb.Max("salary", "max_salary"),
 		xqb.JsonExtract("data", "user.name", ""),
 		xqb.JsonExtract("data", "user.name", "user_name"),
-		xqb.JSONFunc("JSON_LENGTH", []string{"data", "'$.phones'"}, ""),
-		xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.email'"}, "email"),
 		xqb.Math("price * quantity", ""),
 		xqb.Math("price * quantity + tax", "total_price"),
 		xqb.Date("created_at", ""),
@@ -268,7 +338,7 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 		xqb.Length("bio", ""), "DESC",
 	).Limit(5).Offset(10).ToSQL()
 
-	expected := "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.name'), JSON_EXTRACT(data, '$.user.name') AS user_name, JSON_LENGTH(data, '$.phones'), JSON_UNQUOTE(data, '$.email') AS email, price * quantity, price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, DATEDIFF(end_date, start_date), DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY), DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH), DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d'), DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), SUBSTRING(description, 1, 10) AS short_desc FROM coverage_table WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10"
+	expected := "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.name'), JSON_EXTRACT(data, '$.user.name') AS user_name, price * quantity, price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, DATEDIFF(end_date, start_date), DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY), DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH), DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d'), DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), SUBSTRING(description, 1, 10) AS short_desc FROM coverage_table WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10"
 	assert.Equal(t, expected, sql)
 	assert.Equal(t, []any{"active", 1000}, bindings)
 }

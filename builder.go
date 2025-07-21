@@ -130,7 +130,7 @@ func (qb *QueryBuilder) SetDialect(dialect dialects.Driver) *QueryBuilder {
 
 // ToSQL compiles the query to SQL
 func (qb *QueryBuilder) ToSQL() (string, []any, error) {
-	return qb.dialect.CompileSelect(qb.GetData())
+	return qb.dialect.Build(qb.GetData())
 }
 
 // To Expression compiles the query to SQL and returns the Expression

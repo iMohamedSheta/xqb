@@ -3,11 +3,16 @@ package postgres
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
+)
+
+const (
+	Dialect = "postgres"
 )
 
 // PostgresDialect implements Postgres-specific SQL syntax
@@ -113,7 +118,7 @@ func (pg *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, er
 		return "", nil, fmt.Errorf("%w: couldn't build the query sql is empty", xqbErr.ErrInvalidQuery)
 	}
 
-	return sql, bindings, nil
+	return pg.replaceQuestionMarksWithDollar(sql), bindings, nil
 }
 
 // appendClause compiles and appends a clause to the SQL string and bindings
@@ -133,7 +138,30 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 }
 
 // appendError appends an error to the query builder and returns it
-func (mg *PostgresDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
+func (pg *PostgresDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
+}
+
+func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
+	// First we replace all $n with ? in the SQL string some sql is build with $n
+	re := regexp.MustCompile(`\$\d+`)
+	sql = re.ReplaceAllString(sql, "?")
+
+	// Then we replace all ? with $n in the SQL string
+	parts := strings.Split(sql, "?")
+	if len(parts) == 1 {
+		return sql
+	}
+
+	var b strings.Builder
+	for i := 0; i < len(parts)-1; i++ {
+		// Add the part
+		b.WriteString(parts[i])
+		// Add the $n in the end of the SQL string
+		b.WriteString(fmt.Sprintf("$%d", i+1))
+	}
+	// Add the last part
+	b.WriteString(parts[len(parts)-1])
+	return b.String()
 }
