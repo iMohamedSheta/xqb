@@ -7,7 +7,7 @@ import (
 )
 
 // compileLockingClause compiles the locking clause
-func (mg *MySQLGrammar) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

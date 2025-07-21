@@ -7,7 +7,7 @@ import (
 )
 
 // compileOrderByClause compiles the ORDER BY clause
-func (pg *PostgresGrammar) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

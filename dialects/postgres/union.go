@@ -5,7 +5,7 @@ import (
 )
 
 // compileUnionClause compiles the union clauses for the postgres driver.
-func (pg *PostgresGrammar) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	// Add each union

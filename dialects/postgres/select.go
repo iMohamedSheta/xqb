@@ -8,7 +8,7 @@ import (
 )
 
 // compileSelectClause compiles the SELECT clause
-func (pg *PostgresGrammar) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

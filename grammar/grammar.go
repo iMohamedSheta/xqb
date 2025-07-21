@@ -1,4 +1,4 @@
-package grammar
+package dialects
 
 import (
 	"github.com/iMohamedSheta/xqb/dialects/mysql"
@@ -12,14 +12,14 @@ const (
 	DriverPostgres Driver = "postgres"
 )
 
-// GetGrammar returns the appropriate grammar for the given driver
-func GetGrammar(driver Driver) GrammarInterface {
+// GetDialect returns the appropriate grammar for the given driver
+func GetDialect(driver Driver) DialectInterface {
 	switch driver {
 	case DriverMySQL:
-		return &mysql.MySQLGrammar{}
+		return &mysql.MySQLDialect{}
 	case DriverPostgres:
-		return &postgres.PostgresGrammar{}
+		return &postgres.PostgresDialect{}
 	default:
-		return &mysql.MySQLGrammar{} // Default to MySQL grammar
+		return &mysql.MySQLDialect{} // Default to MySQL grammar
 	}
 }

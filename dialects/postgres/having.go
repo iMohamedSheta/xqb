@@ -7,7 +7,7 @@ import (
 )
 
 // compileHavingClause compiles the HAVING clause
-func (pg *PostgresGrammar) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

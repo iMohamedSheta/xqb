@@ -7,7 +7,7 @@ import (
 )
 
 // compileWhereClause compiles the WHERE clause
-func (pg *PostgresGrammar) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

@@ -9,7 +9,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := mg.resolveTable(qb, "delete", false)
 	if err != nil {
 		return "", nil, err
@@ -52,7 +52,7 @@ func (mg *MySQLGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []any
 }
 
 // ValidateDelete validates the delete operation for postgres driver
-func (mg *MySQLGrammar) validateDelete(qb *types.QueryBuilderData) error {
+func (mg *MySQLDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
 	if len(qb.Where) == 0 {

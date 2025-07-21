@@ -33,7 +33,7 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 		qbData.UpdatedBindings = append(qbData.UpdatedBindings, binding)
 	}
 
-	query, args, err := qb.grammar.Build(qbData)
+	query, args, err := qb.dialect.Build(qbData)
 	if err != nil {
 		return nil, fmt.Errorf("%w [Update]: Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
 	}

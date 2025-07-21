@@ -8,7 +8,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySQLGrammar) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

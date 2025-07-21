@@ -7,7 +7,7 @@ import (
 )
 
 // compileHavingClause compiles the HAVING clause
-func (mg *MySQLGrammar) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

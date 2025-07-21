@@ -8,7 +8,7 @@ import (
 )
 
 // compileLimitClause compiles the LIMIT clause
-func (pg *PostgresGrammar) compileLimitClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileLimitClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 	if qb.Limit != 0 {
@@ -19,7 +19,7 @@ func (pg *PostgresGrammar) compileLimitClause(qb *types.QueryBuilderData) (strin
 }
 
 // compileOffsetClause compiles the OFFSET clause
-func (pg *PostgresGrammar) compileOffsetClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileOffsetClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 	if qb.Offset != 0 {

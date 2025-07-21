@@ -8,7 +8,7 @@ import (
 )
 
 // compileUnionClause compiles the union clauses for the postgres driver.
-func (pg *MySQLGrammar) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
+func (pg *MySQLDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	// Add each union

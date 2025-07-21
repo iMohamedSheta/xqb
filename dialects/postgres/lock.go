@@ -7,7 +7,7 @@ import (
 )
 
 // compileLockingClause compiles the locking clause
-func (pg *PostgresGrammar) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

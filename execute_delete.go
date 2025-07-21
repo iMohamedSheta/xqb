@@ -21,7 +21,7 @@ func (qb *QueryBuilder) delete(table ...string) (int64, error) {
 	qb.queryType = enums.DELETE
 	qbData := qb.GetData()
 
-	query, args, err := qb.grammar.Build(qbData)
+	query, args, err := qb.dialect.Build(qbData)
 	if err != nil {
 		return 0, err
 	}

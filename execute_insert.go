@@ -12,7 +12,7 @@ func (qb *QueryBuilder) insert(data []map[string]any) (sql.Result, error) {
 	qbData := qb.GetData()
 	qbData.InsertedValues = data
 
-	query, args, err := qb.grammar.Build(qbData)
+	query, args, err := qb.dialect.Build(qbData)
 	if err != nil {
 		return nil, err
 	}

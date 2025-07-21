@@ -3,7 +3,7 @@ package xqb
 import (
 	"database/sql"
 
-	"github.com/iMohamedSheta/xqb/grammar"
+	dialects "github.com/iMohamedSheta/xqb/grammar"
 	"github.com/iMohamedSheta/xqb/shared/enums"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
@@ -11,7 +11,7 @@ import (
 // QueryBuilder structure with all possible SELECT components
 type QueryBuilder struct {
 	connection      string
-	grammar         grammar.GrammarInterface
+	dialect         dialects.DialectInterface
 	queryType       enums.QueryType
 	table           *types.Table
 	columns         []any
@@ -36,7 +36,7 @@ type QueryBuilder struct {
 // New creates a new QueryBuilder instance
 func New() *QueryBuilder {
 	// Get the driver name from the database connection
-	driverName := grammar.DriverMySQL // Default to MySQL
+	driverName := dialects.DriverMySQL // Default to MySQL
 
 	return &QueryBuilder{
 		queryType:       enums.SELECT,
@@ -50,7 +50,7 @@ func New() *QueryBuilder {
 		joins:           nil,
 		unions:          nil,
 		bindings:        nil,
-		grammar:         grammar.GetGrammar(driverName),
+		dialect:         dialects.GetDialect(driverName),
 		distinct:        false,
 		withCTEs:        nil,
 		isUsingDistinct: false,
@@ -123,14 +123,14 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 	}
 }
 
-func (qb *QueryBuilder) SetDialect(dialect grammar.Driver) *QueryBuilder {
-	qb.grammar = grammar.GetGrammar(dialect)
+func (qb *QueryBuilder) SetDialect(dialect dialects.Driver) *QueryBuilder {
+	qb.dialect = dialects.GetDialect(dialect)
 	return qb
 }
 
 // ToSQL compiles the query to SQL
 func (qb *QueryBuilder) ToSQL() (string, []any, error) {
-	return qb.grammar.CompileSelect(qb.GetData())
+	return qb.dialect.CompileSelect(qb.GetData())
 }
 
 // To Expression compiles the query to SQL and returns the Expression

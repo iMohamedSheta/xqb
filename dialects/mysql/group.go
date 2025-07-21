@@ -7,7 +7,7 @@ import (
 )
 
 // compileGroupByClause compiles the GROUP BY clause
-func (mg *MySQLGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

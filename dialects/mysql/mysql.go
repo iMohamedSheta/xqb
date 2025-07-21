@@ -11,12 +11,12 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// MySQLGrammar implements MySQL-specific SQL syntax
-type MySQLGrammar struct {
+// MySQLDialect implements MySQL-specific SQL syntax
+type MySQLDialect struct {
 }
 
 // CompileSelect generates a SELECT SQL statement for MySQL
-func (mg *MySQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
 		return mg.compileBaseQuery(qb)
 	}
@@ -58,7 +58,7 @@ func (mg *MySQLGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any
 }
 
 // compileBaseQuery compiles a query without unions
-func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -86,7 +86,7 @@ func (mg *MySQLGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := mg.resolveTable(qb, "update", false)
 	if err != nil {
 		return "", nil, err
@@ -133,7 +133,7 @@ func (mg *MySQLGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLGrammar) Build(qbd *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	var err error
@@ -177,7 +177,7 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 }
 
 // appendError appends an error to the query builder and returns it
-func (mg *MySQLGrammar) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
+func (mg *MySQLDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
 }

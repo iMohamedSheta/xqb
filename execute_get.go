@@ -11,7 +11,7 @@ import (
 // Get executes the query and returns all results
 func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	qbData := qb.GetData()
-	query, args, err := qb.grammar.Build(qbData)
+	query, args, err := qb.dialect.Build(qbData)
 	if err != nil {
 		return nil, fmt.Errorf("%w [Get]: Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
 	}

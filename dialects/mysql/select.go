@@ -8,7 +8,7 @@ import (
 )
 
 // compileSelectClause compiles the SELECT clause
-func (mg *MySQLGrammar) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

@@ -10,7 +10,7 @@ import (
 )
 
 // CompileUpdate compiles the update operation for postgres driver
-func (pg *PostgresGrammar) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.UpdatedBindings) == 0 {
 		return "", nil, fmt.Errorf("%w: no bindings provided for update operation", xqbErr.ErrInvalidQuery)
 	}

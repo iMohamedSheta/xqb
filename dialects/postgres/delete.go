@@ -10,7 +10,7 @@ import (
 )
 
 // CompileDelete compiles the delete operation for postgres driver
-func (pg *PostgresGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := pg.resolveTable(qb, "delete", false)
 	if err != nil {
 		return "", nil, err
@@ -57,7 +57,7 @@ func (pg *PostgresGrammar) CompileDelete(qb *types.QueryBuilderData) (string, []
 }
 
 // ValidateDelete validates the delete operation for postgres driver
-func (pg *PostgresGrammar) validateDelete(qb *types.QueryBuilderData) error {
+func (pg *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
 	if len(qb.Where) == 0 {

@@ -8,7 +8,7 @@ import (
 )
 
 // compileFromClause compiles the FROM clause
-func (mg *PostgresGrammar) compileFromClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *PostgresDialect) compileFromClause(qb *types.QueryBuilderData) (string, []any, error) {
 	sql, bindings, err := mg.resolveTable(qb, "select", true)
 	if err != nil || sql == "" {
 		return "", bindings, err
@@ -18,7 +18,7 @@ func (mg *PostgresGrammar) compileFromClause(qb *types.QueryBuilderData) (string
 }
 
 // resolveTable validates and returns the table or raw SQL used
-func (mg *PostgresGrammar) resolveTable(qb *types.QueryBuilderData, statement string, allowBindings bool) (string, []any, error) {
+func (mg *PostgresDialect) resolveTable(qb *types.QueryBuilderData, statement string, allowBindings bool) (string, []any, error) {
 	if qb.Table == nil || (qb.Table.Raw == nil && qb.Table.Name == "") {
 		if len(qb.WithCTEs) > 0 {
 			return "", nil, nil

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPostgresGrammar_CompileSelectClause(t *testing.T) {
+func TestPostgresDialect_CompileSelectClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -41,18 +41,18 @@ func TestPostgresGrammar_CompileSelectClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileSelectClause(tt.qb)
+			sql, bindings, _ := dialect.compileSelectClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileFromClause(t *testing.T) {
+func TestPostgresDialect_CompileFromClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -77,18 +77,18 @@ func TestPostgresGrammar_CompileFromClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileFromClause(tt.qb)
+			sql, bindings, _ := dialect.compileFromClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileJoins(t *testing.T) {
+func TestPostgresDialect_CompileJoins(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -126,18 +126,18 @@ func TestPostgresGrammar_CompileJoins(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileJoins(tt.qb)
+			sql, bindings, _ := dialect.compileJoins(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileWhereClause(t *testing.T) {
+func TestPostgresDialect_CompileWhereClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -202,18 +202,18 @@ func TestPostgresGrammar_CompileWhereClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileWhereClause(tt.qb)
+			sql, bindings, _ := dialect.compileWhereClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileGroupByClause(t *testing.T) {
+func TestPostgresDialect_CompileGroupByClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -246,18 +246,18 @@ func TestPostgresGrammar_CompileGroupByClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileGroupByClause(tt.qb)
+			sql, bindings, _ := dialect.compileGroupByClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileHavingClause(t *testing.T) {
+func TestPostgresDialect_CompileHavingClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -295,18 +295,18 @@ func TestPostgresGrammar_CompileHavingClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileHavingClause(tt.qb)
+			sql, bindings, _ := dialect.compileHavingClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileOrderByClause(t *testing.T) {
+func TestPostgresDialect_CompileOrderByClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -344,18 +344,18 @@ func TestPostgresGrammar_CompileOrderByClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileOrderByClause(tt.qb)
+			sql, bindings, _ := dialect.compileOrderByClause(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileLimitOffsetClause(t *testing.T) {
+func TestPostgresDialect_CompileLimitOffsetClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -398,12 +398,12 @@ func TestPostgresGrammar_CompileLimitOffsetClause(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			limitSql, limitBindings, _ := grammar.compileLimitClause(tt.qb)
-			offsetSql, offsetBindings, _ := grammar.compileOffsetClause(tt.qb)
+			limitSql, limitBindings, _ := dialect.compileLimitClause(tt.qb)
+			offsetSql, offsetBindings, _ := dialect.compileOffsetClause(tt.qb)
 
 			sql := limitSql + offsetSql
 			bindings := append(limitBindings, offsetBindings...)
@@ -414,7 +414,7 @@ func TestPostgresGrammar_CompileLimitOffsetClause(t *testing.T) {
 	}
 }
 
-func TestPostgresGrammar_CompileCTEs(t *testing.T) {
+func TestPostgresDialect_CompileCTEs(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -470,18 +470,18 @@ func TestPostgresGrammar_CompileCTEs(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.compileCTEs(tt.qb)
+			sql, bindings, _ := dialect.compileCTEs(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileSelect(t *testing.T) {
+func TestPostgresDialect_CompileSelect(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -557,18 +557,18 @@ func TestPostgresGrammar_CompileSelect(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, _ := grammar.CompileSelect(tt.qb)
+			sql, bindings, _ := dialect.CompileSelect(tt.qb)
 			assert.Equal(t, tt.expected, sql)
 			assert.Equal(t, tt.bindings, bindings)
 		})
 	}
 }
 
-func TestPostgresGrammar_CompileUpdate(t *testing.T) {
+func TestPostgresDialect_CompileUpdate(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -639,11 +639,11 @@ func TestPostgresGrammar_CompileUpdate(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, err := grammar.CompileUpdate(tt.qb)
+			sql, bindings, err := dialect.CompileUpdate(tt.qb)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -655,7 +655,7 @@ func TestPostgresGrammar_CompileUpdate(t *testing.T) {
 	}
 }
 
-func TestPostgresGrammar_CompileDelete(t *testing.T) {
+func TestPostgresDialect_CompileDelete(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -722,11 +722,11 @@ func TestPostgresGrammar_CompileDelete(t *testing.T) {
 		},
 	}
 
-	grammar := &PostgresGrammar{}
+	dialect := &PostgresDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sql, bindings, err := grammar.CompileDelete(tt.qb)
+			sql, bindings, err := dialect.CompileDelete(tt.qb)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

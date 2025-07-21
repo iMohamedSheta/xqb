@@ -7,7 +7,7 @@ import (
 )
 
 // compileGroupByClause compiles the GROUP BY clause
-func (pg *PostgresGrammar) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

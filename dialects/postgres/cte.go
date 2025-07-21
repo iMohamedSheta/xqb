@@ -7,7 +7,7 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (pg *PostgresGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}

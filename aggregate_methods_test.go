@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
-	"github.com/iMohamedSheta/xqb/grammar"
+	dialects "github.com/iMohamedSheta/xqb/grammar"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -101,7 +101,7 @@ func Test_QueryBuilder_Locks(t *testing.T) {
 	assert.Equal(t, []any(nil), b)
 
 	qb = xqb.Table("users")
-	qb.SetDialect(grammar.DriverPostgres)
+	qb.SetDialect(dialects.DriverPostgres)
 	qb.Where("id", "=", 15).LockNoKeyUpdate().SkipLocked()
 	sql, b, _ = qb.ToSQL()
 	assert.Equal(t, "SELECT * FROM users WHERE id = ? FOR NO KEY UPDATE SKIP LOCKED", sql)

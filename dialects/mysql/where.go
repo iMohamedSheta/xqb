@@ -7,7 +7,7 @@ import (
 )
 
 // compileWhereClause compiles the WHERE clause
-func (mg *MySQLGrammar) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 

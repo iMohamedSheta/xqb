@@ -7,7 +7,7 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySQLDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}

@@ -10,12 +10,12 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// PostgresGrammar implements MySQL-specific SQL syntax
-type PostgresGrammar struct {
+// PostgresDialect implements MySQL-specific SQL syntax
+type PostgresDialect struct {
 }
 
 // CompileSelect generates a SELECT SQL statement for MySQL
-func (pg *PostgresGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
 		return pg.compileBaseQuery(qb)
 	}
@@ -61,7 +61,7 @@ func (pg *PostgresGrammar) CompileSelect(qb *types.QueryBuilderData) (string, []
 }
 
 // compileBaseQuery compiles a query without unions
-func (pg *PostgresGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -89,7 +89,7 @@ func (pg *PostgresGrammar) compileBaseQuery(qb *types.QueryBuilderData) (string,
 	return sql.String(), bindings, nil
 }
 
-func (pg *PostgresGrammar) Build(qbd *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	var err error
@@ -133,7 +133,7 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 }
 
 // appendError appends an error to the query builder and returns it
-func (mg *PostgresGrammar) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
+func (mg *PostgresDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
 }

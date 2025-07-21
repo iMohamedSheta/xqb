@@ -9,7 +9,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (pg *PostgresGrammar) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := pg.resolveTable(qb, "insert", false)
 	if err != nil {
 		return "", nil, err
