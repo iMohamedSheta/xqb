@@ -123,8 +123,9 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 	}
 }
 
-func (qb *QueryBuilder) SetDialect(dialect grammar.Driver) {
+func (qb *QueryBuilder) SetDialect(dialect grammar.Driver) *QueryBuilder {
 	qb.grammar = grammar.GetGrammar(dialect)
+	return qb
 }
 
 // ToSQL compiles the query to SQL
