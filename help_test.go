@@ -3,7 +3,7 @@ package xqb_test
 import (
 	"testing"
 
-	dialects "github.com/iMohamedSheta/xqb/grammar"
+	"github.com/iMohamedSheta/xqb/dialects"
 )
 
 // forEachDialect iterates over all supported dialects and runs the test function

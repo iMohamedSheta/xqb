@@ -3,7 +3,7 @@ package xqb
 import (
 	"database/sql"
 
-	dialects "github.com/iMohamedSheta/xqb/grammar"
+	"github.com/iMohamedSheta/xqb/dialects"
 	"github.com/iMohamedSheta/xqb/shared/enums"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )

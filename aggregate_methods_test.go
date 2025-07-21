@@ -4,7 +4,8 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
-	dialects "github.com/iMohamedSheta/xqb/grammar"
+	"github.com/iMohamedSheta/xqb/dialects"
+
 	"github.com/stretchr/testify/assert"
 )
 
