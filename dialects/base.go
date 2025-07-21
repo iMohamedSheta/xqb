@@ -1,9 +1,29 @@
 package dialects
 
-import "github.com/iMohamedSheta/xqb/shared/types"
+import (
+	"github.com/iMohamedSheta/xqb/dialects/mysql"
+	"github.com/iMohamedSheta/xqb/dialects/postgres"
+	"github.com/iMohamedSheta/xqb/shared/types"
+)
 
-// BaseGrammar provides common functionality for all grammars
-type BaseGrammar struct{}
+type Driver string
+
+const (
+	DriverMySQL    Driver = "mysql"
+	DriverPostgres Driver = "postgres"
+)
+
+// GetDialect returns the appropriate dialect for the given driver
+func GetDialect(driver Driver) DialectInterface {
+	switch driver {
+	case DriverMySQL:
+		return &mysql.MySQLDialect{}
+	case DriverPostgres:
+		return &postgres.PostgresDialect{}
+	default:
+		return &mysql.MySQLDialect{} // Default to MySQL grammar
+	}
+}
 
 // DialectInterface defines the methods that all grammars must implement
 type DialectInterface interface {
