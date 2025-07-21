@@ -74,7 +74,7 @@ func Test_FullJoin(t *testing.T) {
 			grammar.DriverPostgres: "SELECT * FROM users FULL JOIN sessions ON users.id = sessions.user_id",
 		}
 		expectedErr := map[grammar.Driver]error{
-			grammar.DriverMySQL:    xqbErr.ErrInvalidQuery, // MySQL does not support FULL JOIN
+			grammar.DriverMySQL:    xqbErr.ErrUnsupportedFeature, // MySQL does not support FULL JOIN
 			grammar.DriverPostgres: nil,
 		}
 
@@ -233,7 +233,7 @@ func Test_FullJoinExpr(t *testing.T) {
 			grammar.DriverPostgres: "SELECT * FROM users FULL JOIN (SELECT * FROM stats WHERE active = ?) AS s ON users.id = s.user_id",
 		}
 		expectedErr := map[grammar.Driver]error{
-			grammar.DriverMySQL:    xqbErr.ErrInvalidQuery, // MySQL does not support FULL JOIN
+			grammar.DriverMySQL:    xqbErr.ErrUnsupportedFeature, // MySQL does not support FULL JOIN
 			grammar.DriverPostgres: nil,
 		}
 

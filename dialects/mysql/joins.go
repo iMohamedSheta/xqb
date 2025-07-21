@@ -14,7 +14,7 @@ func (mg *MySQLGrammar) compileJoins(qb *types.QueryBuilderData) (string, []any,
 
 	for _, join := range qb.Joins {
 		if join.Type == types.FULL_JOIN {
-			return "", nil, fmt.Errorf("%w: FULL JOIN is not supported by MySQL", xqbErr.ErrInvalidQuery)
+			return "", nil, fmt.Errorf("%w: FULL JOIN is not supported by MySQL driver", xqbErr.ErrUnsupportedFeature)
 		}
 
 		sql.WriteString(" ")
