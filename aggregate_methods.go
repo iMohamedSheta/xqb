@@ -232,15 +232,3 @@ func Substring(column string, start, length int, alias string) *types.Expression
 	}
 	return Raw(raw)
 }
-
-// LockForUpdate - adds a FOR UPDATE clause to lock selected rows for writing.
-func (qb *QueryBuilder) LockForUpdate() *QueryBuilder {
-	qb.isLockedForUpdate = true
-	return qb
-}
-
-// SharedLock - adds a LOCK IN SHARE MODE clause to lock rows for reading.
-func (qb *QueryBuilder) SharedLock() *QueryBuilder {
-	qb.isInSharedLock = true
-	return qb
-}

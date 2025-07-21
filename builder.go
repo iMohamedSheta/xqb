@@ -10,27 +10,27 @@ import (
 
 // QueryBuilder structure with all possible SELECT components
 type QueryBuilder struct {
-	connection        string
-	grammar           grammar.GrammarInterface
-	queryType         enums.QueryType
-	table             *types.Table
-	columns           []any
-	where             []*types.WhereCondition
-	orderBy           []*types.OrderBy
-	groupBy           []string
-	having            []*types.Having
-	limit             int
-	offset            int
-	joins             []*types.Join
-	unions            []*types.Union
-	bindings          []*types.Binding
-	distinct          bool
-	withCTEs          []*types.CTE
-	isUsingDistinct   bool
-	isLockedForUpdate bool
-	isInSharedLock    bool
-	tx                *sql.Tx
-	errors            []error
+	connection      string
+	grammar         grammar.GrammarInterface
+	queryType       enums.QueryType
+	table           *types.Table
+	columns         []any
+	where           []*types.WhereCondition
+	orderBy         []*types.OrderBy
+	groupBy         []string
+	having          []*types.Having
+	limit           int
+	offset          int
+	joins           []*types.Join
+	unions          []*types.Union
+	bindings        []*types.Binding
+	distinct        bool
+	withCTEs        []*types.CTE
+	isUsingDistinct bool
+	tx              *sql.Tx
+	errors          []error
+	deleteFrom      []string
+	options         map[types.Option]any // field for flexible SQL extensions
 }
 
 // New creates a new QueryBuilder instance
@@ -39,23 +39,24 @@ func New() *QueryBuilder {
 	driverName := grammar.DriverMySQL // Default to MySQL
 
 	return &QueryBuilder{
-		queryType:         enums.SELECT,
-		columns:           []any{},
-		where:             nil,
-		orderBy:           nil,
-		groupBy:           []string{},
-		having:            nil,
-		limit:             0,
-		offset:            0,
-		joins:             nil,
-		unions:            nil,
-		bindings:          nil,
-		grammar:           grammar.GetGrammar(driverName),
-		distinct:          false,
-		withCTEs:          nil,
-		isUsingDistinct:   false,
-		isLockedForUpdate: false,
-		isInSharedLock:    false,
+		queryType:       enums.SELECT,
+		columns:         []any{},
+		where:           nil,
+		orderBy:         nil,
+		groupBy:         []string{},
+		having:          nil,
+		limit:           0,
+		offset:          0,
+		joins:           nil,
+		unions:          nil,
+		bindings:        nil,
+		grammar:         grammar.GetGrammar(driverName),
+		distinct:        false,
+		withCTEs:        nil,
+		isUsingDistinct: false,
+		tx:              nil,
+		errors:          nil,
+		deleteFrom:      nil,
 	}
 }
 
@@ -93,32 +94,32 @@ func (qb *QueryBuilder) Reset() {
 	qb.distinct = false
 	qb.withCTEs = nil
 	qb.isUsingDistinct = false
-	qb.isLockedForUpdate = false
-	qb.isInSharedLock = false
 	qb.errors = nil
+	qb.deleteFrom = nil
+	qb.tx = nil
 }
 
 // GetData returns the QueryBuilderData for use by grammars
 func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 	return &types.QueryBuilderData{
-		QueryType:         qb.queryType,
-		Table:             qb.table,
-		Columns:           qb.columns,
-		Where:             qb.where,
-		OrderBy:           qb.orderBy,
-		GroupBy:           qb.groupBy,
-		Having:            qb.having,
-		Limit:             qb.limit,
-		Offset:            qb.offset,
-		Joins:             qb.joins,
-		Unions:            qb.unions,
-		Bindings:          qb.bindings,
-		Distinct:          qb.distinct,
-		WithCTEs:          qb.withCTEs,
-		IsUsingDistinct:   qb.isUsingDistinct,
-		IsLockedForUpdate: qb.isLockedForUpdate,
-		IsInSharedLock:    qb.isInSharedLock,
-		Errors:            qb.errors,
+		QueryType:       qb.queryType,
+		Table:           qb.table,
+		Columns:         qb.columns,
+		Where:           qb.where,
+		OrderBy:         qb.orderBy,
+		GroupBy:         qb.groupBy,
+		Having:          qb.having,
+		Limit:           qb.limit,
+		Offset:          qb.offset,
+		Joins:           qb.joins,
+		Unions:          qb.unions,
+		Bindings:        qb.bindings,
+		Distinct:        qb.distinct,
+		WithCTEs:        qb.withCTEs,
+		IsUsingDistinct: qb.isUsingDistinct,
+		Errors:          qb.errors,
+		DeleteFrom:      qb.deleteFrom,
+		Options:         qb.options,
 	}
 }
 
@@ -152,4 +153,17 @@ func (qb *QueryBuilder) WithTx(tx *sql.Tx) *QueryBuilder {
 func (qb *QueryBuilder) Connection(connection string) *QueryBuilder {
 	qb.connection = connection
 	return qb
+}
+
+func (qb *QueryBuilder) SetOption(key types.Option, value any) {
+	if qb.options == nil {
+		qb.options = make(map[types.Option]any)
+	}
+
+	qb.options[key] = value
+}
+
+func (qb *QueryBuilder) GetOption(key types.Option) (any, bool) {
+	val, ok := qb.options[key]
+	return val, ok
 }

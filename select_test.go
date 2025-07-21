@@ -204,7 +204,7 @@ func Test_Select_WithUnion(t *testing.T) {
 
 	sql, bindings, _ := qb.ToSQL()
 
-	expectedSQL := "SELECT id, name FROM users UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?)"
+	expectedSQL := "(SELECT id, name FROM users) UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?) UNION (SELECT id, name FROM users WHERE type = ?)"
 	expectedBindings := []any{"admin", "superuser", "guest"}
 
 	assert.Equal(t, expectedSQL, sql)

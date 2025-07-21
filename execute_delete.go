@@ -13,7 +13,11 @@ func (qb *QueryBuilder) Delete() (int64, error) {
 }
 
 // core delete execution method
-func (qb *QueryBuilder) delete() (int64, error) {
+func (qb *QueryBuilder) delete(table ...string) (int64, error) {
+	if len(table) != 0 {
+		qb.deleteFrom = table
+	}
+
 	qb.queryType = enums.DELETE
 	qbData := qb.GetData()
 

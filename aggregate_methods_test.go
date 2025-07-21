@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
+	"github.com/iMohamedSheta/xqb/grammar"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,11 +80,32 @@ func Test_Coalesce(t *testing.T) {
 }
 
 func Test_QueryBuilder_Locks(t *testing.T) {
-	qb := xqb.Table("users").LockForUpdate()
-	assert.True(t, qb.GetData().IsLockedForUpdate)
+	sql, b, _ := xqb.Table("users").LockForUpdate().ToSQL()
+	assert.Equal(t, "SELECT * FROM users FOR UPDATE", sql)
+	assert.Equal(t, []any(nil), b)
 
-	qb = xqb.Table("users").SharedLock()
-	assert.True(t, qb.GetData().IsInSharedLock)
+	qb := xqb.Table("users").SharedLock()
+
+	sql, b, _ = qb.ToSQL()
+	assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE", sql)
+	assert.Equal(t, []any(nil), b)
+
+	qb = xqb.Table("users").SharedLock().NoWaitLocked()
+	sql, b, _ = qb.ToSQL()
+	assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE NOWAIT", sql)
+	assert.Equal(t, []any(nil), b)
+
+	qb = xqb.Table("users").LockForUpdate().SkipLocked()
+	sql, b, _ = qb.ToSQL()
+	assert.Equal(t, "SELECT * FROM users FOR UPDATE SKIP LOCKED", sql)
+	assert.Equal(t, []any(nil), b)
+
+	qb = xqb.Table("users")
+	qb.SetDialect(grammar.DriverPostgres)
+	qb.Where("id", "=", 15).LockNoKeyUpdate().SkipLocked()
+	sql, b, _ = qb.ToSQL()
+	assert.Equal(t, "SELECT * FROM users WHERE id = ? FOR NO KEY UPDATE SKIP LOCKED", sql)
+	assert.Equal(t, []any{15}, b)
 }
 
 func Test_Upper(t *testing.T) {

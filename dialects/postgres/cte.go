@@ -1,4 +1,4 @@
-package mysql
+package postgres
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
+func (pg *PostgresGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}
@@ -33,7 +33,7 @@ func (mg *MySQLGrammar) compileCTEs(qb *types.QueryBuilderData) (string, []any, 
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
-				cteSQL, cteBindings, _ := mg.compileBaseQuery(queryData)
+				cteSQL, cteBindings, _ := pg.compileBaseQuery(queryData)
 				sql.WriteString(cteSQL)
 				bindings = append(bindings, cteBindings...)
 			}
