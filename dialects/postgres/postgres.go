@@ -10,11 +10,11 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// PostgresDialect implements MySQL-specific SQL syntax
+// PostgresDialect implements Postgres-specific SQL syntax
 type PostgresDialect struct {
 }
 
-// CompileSelect generates a SELECT SQL statement for MySQL
+// CompileSelect generates a SELECT SQL statement for Postgres
 func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
 		return pg.compileBaseQuery(qb)

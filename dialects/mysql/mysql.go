@@ -3,7 +3,6 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
@@ -80,53 +79,6 @@ func (mg *MySQLDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 	for _, compiler := range clauses {
 		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
-		}
-	}
-
-	return sql.String(), bindings, nil
-}
-
-func (mg *MySQLDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
-	tableName, _, err := mg.resolveTable(qb, "update", false)
-	if err != nil {
-		return "", nil, err
-	}
-
-	if len(qb.UpdatedBindings) == 0 {
-		return "", nil, fmt.Errorf("%w: no bindings provided for update operation", xqbErr.ErrInvalidQuery)
-	}
-
-	// Sort bindings by column name for consistency
-	sort.Slice(qb.Bindings, func(i, j int) bool {
-		return qb.Bindings[i].Column < qb.Bindings[j].Column
-	})
-
-	var setParts []string
-
-	var bindings []any
-	var sql strings.Builder
-
-	for _, binding := range qb.UpdatedBindings {
-		setParts = append(setParts, fmt.Sprintf("%s = ?", binding.Column))
-		bindings = append(bindings, binding.Value)
-	}
-
-	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", tableName, strings.Join(setParts, ", ")))
-
-	whereSQL, whereBindings, _ := mg.compileWhereClause(qb)
-
-	if whereSQL != "" {
-		sql.WriteString(whereSQL)
-		if whereBindings != nil {
-			bindings = append(bindings, whereBindings...)
-		}
-	}
-
-	limitSQL, limitBindings, _ := mg.compileLimitClause(qb)
-	if limitSQL != "" {
-		sql.WriteString(limitSQL)
-		if limitBindings != nil {
-			bindings = append(bindings, limitBindings...)
 		}
 	}
 

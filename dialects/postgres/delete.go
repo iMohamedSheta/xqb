@@ -56,7 +56,7 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 	return sql.String(), bindings, nil
 }
 
-// ValidateDelete validates the delete operation for postgres driver
+// validateDelete validates the delete operation for postgres driver
 func (pg *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
