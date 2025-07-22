@@ -4,169 +4,376 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
+	"github.com/iMohamedSheta/xqb/shared/errors"
+	"github.com/iMohamedSheta/xqb/shared/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_Union(t *testing.T) {
-	q := xqb.Table("users").
-		Select("id", "name").
-		UnionRaw("SELECT id, name FROM admins WHERE active = ?", true).
-		Union(
-			xqb.Table("admins").
-				Select("id", "username").
-				Where("username", "=", "mohamed").
-				Limit(1),
-		)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).
+			Select("id", "name").
+			UnionRaw("SELECT id, name FROM admins WHERE active = ?", true).
+			Union(
+				xqb.Table("admins").SetDialect(dialect).
+					Select("id", "username").
+					Where("username", "=", "mohamed").
+					Limit(1),
+			)
 
-	sql, bindings, err := q.ToSQL()
-	assert.NoError(t, err)
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id, name FROM users) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT id, username FROM admins WHERE username = ? LIMIT 1)",
+			types.DriverPostgres: "(SELECT id, name FROM users) UNION (SELECT id, name FROM admins WHERE active = $1) UNION (SELECT id, username FROM admins WHERE username = $2 LIMIT 1)",
+		}
 
-	expected := "(SELECT id, name FROM users) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT id, username FROM admins WHERE username = ? LIMIT 1)"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []any{true, "mohamed"}, bindings)
+		assert.Equal(t, expectedSql[dialect], sql)
+		expectedBindings := []any{true, "mohamed"}
+		assert.Equal(t, expectedBindings, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_UnionAll(t *testing.T) {
-	q := xqb.Table("users").
-		Select("id").
-		UnionAllRaw("SELECT id FROM guests WHERE banned = ?", false)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).
+			Select("id").
+			UnionAllRaw("SELECT id FROM guests WHERE banned = ?", false)
 
-	sql, bindings, err := q.ToSQL()
-	assert.NoError(t, err)
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
+			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM guests WHERE banned = $1)",
+		}
 
-	expected := "(SELECT id FROM users) UNION ALL (SELECT id FROM guests WHERE banned = ?)"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []any{false}, bindings)
+		assert.Equal(t, expectedSql[dialect], sql)
+		expectedBindings := []any{false}
+		assert.Equal(t, expectedBindings, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_ExceptUnion(t *testing.T) {
-	q := xqb.Table("users").
-		Select("id").
-		ExceptUnionRaw("SELECT id FROM banned_users", false)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).
+			Select("id").
+			ExceptUnionRaw("SELECT id FROM banned_users", false)
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Except is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) EXCEPT (SELECT id FROM banned_users)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_ExceptUnion_All(t *testing.T) {
-	q := xqb.Table("users").
-		Select("id").
-		ExceptUnionRaw("SELECT id FROM banned_users", true)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).
+			Select("id").
+			ExceptUnionRaw("SELECT id FROM banned_users", true)
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Except is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_IntersectUnion(t *testing.T) {
-	q := xqb.Table("users").
-		Select("id").
-		IntersectUnionRaw("SELECT id FROM employees WHERE active = ?", true, true)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).
+			Select("id").
+			IntersectUnionRaw("SELECT id FROM employees WHERE active = ?", true, true)
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Intersect is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) INTERSECT ALL (SELECT id FROM employees WHERE active = $1)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			expectedBindings := []any{true}
+			assert.Equal(t, expectedBindings, bindings)
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func Test_Union_WithMultipleQueries(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		Union(
-			xqb.Table("admins").Select("id"),
-			xqb.Table("guests").Select("id"),
-		)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			Union(
+				xqb.Table("admins").SetDialect(dialect).Select("id"),
+				xqb.Table("guests").SetDialect(dialect).Select("id"),
+			)
 
-	sql, _, err := q.ToSQL()
-	assert.NoError(t, err)
-	expected := "(SELECT id FROM users) UNION (SELECT id FROM admins) UNION (SELECT id FROM guests)"
-	assert.Equal(t, expected, sql)
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id FROM users) UNION (SELECT id FROM admins) UNION (SELECT id FROM guests)",
+			types.DriverPostgres: "(SELECT id FROM users) UNION (SELECT id FROM admins) UNION (SELECT id FROM guests)",
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_UnionAll_WithMultipleQueries(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		UnionAll(
-			xqb.Table("admins").Select("id"),
-			xqb.Table("guests").Select("id"),
-		)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			UnionAll(
+				xqb.Table("admins").SetDialect(dialect).Select("id"),
+				xqb.Table("guests").SetDialect(dialect).Select("id"),
+			)
 
-	sql, _, err := q.ToSQL()
-	assert.NoError(t, err)
-	expected := "(SELECT id FROM users) UNION ALL (SELECT id FROM admins) UNION ALL (SELECT id FROM guests)"
-	assert.Equal(t, expected, sql)
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM admins) UNION ALL (SELECT id FROM guests)",
+			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM admins) UNION ALL (SELECT id FROM guests)",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_Union_MixedRawAndBuilder(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		UnionRaw("SELECT id FROM guests WHERE active = ?", true).
-		Union(xqb.Table("admins").Select("id").Where("id", ">", 5))
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			UnionRaw("SELECT id FROM guests WHERE active = ?", true).
+			Union(xqb.Table("admins").SetDialect(dialect).Select("id").Where("id", ">", 5))
 
-	sql, bindings, err := q.ToSQL()
-	assert.NoError(t, err)
-	expected := "(SELECT id FROM users) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT id FROM admins WHERE id > ?)"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []any{true, 5}, bindings)
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id FROM users) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT id FROM admins WHERE id > ?)",
+			types.DriverPostgres: "(SELECT id FROM users) UNION (SELECT id FROM guests WHERE active = $1) UNION (SELECT id FROM admins WHERE id > $2)",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		expectedBindings := []any{true, 5}
+		assert.Equal(t, expectedBindings, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_UnionAllRaw_WithBindings(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		UnionAllRaw("SELECT id FROM banned_users WHERE reason = ?", "spam")
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			UnionAllRaw("SELECT id FROM banned_users WHERE reason = ?", "spam")
 
-	sql, bindings, err := q.ToSQL()
-	assert.NoError(t, err)
-	expected := "(SELECT id FROM users) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)"
-	assert.Equal(t, expected, sql)
-	assert.Equal(t, []any{"spam"}, bindings)
+		sql, bindings, err := q.ToSQL()
+		assert.NoError(t, err)
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
+			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM banned_users WHERE reason = $1)",
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		expectedBindings := []any{"spam"}
+		assert.Equal(t, expectedBindings, bindings)
+		assert.NoError(t, err)
+	})
 }
 
 func Test_ExceptUnion_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		ExceptUnion(xqb.Table("banned_users").Select("id"))
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			ExceptUnion(xqb.Table("banned_users").SetDialect(dialect).Select("id"))
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Except is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) EXCEPT (SELECT id FROM banned_users)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_ExceptUnionAll_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		ExceptUnionAll(xqb.Table("banned_users").Select("id"))
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			ExceptUnionAll(xqb.Table("banned_users").SetDialect(dialect).Select("id"))
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Except is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+		}
+
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_ExceptUnionRaw_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		ExceptUnionRaw("SELECT id FROM banned_users", true)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			ExceptUnionRaw("SELECT id FROM banned_users", true)
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Except is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+		}
+
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_IntersectUnion_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		IntersectUnion(xqb.Table("employees").Select("id"))
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			IntersectUnion(xqb.Table("employees").SetDialect(dialect).Select("id").Where("active", "=", true))
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Intersect is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) INTERSECT (SELECT id FROM employees WHERE active = $1)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			expectedBindings := []any{true}
+			assert.Equal(t, expectedBindings, bindings)
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func Test_IntersectUnionAll_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		IntersectUnionAll(xqb.Table("employees").Select("id"))
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			IntersectUnionAll(xqb.Table("employees").SetDialect(dialect).Select("id").Where("active", "=", true))
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Intersect is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) INTERSECT ALL (SELECT id FROM employees WHERE active = $1)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			expectedBindings := []any{true}
+			assert.Equal(t, expectedBindings, bindings)
+			assert.NoError(t, err)
+		}
+	})
 }
 
 func Test_IntersectUnionRaw_Unsupported(t *testing.T) {
-	q := xqb.Table("users").Select("id").
-		IntersectUnionRaw("SELECT id FROM employees", false)
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id").
+			IntersectUnionRaw("SELECT id FROM employees", false)
 
-	_, _, err := q.ToSQL()
-	assert.ErrorContains(t, err, "union type Intersect is not supported in MySQL")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "", // not Supported by MySQL
+			types.DriverPostgres: "(SELECT id FROM users) INTERSECT (SELECT id FROM employees)",
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    errors.ErrUnsupportedFeature,
+			types.DriverPostgres: nil,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.NoError(t, err)
+		}
+
+		assert.Empty(t, bindings)
+	})
 }
 
 func Test_Union_WithEmptyUnionList(t *testing.T) {
-	q := xqb.Table("users").Select("id")
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		q := xqb.Table("users").SetDialect(dialect).Select("id")
+		sql, bindings, err := q.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT id FROM users",
+			types.DriverPostgres: "SELECT id FROM users",
+		}
 
-	sql, _, err := q.ToSQL()
-	assert.NoError(t, err)
-	assert.Equal(t, "SELECT id FROM users", sql)
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, bindings)
+		assert.NoError(t, err)
+	})
 }
