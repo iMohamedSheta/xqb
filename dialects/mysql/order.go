@@ -18,8 +18,10 @@ func (mg *MySQLDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 				sql.WriteString(", ")
 			}
 			if order.Raw != nil {
-				sql.WriteString(order.Raw.SQL)
-				bindings = append(bindings, order.Raw.Bindings...)
+				expr := order.Raw.Dialects[mg.GetDriver().String()]
+
+				sql.WriteString(expr.SQL)
+				bindings = append(bindings, expr.Bindings...)
 			} else {
 				sql.WriteString(order.Column)
 			}

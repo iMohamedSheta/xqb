@@ -51,7 +51,7 @@ func (qb *QueryBuilder) From(table string) *QueryBuilder {
 
 // FromSubquery uses a subquery as the FROM clause
 func (qb *QueryBuilder) FromSubquery(subQuery *QueryBuilder, alias string) *QueryBuilder {
-	raw := subQuery.ToRawExpr()
+	raw := subQuery.SetDialect(qb.dialect.GetDriver()).ToRawExpr()
 	raw.SQL = "(" + raw.SQL + ")" + " AS " + alias
 	qb.table = &types.Table{Raw: raw}
 	return qb

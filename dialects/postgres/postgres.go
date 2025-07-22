@@ -11,12 +11,12 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-const (
-	Dialect = "postgres"
-)
-
 // PostgresDialect implements Postgres-specific SQL syntax
 type PostgresDialect struct {
+}
+
+func (pg *PostgresDialect) GetDriver() types.Driver {
+	return types.DriverPostgres
 }
 
 // CompileSelect generates a SELECT SQL statement for Postgres

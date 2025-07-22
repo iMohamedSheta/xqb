@@ -1,6 +1,10 @@
 package xqb
 
-import "fmt"
+import (
+	"fmt"
+
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
+)
 
 // PluckMap gets a list of values for two columns where the first column becomes the key and the second becomes the value
 func (qb *QueryBuilder) Pluck(value, key string) (map[string]any, error) {
@@ -53,7 +57,7 @@ func (qb *QueryBuilder) updateQueryForPluck(value, key string) error {
 	} else if key != "" {
 		qb.columns = []any{key}
 	} else if len(qb.columns) == 0 {
-		return fmt.Errorf("either value or key must be specified")
+		return fmt.Errorf("%w [Pluck]: either value or key must be specified", xqbErr.ErrInvalidQuery)
 	}
 
 	return nil

@@ -10,13 +10,20 @@ import (
 
 func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	var col string
-	var expr *types.Expression
+	var dialectExpr *types.DialectExpression
 
+	dialect := qb.dialect.GetDriver().String()
 	switch v := column.(type) {
 	case string:
 		col = v
+	case *types.DialectExpression:
+		dialectExpr = v
 	case *types.Expression:
-		expr = v
+		dialectExpr = &types.DialectExpression{
+			Dialects: map[string]*types.Expression{
+				dialect: v,
+			},
+		}
 	default:
 		col = fmt.Sprintf("%v", v)
 	}
@@ -24,7 +31,7 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	qb.orderBy = append(qb.orderBy, &types.OrderBy{
 		Column:    col,
 		Direction: direction,
-		Raw:       expr,
+		Raw:       dialectExpr,
 	})
 
 	return qb

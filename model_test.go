@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iMohamedSheta/xqb"
+	"github.com/iMohamedSheta/xqb/shared/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,37 +24,46 @@ func (User) Table() string {
 }
 
 func Test_Query_WithModel(t *testing.T) {
-	sql, bindings, _ := xqb.Model(User{}).
-		Select("id", "name", "email", "active", "created_at").
-		Where("username", "=", "ali").
-		OrWhere("username", "=", "mohamed").
-		Latest("created_at").
-		Limit(1).
-		AddSelect("password").
-		ToSQL()
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		sql, bindings, err := xqb.Model(User{}).SetDialect(dialect).
+			Select("id", "name", "email", "active", "created_at").
+			Where("username", "=", "ali").
+			OrWhere("username", "=", "mohamed").
+			Latest("created_at").
+			Limit(1).
+			AddSelect("password").
+			ToSQL()
 
-	assert.Equal(t, "SELECT id, name, email, active, created_at, password FROM users WHERE username = ? OR username = ? ORDER BY created_at DESC LIMIT 1", sql)
-	assert.Equal(t, []any{"ali", "mohamed"}, bindings)
-	now := time.Now()
-	data := map[string]any{
-		"id":         1,
-		"name":       "Ali",
-		"email":      "ali@example.com",
-		"active":     true,
-		"created_at": now,
-		"password":   "super-secret", // should not be set
-	}
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT id, name, email, active, created_at, password FROM users WHERE username = ? OR username = ? ORDER BY created_at DESC LIMIT 1",
+			types.DriverPostgres: "SELECT id, name, email, active, created_at, password FROM users WHERE username = $1 OR username = $2 ORDER BY created_at DESC LIMIT 1",
+		}
 
-	var user User
-	err := xqb.Bind(data, &user)
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, []any{"ali", "mohamed"}, bindings)
+		assert.NoError(t, err)
 
-	assert.NoError(t, err)
-	assert.Equal(t, 1, user.ID)
-	assert.Equal(t, "Ali", user.Name)
-	assert.Equal(t, "ali@example.com", user.Email.String)
-	assert.Equal(t, true, user.Active.Bool)
-	assert.Equal(t, now, user.CreatedAt.Time)
-	assert.Empty(t, user.Password) // should be ignored
+		now := time.Now()
+		data := map[string]any{
+			"id":         1,
+			"name":       "Ali",
+			"email":      "ali@example.com",
+			"active":     true,
+			"created_at": now,
+			"password":   "super-secret", // should not be set
+		}
+
+		var user User
+		err = xqb.Bind(data, &user)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 1, user.ID)
+		assert.Equal(t, "Ali", user.Name)
+		assert.Equal(t, "ali@example.com", user.Email.String)
+		assert.Equal(t, true, user.Active.Bool)
+		assert.Equal(t, now, user.CreatedAt.Time)
+		assert.Empty(t, user.Password) // should be ignored
+	})
 }
 
 func TestBind_SingleModel(t *testing.T) {

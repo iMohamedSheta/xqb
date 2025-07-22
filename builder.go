@@ -36,7 +36,7 @@ type QueryBuilder struct {
 // New creates a new QueryBuilder instance
 func New() *QueryBuilder {
 	// Get the driver name from the database connection
-	driverName := dialects.DriverMySQL // Default to MySQL
+	driverName := types.DriverMySQL // Default to MySQL
 
 	return &QueryBuilder{
 		queryType:       enums.SELECT,
@@ -123,7 +123,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 	}
 }
 
-func (qb *QueryBuilder) SetDialect(dialect dialects.Driver) *QueryBuilder {
+func (qb *QueryBuilder) SetDialect(dialect types.Driver) *QueryBuilder {
 	qb.dialect = dialects.GetDialect(dialect)
 	return qb
 }
@@ -167,4 +167,8 @@ func (qb *QueryBuilder) SetOption(key types.Option, value any) {
 func (qb *QueryBuilder) GetOption(key types.Option) (any, bool) {
 	val, ok := qb.options[key]
 	return val, ok
+}
+
+func (qb *QueryBuilder) appendError(err error) {
+	qb.errors = append(qb.errors, err)
 }

@@ -18,8 +18,10 @@ func (pg *PostgresDialect) compileOrderByClause(qb *types.QueryBuilderData) (str
 				sql.WriteString(", ")
 			}
 			if order.Raw != nil {
-				sql.WriteString(order.Raw.SQL)
-				bindings = append(bindings, order.Raw.Bindings...)
+				expr := order.Raw.Dialects[pg.GetDriver().String()]
+
+				sql.WriteString(expr.SQL)
+				bindings = append(bindings, expr.Bindings...)
 			} else {
 				sql.WriteString(order.Column)
 			}

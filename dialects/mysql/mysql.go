@@ -10,12 +10,12 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-const (
-	Dialect = "mysql"
-)
-
 // MySQLDialect implements MySQL-specific SQL syntax
 type MySQLDialect struct {
+}
+
+func (mg *MySQLDialect) GetDriver() types.Driver {
+	return types.DriverMySQL
 }
 
 // CompileSelect generates a SELECT SQL statement for MySQL

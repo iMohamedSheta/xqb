@@ -77,7 +77,7 @@ func (qb *QueryBuilder) IntersectUnionRaw(sql string, all bool, bindings ...any)
 func (qb *QueryBuilder) addUnions(unionType types.UnionType, all bool, secondaryQuery []*QueryBuilder) {
 	for _, sub := range secondaryQuery {
 		qb.unions = append(qb.unions, &types.Union{
-			Expression: sub.ToRawExpr(),
+			Expression: sub.SetDialect(qb.dialect.GetDriver()).ToRawExpr(),
 			All:        all,
 			Type:       unionType,
 		})

@@ -11,10 +11,16 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 	for _, column := range columns {
 		var col string
 		var bindings []any
+		var err error
 
 		switch v := column.(type) {
 		case string:
 			col = v
+		case *types.DialectExpression:
+			col, bindings, err = v.ToSQL(qb.dialect.GetDriver().String())
+			if err != nil {
+				qb.appendError(err)
+			}
 		case *types.Expression:
 			col = v.SQL
 			bindings = v.Bindings
