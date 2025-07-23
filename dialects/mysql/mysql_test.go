@@ -27,7 +27,7 @@ func TestMySQLDialect_CompileSelectClause(t *testing.T) {
 			qb: &types.QueryBuilderData{
 				Columns: []any{"id", "name", "email"},
 			},
-			expected: "SELECT id, name, email",
+			expected: "SELECT `id`, `name`, `email`",
 			bindings: nil,
 		},
 		{
@@ -36,7 +36,7 @@ func TestMySQLDialect_CompileSelectClause(t *testing.T) {
 				IsUsingDistinct: true,
 				Columns:         []any{"id", "name"},
 			},
-			expected: "SELECT DISTINCT id, name",
+			expected: "SELECT DISTINCT `id`, `name`",
 			bindings: nil,
 		},
 	}
@@ -64,7 +64,7 @@ func TestMySQLDialect_CompileFromClause(t *testing.T) {
 			qb: &types.QueryBuilderData{
 				Table: &types.Table{Name: "users"},
 			},
-			expected: " FROM users",
+			expected: " FROM `users`",
 			bindings: nil,
 		},
 		{
@@ -102,7 +102,7 @@ func TestMySQLDialect_CompileJoins(t *testing.T) {
 					{Type: "JOIN", Table: "orders", Condition: "users.id = orders.user_id"},
 				},
 			},
-			expected: " JOIN orders ON users.id = orders.user_id",
+			expected: " JOIN `orders` ON users.id = orders.user_id",
 			bindings: nil,
 		},
 		{
@@ -113,7 +113,7 @@ func TestMySQLDialect_CompileJoins(t *testing.T) {
 					{Type: "JOIN", Table: "order_items", Condition: "orders.id = order_items.order_id"},
 				},
 			},
-			expected: " LEFT JOIN orders ON users.id = orders.user_id JOIN order_items ON orders.id = order_items.order_id",
+			expected: " LEFT JOIN `orders` ON users.id = orders.user_id JOIN `order_items` ON orders.id = order_items.order_id",
 			bindings: nil,
 		},
 		{
@@ -151,7 +151,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 					{Column: "age", Operator: ">", Value: 18},
 				},
 			},
-			expected: " WHERE age > ?",
+			expected: " WHERE `age` > ?",
 			bindings: []any{18},
 		},
 		{
@@ -162,7 +162,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 					{Connector: "AND", Column: "active", Operator: "=", Value: true},
 				},
 			},
-			expected: " WHERE age > ? AND active = ?",
+			expected: " WHERE `age` > ? AND `active` = ?",
 			bindings: []any{18, true},
 		},
 		{
@@ -172,7 +172,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 					{Column: "id", Operator: "IN", Value: []any{1, 2, 3}},
 				},
 			},
-			expected: " WHERE id IN (?, ?, ?)",
+			expected: " WHERE `id` IN (?, ?, ?)",
 			bindings: []any{1, 2, 3},
 		},
 		{
@@ -182,7 +182,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 					{Column: "age", Operator: "BETWEEN", Value: []any{18, 65}},
 				},
 			},
-			expected: " WHERE age BETWEEN ? AND ?",
+			expected: " WHERE `age` BETWEEN ? AND ?",
 			bindings: []any{18, 65},
 		},
 		{
@@ -191,13 +191,13 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 				Where: []*types.WhereCondition{
 					{
 						Raw: &types.Expression{
-							SQL:      "EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id)",
+							SQL:      "EXISTS (SELECT 1 FROM `orders` WHERE orders.user_id = users.id)",
 							Bindings: nil,
 						},
 					},
 				},
 			},
-			expected: " WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id)",
+			expected: " WHERE EXISTS (SELECT 1 FROM `orders` WHERE orders.user_id = users.id)",
 			bindings: nil,
 		},
 	}
@@ -225,7 +225,7 @@ func TestMySQLDialect_CompileGroupByClause(t *testing.T) {
 			qb: &types.QueryBuilderData{
 				GroupBy: []string{"user_id"},
 			},
-			expected: " GROUP BY user_id",
+			expected: " GROUP BY `user_id`",
 			bindings: nil,
 		},
 		{
@@ -233,7 +233,7 @@ func TestMySQLDialect_CompileGroupByClause(t *testing.T) {
 			qb: &types.QueryBuilderData{
 				GroupBy: []string{"user_id", "status"},
 			},
-			expected: " GROUP BY user_id, status",
+			expected: " GROUP BY `user_id`, `status`",
 			bindings: nil,
 		},
 		{
@@ -271,7 +271,7 @@ func TestMySQLDialect_CompileHavingClause(t *testing.T) {
 					{Column: "total_amount", Operator: ">", Value: 1000},
 				},
 			},
-			expected: " HAVING total_amount > ?",
+			expected: " HAVING `total_amount` > ?",
 			bindings: []any{1000},
 		},
 		{
@@ -282,7 +282,7 @@ func TestMySQLDialect_CompileHavingClause(t *testing.T) {
 					{Connector: types.AND, Column: "order_count", Operator: ">=", Value: 5},
 				},
 			},
-			expected: " HAVING total_amount > ? AND order_count >= ?",
+			expected: " HAVING `total_amount` > ? AND `order_count` >= ?",
 			bindings: []any{1000, 5},
 		},
 		{
@@ -320,7 +320,7 @@ func TestMySQLDialect_CompileOrderByClause(t *testing.T) {
 					{Column: "created_at", Direction: "DESC"},
 				},
 			},
-			expected: " ORDER BY created_at DESC",
+			expected: " ORDER BY `created_at` DESC",
 			bindings: nil,
 		},
 		{
@@ -331,7 +331,7 @@ func TestMySQLDialect_CompileOrderByClause(t *testing.T) {
 					{Column: "created_at", Direction: "DESC"},
 				},
 			},
-			expected: " ORDER BY status ASC, created_at DESC",
+			expected: " ORDER BY `status` ASC, `created_at` DESC",
 			bindings: nil,
 		},
 		{
@@ -494,7 +494,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 				Table:   &types.Table{Name: "users"},
 				Columns: []any{"id", "name", "email"},
 			},
-			expected: "SELECT id, name, email FROM users",
+			expected: "SELECT `id`, `name`, `email` FROM `users`",
 			bindings: nil,
 		},
 		{
@@ -509,7 +509,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 					{Column: "name", Direction: "ASC"},
 				},
 			},
-			expected: "SELECT id, name FROM users WHERE active = ? ORDER BY name ASC",
+			expected: "SELECT `id`, `name` FROM `users` WHERE `active` = ? ORDER BY `name` ASC",
 			bindings: []any{true},
 		},
 		{
@@ -528,7 +528,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 					},
 				},
 			},
-			expected: "(SELECT id, name FROM active_users) UNION ALL (SELECT id, name FROM inactive_users)",
+			expected: "(SELECT `id`, `name` FROM `active_users`) UNION ALL (SELECT id, name FROM inactive_users)",
 			bindings: nil,
 		},
 		{
@@ -552,7 +552,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 				Limit:  10,
 				Offset: 20,
 			},
-			expected: "SELECT id, user_id, amount FROM orders JOIN users ON orders.user_id = users.id WHERE status = ? GROUP BY user_id HAVING total_amount > ? ORDER BY total_amount DESC LIMIT 10 OFFSET 20",
+			expected: "SELECT `id`, `user_id`, `amount` FROM `orders` JOIN `users` ON orders.user_id = users.id WHERE `status` = ? GROUP BY `user_id` HAVING `total_amount` > ? ORDER BY `total_amount` DESC LIMIT 10 OFFSET 20",
 			bindings: []any{"pending", 1000},
 		},
 	}
@@ -588,7 +588,7 @@ func TestMySQLDialect_CompileUpdate(t *testing.T) {
 					{Column: "id", Operator: "=", Value: 1},
 				},
 			},
-			expected: "UPDATE users SET name = ?, email = ? WHERE id = ?",
+			expected: "UPDATE `users` SET `name` = ?, `email` = ? WHERE `id` = ?",
 			bindings: []any{"John Updated", "john.updated@example.com", 1},
 			wantErr:  false,
 		},
@@ -604,7 +604,7 @@ func TestMySQLDialect_CompileUpdate(t *testing.T) {
 					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
 				},
 			},
-			expected: "UPDATE users SET status = ? WHERE status = ? AND last_login < ?",
+			expected: "UPDATE `users` SET `status` = ? WHERE `status` = ? AND `last_login` < ?",
 			bindings: []any{"inactive", "active", "2024-01-01"},
 			wantErr:  false,
 		},
@@ -620,7 +620,7 @@ func TestMySQLDialect_CompileUpdate(t *testing.T) {
 				},
 				Limit: 10,
 			},
-			expected: "UPDATE users SET status = ? WHERE status = ? LIMIT 10",
+			expected: "UPDATE `users` SET `status` = ? WHERE `status` = ? LIMIT 10",
 			bindings: []any{"verified", "pending"},
 			wantErr:  false,
 		},
@@ -674,7 +674,7 @@ func TestMySQLDialect_CompileDelete(t *testing.T) {
 					{Column: "id", Operator: "=", Value: 1},
 				},
 			},
-			expected: "DELETE FROM users WHERE id = ?",
+			expected: "DELETE FROM `users` WHERE `id` = ?",
 			bindings: []any{1},
 			wantErr:  false,
 		},
@@ -690,7 +690,7 @@ func TestMySQLDialect_CompileDelete(t *testing.T) {
 					{Connector: "AND", Column: "last_login", Operator: "<", Value: "2024-01-01"},
 				},
 			},
-			expected: "DELETE FROM users WHERE status = ? AND last_login < ?",
+			expected: "DELETE FROM `users` WHERE `status` = ? AND `last_login` < ?",
 			bindings: []any{"inactive", "2024-01-01"},
 			wantErr:  false,
 		},
@@ -706,7 +706,7 @@ func TestMySQLDialect_CompileDelete(t *testing.T) {
 				},
 				Limit: 10,
 			},
-			expected: "DELETE FROM users WHERE status = ? LIMIT 10",
+			expected: "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
 			bindings: []any{"pending"},
 			wantErr:  false,
 		},

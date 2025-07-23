@@ -27,7 +27,7 @@ func (mg *MySQLDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 	var sql strings.Builder
 
 	for _, binding := range qb.UpdatedBindings {
-		setParts = append(setParts, fmt.Sprintf("%s = ?", binding.Column))
+		setParts = append(setParts, fmt.Sprintf("%s = ?", mg.Wrap(binding.Column)))
 		bindings = append(bindings, binding.Value)
 	}
 

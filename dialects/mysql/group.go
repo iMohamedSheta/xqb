@@ -17,7 +17,7 @@ func (mg *MySQLDialect) compileGroupByClause(qb *types.QueryBuilderData) (string
 			if i > 0 {
 				sql.WriteString(", ")
 			}
-			sql.WriteString(column)
+			sql.WriteString(mg.Wrap(column))
 		}
 	}
 

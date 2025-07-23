@@ -3,6 +3,7 @@ package mysql
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
@@ -136,4 +137,58 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 func (mg *MySQLDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
+}
+
+func (mg *MySQLDialect) Wrap(value string) string {
+	value = strings.TrimSpace(value)
+	lower := strings.ToLower(value)
+
+	// Handle aliases (e.g., COUNT(id) AS total)
+	if idx := strings.LastIndex(lower, " as "); idx != -1 {
+		left := strings.TrimSpace(value[:idx])
+		right := strings.TrimSpace(value[idx+4:])
+		return fmt.Sprintf("%s AS %s", mg.Wrap(left), wrapMysqlValue(right))
+	}
+
+	// Don't wrap SQL expressions like COUNT(id)
+	if mg.isLikelyExpr(lower) || mg.isLiteral(lower) {
+		return value
+	}
+
+	// Handle dot notation like table.*
+	if strings.HasSuffix(value, ".*") {
+		parts := strings.SplitN(value, ".", 2)
+		return wrapMysqlValue(parts[0]) + ".*"
+	}
+
+	// Handle dot notation like table.column
+	segments := strings.Split(value, ".")
+	for i := range segments {
+		segments[i] = wrapMysqlValue(segments[i])
+	}
+	return strings.Join(segments, ".")
+}
+
+func wrapMysqlValue(value string) string {
+	if value == "*" {
+		return "*"
+	}
+	return "`" + strings.Trim(value, "`") + "`"
+}
+
+func (mg *MySQLDialect) isLikelyExpr(s string) bool {
+	return strings.ContainsAny(s, "()+*/-")
+}
+
+func (mg *MySQLDialect) isLiteral(s string) bool {
+	if s == "null" || s == "true" || s == "false" {
+		return true
+	}
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return true // numeric literal
+	}
+	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
+		return true // string literal
+	}
+	return false
 }

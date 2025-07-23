@@ -57,6 +57,7 @@ func New() *QueryBuilder {
 		tx:              nil,
 		errors:          nil,
 		deleteFrom:      nil,
+		options:         make(map[types.Option]any),
 	}
 }
 

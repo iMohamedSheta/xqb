@@ -23,7 +23,7 @@ func (mg *MySQLDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 				sql.WriteString(expr.SQL)
 				bindings = append(bindings, expr.Bindings...)
 			} else {
-				sql.WriteString(order.Column)
+				sql.WriteString(mg.Wrap(order.Column))
 			}
 
 			if order.Direction != "" {

@@ -2,8 +2,8 @@ package xqb
 
 import (
 	"fmt"
-	"strings"
 
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -36,7 +36,10 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 	if raw == nil {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSQL, subBindings, _ := v.ToSQL()
+			subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+			if err != nil {
+				qb.appendError(err)
+			}
 			raw = &types.Expression{
 				SQL:      fmt.Sprintf("%s %s (%s)", col, operator, subSQL),
 				Bindings: subBindings,
@@ -106,7 +109,7 @@ func (qb *QueryBuilder) OrWhereValue(column string, operator string, value any) 
 }
 
 func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSQL, subBindings, _ := sub.ToSQL()
+	subSQL, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSQL()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -120,7 +123,7 @@ func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuild
 }
 
 func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSQL, subBindings, _ := sub.ToSQL()
+	subSQL, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSQL()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -234,7 +237,10 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	for _, value := range values {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSQL, subBindings, _ := v.ToSQL()
+			subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+			if err != nil {
+				qb.appendError(err)
+			}
 			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
@@ -366,54 +372,149 @@ func (qb *QueryBuilder) OrWhereNotBetween(column string, min, max any) *QueryBui
 	return qb.whereBetweenClause(column, min, max, "NOT BETWEEN", types.OR)
 }
 
-type ToSql interface {
-	ToSQL() (string, []any, error)
-}
-
 // WhereExistsClause have the main logic to add a WHERE EXISTS conditions to the query builder
-func (qb *QueryBuilder) whereExistsClause(value ToSql, operator string, connector types.WhereConditionEnum) *QueryBuilder {
+func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector types.WhereConditionEnum) *QueryBuilder {
 	if value == nil {
 		return qb
 	}
 
-	sql, bindings, err := value.ToSQL()
-	if err != nil {
+	switch v := value.(type) {
+	case *types.Expression:
+		sqlStr, sqlBindings, err := v.ToSQL()
+		if err != nil {
+			qb.appendError(err)
+		}
+		qb.where = append(qb.where, &types.WhereCondition{
+			Column:    operator,
+			Operator:  "",
+			Value:     nil,
+			Connector: connector,
+			Raw: &types.Expression{
+				SQL:      operator + " (" + sqlStr + ")",
+				Bindings: sqlBindings,
+			},
+		})
+		return qb
+	case *types.DialectExpression:
+		sqlStr, sqlBindings, err := v.ToSQL(qb.dialect.GetDriver().String())
+		if err != nil {
+			qb.appendError(err)
+		}
+		qb.where = append(qb.where, &types.WhereCondition{
+			Column:    operator,
+			Operator:  "",
+			Value:     nil,
+			Connector: connector,
+			Raw: &types.Expression{
+				SQL:      operator + "(" + sqlStr + ")",
+				Bindings: sqlBindings,
+			},
+		})
+		return qb
+
+	case *QueryBuilder:
+		subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+		if err != nil {
+			qb.appendError(err)
+		}
+		qb.where = append(qb.where, &types.WhereCondition{
+			Column:    operator,
+			Operator:  "",
+			Value:     nil,
+			Connector: connector,
+			Raw: &types.Expression{
+				SQL:      operator + " (" + subSQL + ")",
+				Bindings: subBindings,
+			},
+		})
 		return qb
 	}
 
-	qb.where = append(qb.where, &types.WhereCondition{
-		Column:    operator,
-		Operator:  "",
-		Value:     nil,
-		Connector: connector,
-		Raw: &types.Expression{
-			SQL:      operator + " (" + sql + ")",
-			Bindings: bindings,
-		},
-	})
-
+	qb.appendError(fmt.Errorf("%w: expected Raw Expression or QueryBuilder in WhereExists clause", xqbErr.ErrInvalidQuery))
 	return qb
 }
 
 // WhereExists adds a WHERE EXISTS condition it accepts a subquery like Raw Expression or QueryBuilder (implement ToSql)
-func (qb *QueryBuilder) WhereExists(subquery ToSql) *QueryBuilder {
+func (qb *QueryBuilder) WhereExists(subquery any) *QueryBuilder {
 	return qb.whereExistsClause(subquery, "EXISTS", types.AND)
 }
 
 // WhereExists adds a WHERE EXISTS condition it accepts a subquery like Raw Expression or QueryBuilder (implement ToSql)
-func (qb *QueryBuilder) OrWhereExists(subquery ToSql) *QueryBuilder {
+func (qb *QueryBuilder) OrWhereExists(subquery any) *QueryBuilder {
 	return qb.whereExistsClause(subquery, "EXISTS", types.OR)
 }
 
 // WhereNotExists adds a WHERE NOT EXISTS condition it accepts a subquery like Raw Expression or QueryBuilder (implement ToSql)
-func (qb *QueryBuilder) WhereNotExists(subquery ToSql) *QueryBuilder {
+func (qb *QueryBuilder) WhereNotExists(subquery any) *QueryBuilder {
 	return qb.whereExistsClause(subquery, "NOT EXISTS", types.AND)
 }
 
 // WhereNotExists adds a WHERE NOT EXISTS condition it accepts a subquery like Raw Expression or QueryBuilder (implement ToSql)
-func (qb *QueryBuilder) OrWhereNotExists(subquery ToSql) *QueryBuilder {
+func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 	return qb.whereExistsClause(subquery, "NOT EXISTS", types.OR)
 }
+
+// func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
+// 	// Create a temporary builder to capture the conditions in the group
+// 	groupBuilder := &QueryBuilder{}
+
+// 	// Execute the function to populate the group builder's conditions
+// 	fn(groupBuilder)
+
+// 	// If no conditions were added in the group, return the original builder
+// 	if len(groupBuilder.where) == 0 {
+// 		return qb
+// 	}
+
+// 	// Create a raw expression for the group
+// 	var sql strings.Builder
+// 	sql.WriteString("(")
+
+// 	var groupBindings []any
+
+// 	s, bindings, err := groupBuilder.SetDialect(qb.dialect.GetDriver()).ToSQL()
+// 	DD(s, bindings, err)
+// 	// Process each condition in the group
+// 	for i, condition := range groupBuilder.where {
+// 		if i > 0 {
+// 			sql.WriteString(" ")
+// 			sql.WriteString(string(condition.Connector))
+// 			sql.WriteString(" ")
+// 		}
+
+// 		if condition.Raw != nil {
+// 			// Handle raw SQL expression
+// 			sql.WriteString(condition.Raw.SQL)
+// 			if len(condition.Raw.Bindings) > 0 {
+// 				groupBindings = append(groupBindings, condition.Raw.Bindings...)
+// 			}
+// 		} else {
+// 			// Handle regular condition
+// 			sql.WriteString(condition.Column)
+// 			if condition.Operator != "" {
+// 				sql.WriteString(" ")
+// 				sql.WriteString(condition.Operator)
+// 				if condition.Value != nil {
+// 					sql.WriteString(" ?")
+// 					groupBindings = append(groupBindings, condition.Value)
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	sql.WriteString(")")
+
+// 	// Add the group as a raw expression to the main builder
+// 	qb.where = append(qb.where, &types.WhereCondition{
+// 		Raw: &types.Expression{
+// 			SQL:      sql.String(),
+// 			Bindings: groupBindings,
+// 		},
+// 		Connector: connector,
+// 	})
+
+// 	return qb
+// }
 
 func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
 	// Create a temporary builder to capture the conditions in the group
@@ -427,48 +528,9 @@ func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector ty
 		return qb
 	}
 
-	// Create a raw expression for the group
-	var sql strings.Builder
-	sql.WriteString("(")
-
-	var groupBindings []any
-
-	// Process each condition in the group
-	for i, condition := range groupBuilder.where {
-		if i > 0 {
-			sql.WriteString(" ")
-			sql.WriteString(string(condition.Connector))
-			sql.WriteString(" ")
-		}
-
-		if condition.Raw != nil {
-			// Handle raw SQL expression
-			sql.WriteString(condition.Raw.SQL)
-			if len(condition.Raw.Bindings) > 0 {
-				groupBindings = append(groupBindings, condition.Raw.Bindings...)
-			}
-		} else {
-			// Handle regular condition
-			sql.WriteString(condition.Column)
-			if condition.Operator != "" {
-				sql.WriteString(" ")
-				sql.WriteString(condition.Operator)
-				if condition.Value != nil {
-					sql.WriteString(" ?")
-					groupBindings = append(groupBindings, condition.Value)
-				}
-			}
-		}
-	}
-
-	sql.WriteString(")")
-
-	// Add the group as a raw expression to the main builder
+	// Add the group as a structured Group instead of raw SQL
 	qb.where = append(qb.where, &types.WhereCondition{
-		Raw: &types.Expression{
-			SQL:      sql.String(),
-			Bindings: groupBindings,
-		},
+		Group:     groupBuilder.where,
 		Connector: connector,
 	})
 

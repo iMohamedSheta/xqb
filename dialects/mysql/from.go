@@ -37,5 +37,5 @@ func (mg *MySQLDialect) resolveTable(qb *types.QueryBuilderData, statement strin
 		return qb.Table.Raw.SQL, qb.Table.Raw.Bindings, nil
 	}
 
-	return qb.Table.Name, nil, nil
+	return mg.Wrap(qb.Table.Name), nil, nil
 }

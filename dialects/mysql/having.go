@@ -26,7 +26,7 @@ func (mg *MySQLDialect) compileHavingClause(qb *types.QueryBuilderData) (string,
 				sql.WriteString(having.Raw.SQL)
 				bindings = append(bindings, having.Raw.Bindings...)
 			} else {
-				sql.WriteString(having.Column)
+				sql.WriteString(mg.Wrap(having.Column))
 				sql.WriteString(" ")
 				sql.WriteString(having.Operator)
 				if having.Value != nil {

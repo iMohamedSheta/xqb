@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
@@ -164,4 +165,60 @@ func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 	// Add the last part
 	b.WriteString(parts[len(parts)-1])
 	return b.String()
+}
+
+func (pg *PostgresDialect) Wrap(value string) string {
+	value = strings.TrimSpace(value)
+	lower := strings.ToLower(value)
+
+	// Handle aliases
+	if idx := strings.LastIndex(lower, " as "); idx != -1 {
+		left := strings.TrimSpace(value[:idx])
+		right := strings.TrimSpace(value[idx+4:])
+		return fmt.Sprintf("%s AS %s", pg.Wrap(left), pg.Wrap(right))
+	}
+
+	// Don't wrap expressions like COUNT(id) or SUM(price)
+	if pg.isLikelyExpr(lower) || pg.isLiteral(lower) {
+		return value
+	}
+
+	// Handle dot notation like table.column
+	segments := strings.Split(value, ".")
+	for i := range segments {
+		segments[i] = wrapPgValue(segments[i])
+	}
+	return strings.Join(segments, ".")
+}
+
+func (mg *PostgresDialect) isLikelyExpr(s string) bool {
+	return strings.ContainsAny(s, "()+*/-")
+}
+
+func wrapPgValue(val string) string {
+	val = strings.TrimSpace(val)
+	if val == "*" {
+		return "*"
+	}
+	// ignore if already wrapped
+	if strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
+		return val
+	}
+	// escape double quotes in the value like my"value -> my""value
+	val = strings.ReplaceAll(val, `"`, `""`)
+
+	return `"` + val + `"`
+}
+
+func (mg *PostgresDialect) isLiteral(s string) bool {
+	if s == "null" || s == "true" || s == "false" {
+		return true
+	}
+	if _, err := strconv.ParseFloat(s, 64); err == nil {
+		return true // numeric literal
+	}
+	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
+		return true // string literal
+	}
+	return false
 }

@@ -3,6 +3,7 @@ package xqb
 import (
 	"fmt"
 
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -16,9 +17,12 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 	case string:
 		tableSQL = t
 	case *QueryBuilder:
-		subSQL, subBindings, _ := t.ToSQL()
+		subSQL, subBindings, err := t.ToSQL()
+		if err != nil {
+			qb.appendError(err)
+		}
 		if alias == "" {
-			alias = "sub" // fallback alias
+			qb.appendError(fmt.Errorf("%w: alias is required for subquery or expression join", xqbErr.ErrInvalidQuery))
 		}
 		tableSQL = fmt.Sprintf("(%s) AS %s", subSQL, alias)
 		for _, b := range subBindings {

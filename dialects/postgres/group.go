@@ -17,7 +17,7 @@ func (pg *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (str
 			if i > 0 {
 				sql.WriteString(", ")
 			}
-			sql.WriteString(column)
+			sql.WriteString(pg.Wrap(column))
 		}
 	}
 

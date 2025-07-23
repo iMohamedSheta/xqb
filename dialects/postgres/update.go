@@ -21,11 +21,11 @@ func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []
 	var sql strings.Builder
 
 	for _, binding := range qb.UpdatedBindings {
-		setParts = append(setParts, fmt.Sprintf("%s = ?", binding.Column))
+		setParts = append(setParts, fmt.Sprintf("%s = ?", pg.Wrap(binding.Column)))
 		bindings = append(bindings, binding.Value)
 	}
 
-	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", qb.Table.Name, strings.Join(setParts, ", ")))
+	sql.WriteString(fmt.Sprintf("UPDATE %s SET %s", pg.Wrap(qb.Table.Name), strings.Join(setParts, ", ")))
 
 	// Compile each part of the query in order
 	clauses := []func(*types.QueryBuilderData) (string, []any, error){

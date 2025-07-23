@@ -26,7 +26,7 @@ func (pg *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (stri
 				sql.WriteString(having.Raw.SQL)
 				bindings = append(bindings, having.Raw.Bindings...)
 			} else {
-				sql.WriteString(having.Column)
+				sql.WriteString(pg.Wrap(having.Column))
 				sql.WriteString(" ")
 				sql.WriteString(having.Operator)
 				if having.Value != nil {

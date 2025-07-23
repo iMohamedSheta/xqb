@@ -14,7 +14,7 @@ func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
 
 // SelectSub add sub queries to select
 func (qb *QueryBuilder) SelectSub(subQuery *QueryBuilder, alias string) *QueryBuilder {
-	sql, bindings, err := subQuery.ToSQL()
+	sql, bindings, err := subQuery.SetDialect(qb.dialect.GetDriver()).ToSQL()
 	if err != nil {
 		qb.errors = append(qb.errors, err)
 		return qb

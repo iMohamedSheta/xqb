@@ -15,4 +15,5 @@ type WhereCondition struct {
 	Value     any
 	Connector WhereConditionEnum
 	Raw       *Expression
+	Group     []*WhereCondition
 }

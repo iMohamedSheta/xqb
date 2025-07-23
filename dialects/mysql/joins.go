@@ -20,7 +20,7 @@ func (mg *MySQLDialect) compileJoins(qb *types.QueryBuilderData) (string, []any,
 		sql.WriteString(" ")
 		sql.WriteString(string(join.Type))
 		sql.WriteString(" ")
-		sql.WriteString(join.Table)
+		sql.WriteString(mg.Wrap(join.Table))
 
 		if join.Type != types.CROSS_JOIN && join.Condition != "" {
 			sql.WriteString(" ON ")
