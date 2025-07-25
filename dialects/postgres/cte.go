@@ -33,7 +33,10 @@ func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []an
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
-				cteSQL, cteBindings, _ := pg.compileBaseQuery(queryData)
+				cteSQL, cteBindings, err := pg.compileBaseQuery(queryData)
+				if err != nil {
+					return "", nil, err
+				}
 				sql.WriteString(cteSQL)
 				bindings = append(bindings, cteBindings...)
 			}

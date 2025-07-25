@@ -57,7 +57,7 @@ func (qb *QueryBuilder) UpsertSql(values []map[string]any, uniqueBy []string, up
 	qb.queryType = enums.INSERT
 
 	if len(values) == 0 || len(uniqueBy) == 0 || len(updateColumns) == 0 {
-		return "", nil, fmt.Errorf("%w [Upsert]: values, uniqueBy and updateColumns must not be empty", xqbErr.ErrInvalidQuery)
+		return "", nil, fmt.Errorf("%w: Upsert() values, uniqueBy and updateColumns must not be empty", xqbErr.ErrInvalidQuery)
 	}
 
 	// Ensure updateColumns are part of inserted columns
@@ -68,7 +68,7 @@ func (qb *QueryBuilder) UpsertSql(values []map[string]any, uniqueBy []string, up
 
 	for _, col := range updateColumns {
 		if _, ok := insertCols[col]; !ok {
-			return "", nil, fmt.Errorf("%w [Upsert]: cannot update column %q because it is not part of inserted values", xqbErr.ErrInvalidQuery, col)
+			return "", nil, fmt.Errorf("%w: Upsert() cannot update column %q because it is not part of inserted values", xqbErr.ErrInvalidQuery, col)
 		}
 	}
 

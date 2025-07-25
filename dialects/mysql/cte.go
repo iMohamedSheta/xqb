@@ -33,7 +33,10 @@ func (mg *MySQLDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, 
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
-				cteSQL, cteBindings, _ := mg.compileBaseQuery(queryData)
+				cteSQL, cteBindings, err := mg.compileBaseQuery(queryData)
+				if err != nil {
+					return "", nil, err
+				}
 				sql.WriteString(cteSQL)
 				bindings = append(bindings, cteBindings...)
 			}

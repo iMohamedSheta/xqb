@@ -3,11 +3,15 @@ package xqb
 import (
 	"fmt"
 
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // GroupBy sets the GROUP BY clause
 func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
+	if len(columns) == 0 {
+		qb.appendError(fmt.Errorf("%w: GroupBy() requires at least one column", xqbErr.ErrInvalidQuery))
+	}
 	for _, column := range columns {
 		var col string
 		var bindings []any
@@ -19,7 +23,7 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 		case *types.DialectExpression:
 			col, bindings, err = v.ToSQL(qb.dialect.GetDriver().String())
 			if err != nil {
-				qb.appendError(err)
+				qb.appendError(fmt.Errorf("%w: GroupBy() invalid DialectExpression - %v", xqbErr.ErrInvalidQuery, err))
 			}
 		case *types.Expression:
 			col = v.SQL
@@ -28,12 +32,15 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 			col = fmt.Sprintf("%v", v)
 		}
 
+		if col == "" {
+			qb.appendError(fmt.Errorf("%w: GroupBy() received empty or invalid column", xqbErr.ErrInvalidQuery))
+			continue
+		}
+
 		qb.groupBy = append(qb.groupBy, col)
 
-		if len(bindings) > 0 {
-			for _, binding := range bindings {
-				qb.bindings = append(qb.bindings, &types.Binding{Value: binding})
-			}
+		for _, binding := range bindings {
+			qb.bindings = append(qb.bindings, &types.Binding{Value: binding})
 		}
 	}
 	return qb

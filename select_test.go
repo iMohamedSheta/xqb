@@ -13,9 +13,10 @@ func Test_Select(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		qb.Select("id", "name", "email")
 		sql, bindings, err := qb.ToSQL()
+
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name, email FROM users",
-			types.DriverPostgres: "SELECT id, name, email FROM users",
+			types.DriverMySQL:    "SELECT `id`, `name`, `email` FROM `users`",
+			types.DriverPostgres: `SELECT "id", "name", "email" FROM "users"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -30,8 +31,8 @@ func Test_Select_WithWhere(t *testing.T) {
 		qb.Where("age", ">", 18)
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name FROM users WHERE age > ?",
-			types.DriverPostgres: "SELECT id, name FROM users WHERE age > $1",
+			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` WHERE `age` > ?",
+			types.DriverPostgres: `SELECT "id", "name" FROM "users" WHERE "age" > $1`,
 		}
 		expectedBindings := []any{18}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -47,8 +48,8 @@ func Test_Select_WithJoins(t *testing.T) {
 		qb.Join("orders", "users.id = orders.user_id")
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id",
-			types.DriverPostgres: "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id",
+			types.DriverMySQL:    "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id",
+			types.DriverPostgres: `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -64,8 +65,8 @@ func Test_Select_WithLeftJoins(t *testing.T) {
 		qb.LeftJoin("products", "orders.product_id = products.id")
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id LEFT JOIN products ON orders.product_id = products.id WHERE users.id > ? AND orders.id > ?",
-			types.DriverPostgres: "SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id LEFT JOIN products ON orders.product_id = products.id WHERE users.id > $1 AND orders.id > $2",
+			types.DriverMySQL:    "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id LEFT JOIN `products` ON orders.product_id = products.id WHERE `users`.`id` > ? AND `orders`.`id` > ?",
+			types.DriverPostgres: `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id LEFT JOIN "products" ON orders.product_id = products.id WHERE "users"."id" > $1 AND "orders"."id" > $2`,
 		}
 		expectedBindings := []any{55, 11}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -81,8 +82,8 @@ func Test_Select_WithGroupBy(t *testing.T) {
 		qb.GroupBy("user_id")
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id",
-			types.DriverPostgres: "SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id",
+			types.DriverMySQL:    "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id`",
+			types.DriverPostgres: `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -98,8 +99,8 @@ func Test_Select_WithHaving(t *testing.T) {
 		qb.Having("order_count", ">", 5)
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?",
-			types.DriverPostgres: "SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > $1",
+			types.DriverMySQL:    "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id` HAVING `order_count` > ?",
+			types.DriverPostgres: `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id" HAVING "order_count" > $1`,
 		}
 		expectedBindings := []any{5}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -115,8 +116,8 @@ func Test_Select_WithOrderBy(t *testing.T) {
 		qb.OrderBy("name", "ASC")
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name FROM users ORDER BY name ASC",
-			types.DriverPostgres: "SELECT id, name FROM users ORDER BY name ASC",
+			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` ORDER BY `name` ASC",
+			types.DriverPostgres: `SELECT "id", "name" FROM "users" ORDER BY "name" ASC`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -132,8 +133,8 @@ func Test_Select_WithLimitOffset(t *testing.T) {
 		qb.Offset(20)
 		sql, bindings, err := qb.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name FROM users LIMIT 10 OFFSET 20",
-			types.DriverPostgres: "SELECT id, name FROM users LIMIT 10 OFFSET 20",
+			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` LIMIT 10 OFFSET 20",
+			types.DriverPostgres: `SELECT "id", "name" FROM "users" LIMIT 10 OFFSET 20`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -153,8 +154,8 @@ func Test_Select_WithAggregateFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM orders",
-			types.DriverPostgres: "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM orders",
+			types.DriverMySQL:    "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM `orders`",
+			types.DriverPostgres: `SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM "orders"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -172,9 +173,9 @@ func Test_Select_WithCTE(t *testing.T) {
 
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL: "WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) " +
-				"SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id",
-			types.DriverPostgres: "WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) " +
-				"SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id",
+				"SELECT `users`.`id`, `users`.`name`, `user_totals`.`total_spent` FROM `users` JOIN `user_totals` ON users.id = user_totals.user_id",
+			types.DriverPostgres: `WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) ` +
+				`SELECT "users"."id", "users"."name", "user_totals"."total_spent" FROM "users" JOIN "user_totals" ON users.id = user_totals.user_id`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -196,10 +197,10 @@ func Test_Select_WithComplexCTE(t *testing.T) {
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL: "WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) " +
 				"SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) " +
-				"SELECT products.id, products.name, active_users.name as buyer FROM products JOIN active_users ON products.id = active_users.id",
-			types.DriverPostgres: "WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) " +
-				"SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) " +
-				"SELECT products.id, products.name, active_users.name as buyer FROM products JOIN active_users ON products.id = active_users.id",
+				"SELECT `products`.`id`, `products`.`name`, `active_users`.`name` AS `buyer` FROM `products` JOIN `active_users` ON products.id = active_users.id",
+			types.DriverPostgres: `WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) ` +
+				`SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) ` +
+				`SELECT "products"."id", "products"."name", "active_users"."name" AS "buyer" FROM "products" JOIN "active_users" ON products.id = active_users.id`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -218,8 +219,8 @@ func Test_Select_WithJSONExpressions(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM users",
-			types.DriverPostgres: "SELECT id, name, metadata->'preferences'->>'theme' AS theme FROM users",
+			types.DriverMySQL:    "SELECT `id`, `name`, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM `users`",
+			types.DriverPostgres: `SELECT "id", "name", metadata->'preferences'->>'theme' AS theme FROM "users"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -241,8 +242,8 @@ func Test_Select_WithStringFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, CONCAT(first_name, ' ', last_name) AS full_name FROM users",
-			types.DriverPostgres: "SELECT id, CONCAT(first_name, ' ', last_name) AS full_name FROM users",
+			types.DriverMySQL:    "SELECT `id`, CONCAT(first_name, ' ', last_name) AS full_name FROM `users`",
+			types.DriverPostgres: `SELECT "id", CONCAT(first_name, ' ', last_name) AS full_name FROM "users"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Equal(t, []any(nil), bindings)
@@ -260,8 +261,8 @@ func Test_Select_WithDateFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM orders",
-			types.DriverPostgres: "SELECT id, TO_CHAR(created_at, '%Y-%m-%d') AS order_date FROM orders",
+			types.DriverMySQL:    "SELECT `id`, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM `orders`",
+			types.DriverPostgres: `SELECT "id", TO_CHAR(created_at, '%Y-%m-%d') AS order_date FROM "orders"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Equal(t, []any(nil), bindings)
@@ -279,8 +280,8 @@ func Test_Select_WithMathExpressions(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, amount * 1.1 AS total_with_tax FROM orders",
-			types.DriverPostgres: "SELECT id, amount * 1.1 AS total_with_tax FROM orders",
+			types.DriverMySQL:    "SELECT `id`, amount * 1.1 AS total_with_tax FROM `orders`",
+			types.DriverPostgres: `SELECT "id", amount * 1.1 AS total_with_tax FROM "orders"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -296,8 +297,8 @@ func Test_Select_WithLocking(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name FROM users FOR UPDATE",
-			types.DriverPostgres: "SELECT id, name FROM users FOR UPDATE",
+			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` FOR UPDATE",
+			types.DriverPostgres: `SELECT "id", "name" FROM "users" FOR UPDATE`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -308,16 +309,19 @@ func Test_Select_WithLocking(t *testing.T) {
 func Test_Select_WithUnion(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("id", "name")
-		qb.UnionRaw("SELECT id, name FROM users WHERE type = $1", "admin")
+		qb.UnionRaw("SELECT id, name FROM users WHERE type = $1", "admin") // Raw sql will be the same as the raw in any dialect
 		qb.UnionRaw("SELECT id, name FROM users WHERE type = $2", "superuser")
 		qb.UnionRaw("SELECT id, name FROM users WHERE type = $3", "guest")
 
 		sql, bindings, err := qb.ToSQL()
 
-		expectedSQL := "(SELECT id, name FROM users) UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)"
-		expectedBindings := []any{"admin", "superuser", "guest"}
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)",
+			types.DriverPostgres: `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)`,
+		}
 
-		assert.Equal(t, expectedSQL, sql)
+		assert.Equal(t, expectedSql[dialect], sql)
+		expectedBindings := []any{"admin", "superuser", "guest"}
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})
@@ -331,8 +335,8 @@ func Test_Select_WithDistinct(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT DISTINCT name FROM users",
-			types.DriverPostgres: "SELECT DISTINCT name FROM users",
+			types.DriverMySQL:    "SELECT DISTINCT `name` FROM `users`",
+			types.DriverPostgres: `SELECT DISTINCT "name" FROM "users"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -350,8 +354,8 @@ func Test_Select_WithRawExpressions(t *testing.T) {
 		).ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users",
-			types.DriverPostgres: "SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users",
+			types.DriverMySQL:    "SELECT COUNT(*) as total, `name`, CONCAT(first_name, ' ', last_name) as full_name FROM `users`",
+			types.DriverPostgres: `SELECT COUNT(*) as total, "name", CONCAT(first_name, ' ', last_name) as full_name FROM "users"`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -372,8 +376,8 @@ func Test_Select_WithDateExpressions(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM orders GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC",
-			types.DriverPostgres: "SELECT TO_CHAR(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM orders GROUP BY TO_CHAR(created_at, '%Y-%m') ORDER BY TO_CHAR(created_at, '%Y-%m') ASC",
+			types.DriverMySQL:    "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM `orders` GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC",
+			types.DriverPostgres: `SELECT TO_CHAR(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM "orders" GROUP BY TO_CHAR(created_at, '%Y-%m') ORDER BY TO_CHAR(created_at, '%Y-%m') ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -397,8 +401,8 @@ func Test_Select_WithExpressions(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM users WHERE LOWER(email) LIKE ? GROUP BY id, first_name, last_name HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
-			types.DriverPostgres: "SELECT id, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM users WHERE LOWER(email) LIKE $1 GROUP BY id, first_name, last_name HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > $2 ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
+			types.DriverMySQL:    "SELECT `id`, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM `users` WHERE LOWER(email) LIKE ? GROUP BY `id`, `first_name`, `last_name` HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
+			types.DriverPostgres: `SELECT "id", CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM "users" WHERE LOWER(email) LIKE $1 GROUP BY "id", "first_name", "last_name" HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > $2 ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC`,
 		}
 		expectedBindings := []any{"%@example.com", 5}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -409,7 +413,7 @@ func Test_Select_WithExpressions(t *testing.T) {
 
 func Test_Select_WithSubQuery(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
-		subSql, subBindings, _ := xqb.Table("payments").
+		subSql, subBindings, _ := xqb.Table("payments").SetDialect(dialect).
 			Select("id", "amount", "created_at").
 			Where("payments.user_id", "=", 15).
 			ToSQL()
@@ -421,8 +425,8 @@ func Test_Select_WithSubQuery(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name, (SELECT id, amount, created_at FROM payments WHERE payments.user_id = ?) AS payments FROM users WHERE id = ?",
-			types.DriverPostgres: "SELECT id, name, (SELECT id, amount, created_at FROM payments WHERE payments.user_id = $1) AS payments FROM users WHERE id = $2",
+			types.DriverMySQL:    "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments FROM `users` WHERE `id` = ?",
+			types.DriverPostgres: `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments FROM "users" WHERE "id" = $2`,
 		}
 		expectedBindings := []any{15, 15}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -450,8 +454,8 @@ func Test_Select_WithSubQuery_(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name, (SELECT id, amount, created_at FROM payments WHERE payments.user_id = ?) AS payments, (SELECT id, amount, created_at FROM admins WHERE admins.user_id = ?) AS admins FROM users WHERE id = ?",
-			types.DriverPostgres: "SELECT id, name, (SELECT id, amount, created_at FROM payments WHERE payments.user_id = $1) AS payments, (SELECT id, amount, created_at FROM admins WHERE admins.user_id = $2) AS admins FROM users WHERE id = $3",
+			types.DriverMySQL:    "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments, (SELECT `id`, `amount`, `created_at` FROM `admins` WHERE `admins`.`user_id` = ?) AS admins FROM `users` WHERE `id` = ?",
+			types.DriverPostgres: `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments, (SELECT "id", "amount", "created_at" FROM "admins" WHERE "admins"."user_id" = $2) AS admins FROM "users" WHERE "id" = $3`,
 		}
 		expectedBindings := []any{15, 15, 15}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -475,8 +479,8 @@ func Test_FromSubquery(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT u.id, u.name, o.order_count FROM (SELECT user_id, COUNT(*) AS order_count FROM orders WHERE user_id = ? GROUP BY user_id) AS o JOIN users u ON u.id = o.user_id WHERE u.id = ?",
-			types.DriverPostgres: "SELECT u.id, u.name, o.order_count FROM (SELECT user_id, COUNT(*) AS order_count FROM orders WHERE user_id = $1 GROUP BY user_id) AS o JOIN users u ON u.id = o.user_id WHERE u.id = $2",
+			types.DriverMySQL:    "SELECT `u`.`id`, `u`.`name`, `o`.`order_count` FROM (SELECT `user_id`, COUNT(*) AS order_count FROM `orders` WHERE `user_id` = ? GROUP BY `user_id`) AS o JOIN `users` `u` ON u.id = o.user_id WHERE `u`.`id` = ?",
+			types.DriverPostgres: `SELECT "u"."id", "u"."name", "o"."order_count" FROM (SELECT "user_id", COUNT(*) AS order_count FROM "orders" WHERE "user_id" = $1 GROUP BY "user_id") AS o JOIN "users" "u" ON u.id = o.user_id WHERE "u"."id" = $2`,
 		}
 		expectedBindings := []any{25, 25}
 		assert.Equal(t, expectedSql[dialect], sql)

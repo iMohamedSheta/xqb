@@ -1,8 +1,10 @@
 package mysql
 
 import (
+	"fmt"
 	"strings"
 
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -19,6 +21,13 @@ func (mg *MySQLDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 			}
 			if order.Raw != nil {
 				expr := order.Raw.Dialects[mg.GetDriver().String()]
+				if expr == nil {
+					expr = order.Raw.Dialects[order.Raw.Default]
+				}
+
+				if expr == nil {
+					return "", nil, fmt.Errorf("%w: ORDER BY raw SQL not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, mg.GetDriver().String())
+				}
 
 				sql.WriteString(expr.SQL)
 				bindings = append(bindings, expr.Bindings...)

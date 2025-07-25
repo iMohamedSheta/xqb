@@ -3,12 +3,12 @@ package mysql
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/iMohamedSheta/xqb/shared/enums"
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
+	"github.com/iMohamedSheta/xqb/shared/wrap"
 )
 
 // MySQLDialect implements MySQL-specific SQL syntax
@@ -51,12 +51,6 @@ func (mg *MySQLDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any
 	// Combine bindings
 	bindings = append(bindings, baseBindings...)
 	bindings = append(bindings, unionBindings...)
-
-	// Check if there are any errors in building the query
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
-	}
 
 	return sql.String(), bindings, nil
 }
@@ -114,6 +108,11 @@ func (mg *MySQLDialect) Build(qbd *types.QueryBuilderData) (string, []any, error
 		return "", nil, fmt.Errorf("%w: couldn't build the query sql is empty", xqbErr.ErrInvalidQuery)
 	}
 
+	// Check if there are any errors in building the query
+	if len(qbd.Errors) > 0 {
+		return "", nil, errors.Join(qbd.Errors...)
+	}
+
 	return sql, bindings, nil
 }
 
@@ -140,55 +139,68 @@ func (mg *MySQLDialect) appendError(qb *types.QueryBuilderData, err error) (stri
 }
 
 func (mg *MySQLDialect) Wrap(value string) string {
-	value = strings.TrimSpace(value)
-	lower := strings.ToLower(value)
-
-	// Handle aliases (e.g., COUNT(id) AS total)
-	if idx := strings.LastIndex(lower, " as "); idx != -1 {
-		left := strings.TrimSpace(value[:idx])
-		right := strings.TrimSpace(value[idx+4:])
-		return fmt.Sprintf("%s AS %s", mg.Wrap(left), wrapMysqlValue(right))
-	}
-
-	// Don't wrap SQL expressions like COUNT(id)
-	if mg.isLikelyExpr(lower) || mg.isLiteral(lower) {
-		return value
-	}
-
-	// Handle dot notation like table.*
-	if strings.HasSuffix(value, ".*") {
-		parts := strings.SplitN(value, ".", 2)
-		return wrapMysqlValue(parts[0]) + ".*"
-	}
-
-	// Handle dot notation like table.column
-	segments := strings.Split(value, ".")
-	for i := range segments {
-		segments[i] = wrapMysqlValue(segments[i])
-	}
-	return strings.Join(segments, ".")
+	return wrap.Wrap(value, '`')
 }
 
-func wrapMysqlValue(value string) string {
-	if value == "*" {
-		return "*"
-	}
-	return "`" + strings.Trim(value, "`") + "`"
-}
+// func (mg *MySQLDialect) Wrap(value string) string {
+// 	value = strings.TrimSpace(value)
+// 	lower := strings.ToLower(value)
 
-func (mg *MySQLDialect) isLikelyExpr(s string) bool {
-	return strings.ContainsAny(s, "()+*/-")
-}
+// 	// Handle "AS" aliases (e.g., COUNT(id) AS total)
+// 	if idx := strings.LastIndex(lower, " as "); idx != -1 {
+// 		left := strings.TrimSpace(value[:idx])
+// 		right := strings.TrimSpace(value[idx+4:])
+// 		return fmt.Sprintf("%s AS %s", mg.Wrap(left), wrapMysqlValue(right))
+// 	}
 
-func (mg *MySQLDialect) isLiteral(s string) bool {
-	if s == "null" || s == "true" || s == "false" {
-		return true
-	}
-	if _, err := strconv.ParseFloat(s, 64); err == nil {
-		return true // numeric literal
-	}
-	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
-		return true // string literal
-	}
-	return false
-}
+// 	// Handle shorthand aliases (e.g., users u)
+// 	parts := strings.Fields(value)
+// 	if len(parts) == 2 && !mg.isLikelyExpr(lower) {
+// 		return fmt.Sprintf("%s %s", mg.Wrap(parts[0]), wrapMysqlValue(parts[1]))
+// 	}
+
+// 	// Don't wrap SQL expressions like COUNT(id)
+// 	if mg.isLikelyExpr(lower) || mg.isLiteral(lower) {
+// 		return value
+// 	}
+
+// 	// Handle table.*
+// 	if strings.HasSuffix(value, ".*") {
+// 		parts := strings.SplitN(value, ".", 2)
+// 		return wrapMysqlValue(parts[0]) + ".*"
+// 	}
+
+// 	// Handle table.column
+// 	segments := strings.Split(value, ".")
+// 	for i := range segments {
+// 		segments[i] = wrapMysqlValue(segments[i])
+// 	}
+// 	return strings.Join(segments, ".")
+// }
+
+// func wrapMysqlValue(value string) string {
+// 	if value == "*" {
+// 		return "*"
+// 	}
+// 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
+// 		return value // already wrapped
+// 	}
+// 	return "`" + strings.Trim(value, "`") + "`"
+// }
+
+// func (mg *MySQLDialect) isLikelyExpr(s string) bool {
+// 	return strings.ContainsAny(s, "()+*/-")
+// }
+
+// func (mg *MySQLDialect) isLiteral(s string) bool {
+// 	if s == "null" || s == "true" || s == "false" {
+// 		return true
+// 	}
+// 	if _, err := strconv.ParseFloat(s, 64); err == nil {
+// 		return true // numeric literal
+// 	}
+// 	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
+// 		return true // string literal
+// 	}
+// 	return false
+// }

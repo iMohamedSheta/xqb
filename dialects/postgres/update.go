@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -37,12 +36,6 @@ func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []
 		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
 		}
-	}
-
-	// Check if there are any errors in building the query
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
 	}
 
 	return sql.String(), bindings, nil

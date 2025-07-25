@@ -1,8 +1,10 @@
 package postgres
 
 import (
+	"fmt"
 	"strings"
 
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -19,6 +21,13 @@ func (pg *PostgresDialect) compileOrderByClause(qb *types.QueryBuilderData) (str
 			}
 			if order.Raw != nil {
 				expr := order.Raw.Dialects[pg.GetDriver().String()]
+				if expr == nil {
+					expr = order.Raw.Dialects[order.Raw.Default]
+				}
+
+				if expr == nil {
+					return "", nil, fmt.Errorf("%w: ORDER BY raw SQL not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, pg.GetDriver().String())
+				}
 
 				sql.WriteString(expr.SQL)
 				bindings = append(bindings, expr.Bindings...)

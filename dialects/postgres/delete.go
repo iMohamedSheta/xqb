@@ -47,12 +47,6 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 		}
 	}
 
-	// Check if there are any errors in building the query
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
-	}
-
 	return sql.String(), bindings, nil
 }
 

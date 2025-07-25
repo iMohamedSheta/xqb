@@ -15,8 +15,8 @@ func Test_Pluck_ValueAndKey(t *testing.T) {
 
 		sql, bindings, err := qb.PluckSQL("name", "id")
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT name, id FROM users WHERE name LIKE ?",
-			types.DriverPostgres: "SELECT name, id FROM users WHERE name LIKE $1",
+			types.DriverMySQL:    "SELECT `name`, `id` FROM `users` WHERE `name` LIKE ?",
+			types.DriverPostgres: `SELECT "name", "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -31,8 +31,8 @@ func Test_Pluck_Value(t *testing.T) {
 		sql, bindings, err := qb.PluckSQL("name", "")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT name FROM users WHERE name LIKE ?",
-			types.DriverPostgres: "SELECT name FROM users WHERE name LIKE $1",
+			types.DriverMySQL:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
+			types.DriverPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -47,8 +47,8 @@ func Test_Pluck_Key(t *testing.T) {
 		sql, bindings, err := qb.PluckSQL("", "id")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id FROM users WHERE name LIKE ?",
-			types.DriverPostgres: "SELECT id FROM users WHERE name LIKE $1",
+			types.DriverMySQL:    "SELECT `id` FROM `users` WHERE `name` LIKE ?",
+			types.DriverPostgres: `SELECT "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -63,8 +63,8 @@ func Test_Pluck_NoData(t *testing.T) {
 		sql, bindings, err := qb.PluckSQL("name", "id")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT name, id FROM users",
-			types.DriverPostgres: "SELECT name, id FROM users",
+			types.DriverMySQL:    "SELECT `name`, `id` FROM `users`",
+			types.DriverPostgres: `SELECT "name", "id" FROM "users"`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -93,8 +93,8 @@ func Test_Pluck_ComplexQuery(t *testing.T) {
 		sql, bindings, err := qb.PluckSQL("", "")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id, name FROM users WHERE name LIKE ? AND id = ?",
-			types.DriverPostgres: "SELECT id, name FROM users WHERE name LIKE $1 AND id = $2",
+			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `id` = ?",
+			types.DriverPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "id" = $2`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

@@ -2,40 +2,38 @@ package errors
 
 import "errors"
 
+// Query Builder Errors
 var (
-	// No results found
-	ErrNotFound = errors.New("xqb - the resource was not found")
+	// ErrNotFound is returned when a query returns no results.
+	// Commonly used to signal that a resource (row, record) doesn't exist.
+	ErrNotFound = errors.New("xqb_resource_not_found")
 
-	// The table name was not set
-	ErrMissingTable = errors.New("xqb - no table specified for query")
+	// ErrInvalidQuery is returned when query building fails due to syntax errors,
+	// unsupported constructs, or invalid parameters.
+	ErrInvalidQuery = errors.New("xqb_invalid_query")
 
-	// No columns selected
-	ErrNoColumns = errors.New("xqb - no columns selected")
+	// ErrQueryFailed is returned when a query execution fails, often due to a database error.
+	ErrQueryFailed = errors.New("xqb_query_failed")
 
-	// Placeholder count does not match bindings
-	ErrPlaceholderMismatch = errors.New("xqb - placeholders and bindings count mismatch")
+	// ErrInvalidResult is returned when a query returns an unexpected result type or structure.
+	// Commonly used to signal a mismatch between expected and actual result types.
+	ErrInvalidResult = errors.New("xqb_invalid_result")
 
-	// No database connection available
-	ErrNoConnection = errors.New("xqb - database connection not available to execute query")
+	// ErrUnsupportedFeature is returned when a feature is not supported by the underlying driver,
+	// such as streaming, chunking, or advanced SQL syntax.
+	ErrUnsupportedFeature = errors.New("xqb_unsupported_feature")
 
-	// Query building failed due to invalid query
-	ErrInvalidQuery = errors.New("xqb - invalid query build error")
+	// ErrTransactionFailed is returned when a transaction could not be completed successfully,
+	// often due to rollback or nested failure.
+	ErrTransactionFailed = errors.New("xqb_transaction_failed")
+)
 
-	// Attempted to use chunking or streaming on an unsupported connection
-	ErrUnsupportedFeature = errors.New("xqb - feature not supported by the driver")
+// Database Manager Errors
+var (
+	// ErrNoConnection is returned when there is no database connection available.
+	// Indicates a critical failure in establishing or maintaining a connection.
+	ErrNoConnection = errors.New("xqb_no_database_connection")
 
-	// The query was not valid and it executed
-	ErrInvalidExecutedQuerySyntax = errors.New("xqb - invalid executed query syntax")
-
-	// Unexpected row count
-	ErrUnexpectedRowCount = errors.New("xqb - unexpected row count")
-
-	// Invalid result type
-	ErrInvalidResultType = errors.New("xqb - invalid result type")
-
-	// Closing connection failed
-	ErrClosingConnection = errors.New("xqb - closing connection failed")
-
-	// Transaction failed
-	ErrTransactionFailed = errors.New("xqb - transaction failed")
+	// ErrClosingConnection is returned when a database connection could not be closed.
+	ErrClosingConnection = errors.New("xqb_failed_to_close_connection")
 )

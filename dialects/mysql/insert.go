@@ -1,7 +1,6 @@
 package mysql
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -35,10 +34,6 @@ func (mg *MySQLDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any
 		if upsertClause != "" {
 			sql += " " + upsertClause
 		}
-	}
-
-	if len(qb.Errors) > 0 {
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errors.Join(qb.Errors...))
 	}
 
 	return sql, bindings, nil

@@ -17,12 +17,12 @@ func (qb *QueryBuilder) Count(column string) (int64, error) {
 	}
 
 	if len(data) != 1 {
-		return 0, fmt.Errorf("%w [Count]: expected one row, got %d rows", xqbErr.ErrUnexpectedRowCount, len(data))
+		return 0, fmt.Errorf("%w: Count() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
 	count, err := asInt64(data[0]["count_value"])
 	if err != nil {
-		return 0, fmt.Errorf("%w [Count]: failed to convert count_value, %v", xqbErr.ErrInvalidResultType, err)
+		return 0, fmt.Errorf("%w: Count() failed to convert result value to int, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return count, nil
@@ -38,12 +38,12 @@ func (qb *QueryBuilder) Avg(column string) (float64, error) {
 	}
 
 	if len(data) != 1 {
-		return 0, fmt.Errorf("%w [Avg]: expected one row, got %d rows", xqbErr.ErrUnexpectedRowCount, len(data))
+		return 0, fmt.Errorf("%w: Avg() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
 	avg, err := asFloat64(data[0]["avg_value"])
 	if err != nil {
-		return 0, fmt.Errorf("%w [Avg]: failed to convert avg_value, %v", xqbErr.ErrInvalidResultType, err)
+		return 0, fmt.Errorf("%w: Avg() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return avg, nil
@@ -59,12 +59,12 @@ func (qb *QueryBuilder) Sum(column string) (float64, error) {
 	}
 
 	if len(data) != 1 {
-		return 0, fmt.Errorf("%w [Sum]: expected one row, got %d rows", xqbErr.ErrUnexpectedRowCount, len(data))
+		return 0, fmt.Errorf("%w: Sum() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
 	sum, err := asFloat64(data[0]["sum_value"])
 	if err != nil {
-		return 0, fmt.Errorf("%w [Sum]: failed to convert sum_value, %v", xqbErr.ErrInvalidResultType, err)
+		return 0, fmt.Errorf("%w: Sum() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return sum, nil
@@ -80,12 +80,12 @@ func (qb *QueryBuilder) Min(column string) (float64, error) {
 	}
 
 	if len(data) != 1 {
-		return 0, fmt.Errorf("%w [Min]: expected one row, got %d rows", xqbErr.ErrUnexpectedRowCount, len(data))
+		return 0, fmt.Errorf("%w: Min() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
 	min, err := asFloat64(data[0]["min_value"])
 	if err != nil {
-		return 0, fmt.Errorf("%w [Min]: failed to convert min_value, %v", xqbErr.ErrInvalidResultType, err)
+		return 0, fmt.Errorf("%w: Min() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return min, nil
@@ -101,12 +101,12 @@ func (qb *QueryBuilder) Max(column string) (float64, error) {
 	}
 
 	if len(data) != 1 {
-		return 0, fmt.Errorf("%w [Max]: expected one row, got %d rows", xqbErr.ErrUnexpectedRowCount, len(data))
+		return 0, fmt.Errorf("%w: Max() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
 	max, err := asFloat64(data[0]["max_value"])
 	if err != nil {
-		return 0, fmt.Errorf("%w [Max]: failed to convert max_value, %v", xqbErr.ErrInvalidResultType, err)
+		return 0, fmt.Errorf("%w: Max() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return max, nil

@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -39,11 +38,6 @@ func (pg *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []
 		if upsertClause != "" {
 			sql += " " + upsertClause
 		}
-	}
-
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
 	}
 
 	return sql, bindings, nil

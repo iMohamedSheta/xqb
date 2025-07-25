@@ -57,7 +57,7 @@ func (qb *QueryBuilder) updateQueryForPluck(value, key string) error {
 	} else if key != "" {
 		qb.columns = []any{key}
 	} else if len(qb.columns) == 0 {
-		return fmt.Errorf("%w [Pluck]: either value or key must be specified", xqbErr.ErrInvalidQuery)
+		return fmt.Errorf("%w: Pluck() either value or key must be specified", xqbErr.ErrInvalidQuery)
 	}
 
 	return nil

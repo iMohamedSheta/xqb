@@ -23,8 +23,8 @@ func Test_Union(t *testing.T) {
 
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id, name FROM users) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT id, username FROM admins WHERE username = ? LIMIT 1)",
-			types.DriverPostgres: "(SELECT id, name FROM users) UNION (SELECT id, name FROM admins WHERE active = $1) UNION (SELECT id, username FROM admins WHERE username = $2 LIMIT 1)",
+			types.DriverMySQL:    "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT `id`, `username` FROM `admins` WHERE `username` = ? LIMIT 1)",
+			types.DriverPostgres: `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM admins WHERE active = $1) UNION (SELECT "id", "username" FROM "admins" WHERE "username" = $2 LIMIT 1)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -42,8 +42,8 @@ func Test_UnionAll(t *testing.T) {
 
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
-			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM guests WHERE banned = $1)",
+			types.DriverMySQL:    "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM guests WHERE banned = $1)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -62,7 +62,7 @@ func Test_ExceptUnion(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) EXCEPT (SELECT id FROM banned_users)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") EXCEPT (SELECT id FROM banned_users)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -87,7 +87,7 @@ func Test_ExceptUnion_All(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -112,7 +112,7 @@ func Test_IntersectUnion(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) INTERSECT ALL (SELECT id FROM employees WHERE active = $1)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") INTERSECT ALL (SELECT id FROM employees WHERE active = $1)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -139,8 +139,8 @@ func Test_Union_WithMultipleQueries(t *testing.T) {
 
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id FROM users) UNION (SELECT id FROM admins) UNION (SELECT id FROM guests)",
-			types.DriverPostgres: "(SELECT id FROM users) UNION (SELECT id FROM admins) UNION (SELECT id FROM guests)",
+			types.DriverMySQL:    "(SELECT `id` FROM `users`) UNION (SELECT `id` FROM `admins`) UNION (SELECT `id` FROM `guests`)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") UNION (SELECT "id" FROM "admins") UNION (SELECT "id" FROM "guests")`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -158,8 +158,8 @@ func Test_UnionAll_WithMultipleQueries(t *testing.T) {
 
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM admins) UNION ALL (SELECT id FROM guests)",
-			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM admins) UNION ALL (SELECT id FROM guests)",
+			types.DriverMySQL:    "(SELECT `id` FROM `users`) UNION ALL (SELECT `id` FROM `admins`) UNION ALL (SELECT `id` FROM `guests`)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT "id" FROM "admins") UNION ALL (SELECT "id" FROM "guests")`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -176,8 +176,8 @@ func Test_Union_MixedRawAndBuilder(t *testing.T) {
 
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id FROM users) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT id FROM admins WHERE id > ?)",
-			types.DriverPostgres: "(SELECT id FROM users) UNION (SELECT id FROM guests WHERE active = $1) UNION (SELECT id FROM admins WHERE id > $2)",
+			types.DriverMySQL:    "(SELECT `id` FROM `users`) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT `id` FROM `admins` WHERE `id` > ?)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") UNION (SELECT id FROM guests WHERE active = $1) UNION (SELECT "id" FROM "admins" WHERE "id" > $2)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -195,8 +195,8 @@ func Test_UnionAllRaw_WithBindings(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		assert.NoError(t, err)
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "(SELECT id FROM users) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
-			types.DriverPostgres: "(SELECT id FROM users) UNION ALL (SELECT id FROM banned_users WHERE reason = $1)",
+			types.DriverMySQL:    "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM banned_users WHERE reason = $1)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -214,7 +214,7 @@ func Test_ExceptUnion_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) EXCEPT (SELECT id FROM banned_users)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") EXCEPT (SELECT "id" FROM "banned_users")`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -239,7 +239,7 @@ func Test_ExceptUnionAll_Unsupported(t *testing.T) {
 
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT "id" FROM "banned_users")`,
 		}
 
 		expectedErr := map[types.Driver]error{
@@ -267,7 +267,7 @@ func Test_ExceptUnionRaw_Unsupported(t *testing.T) {
 
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) EXCEPT ALL (SELECT id FROM banned_users)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
 		}
 
 		expectedErr := map[types.Driver]error{
@@ -295,7 +295,7 @@ func Test_IntersectUnion_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) INTERSECT (SELECT id FROM employees WHERE active = $1)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") INTERSECT (SELECT "id" FROM "employees" WHERE "active" = $1)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -320,7 +320,7 @@ func Test_IntersectUnionAll_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) INTERSECT ALL (SELECT id FROM employees WHERE active = $1)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") INTERSECT ALL (SELECT "id" FROM "employees" WHERE "active" = $1)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -345,7 +345,7 @@ func Test_IntersectUnionRaw_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
 			types.DriverMySQL:    "", // not Supported by MySQL
-			types.DriverPostgres: "(SELECT id FROM users) INTERSECT (SELECT id FROM employees)",
+			types.DriverPostgres: `(SELECT "id" FROM "users") INTERSECT (SELECT id FROM employees)`,
 		}
 		expectedErr := map[types.Driver]error{
 			types.DriverMySQL:    errors.ErrUnsupportedFeature,
@@ -368,8 +368,8 @@ func Test_Union_WithEmptyUnionList(t *testing.T) {
 		q := xqb.Table("users").SetDialect(dialect).Select("id")
 		sql, bindings, err := q.ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id FROM users",
-			types.DriverPostgres: "SELECT id FROM users",
+			types.DriverMySQL:    "SELECT `id` FROM `users`",
+			types.DriverPostgres: `SELECT "id" FROM "users"`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

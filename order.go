@@ -13,6 +13,7 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	var dialectExpr *types.DialectExpression
 
 	dialect := qb.dialect.GetDriver().String()
+
 	switch v := column.(type) {
 	case string:
 		col = v
@@ -20,6 +21,7 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 		dialectExpr = v
 	case *types.Expression:
 		dialectExpr = &types.DialectExpression{
+			Default: dialect,
 			Dialects: map[string]*types.Expression{
 				dialect: v,
 			},

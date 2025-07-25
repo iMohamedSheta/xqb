@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
+	"github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,8 +17,8 @@ func TestGroupByWithRawExpressions(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT YEAR(created_at) as year, SUM(amount) as total FROM orders GROUP BY YEAR(created_at)",
-			types.DriverPostgres: "SELECT YEAR(created_at) as year, SUM(amount) as total FROM orders GROUP BY YEAR(created_at)",
+			types.DriverMySQL:    "SELECT YEAR(created_at) as year, SUM(amount) as total FROM `orders` GROUP BY YEAR(created_at)",
+			types.DriverPostgres: `SELECT YEAR(created_at) as year, SUM(amount) as total FROM "orders" GROUP BY YEAR(created_at)`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)
@@ -33,8 +34,8 @@ func TestGroupByMultipleColumns(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT user_id, product_id FROM orders GROUP BY user_id, product_id",
-			types.DriverPostgres: "SELECT user_id, product_id FROM orders GROUP BY user_id, product_id",
+			types.DriverMySQL:    "SELECT `user_id`, `product_id` FROM `orders` GROUP BY `user_id`, `product_id`",
+			types.DriverPostgres: `SELECT "user_id", "product_id" FROM "orders" GROUP BY "user_id", "product_id"`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -51,8 +52,8 @@ func TestGroupByRawShortcut(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id FROM orders GROUP BY DATE(created_at)",
-			types.DriverPostgres: "SELECT id FROM orders GROUP BY DATE(created_at)",
+			types.DriverMySQL:    "SELECT `id` FROM `orders` GROUP BY DATE(created_at)",
+			types.DriverPostgres: `SELECT "id" FROM "orders" GROUP BY DATE(created_at)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -71,8 +72,8 @@ func TestGroupByWithHaving(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT region, SUM(amount) as total FROM sales GROUP BY region HAVING SUM(amount) > ?",
-			types.DriverPostgres: "SELECT region, SUM(amount) as total FROM sales GROUP BY region HAVING SUM(amount) > $1",
+			types.DriverMySQL:    "SELECT `region`, SUM(amount) as total FROM `sales` GROUP BY `region` HAVING SUM(amount) > ?",
+			types.DriverPostgres: `SELECT "region", SUM(amount) as total FROM "sales" GROUP BY "region" HAVING SUM(amount) > $1`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
@@ -89,8 +90,8 @@ func TestGroupByWithMultipleRawAndColumns(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT type, DATE(created_at) as day FROM events GROUP BY type, DATE(created_at)",
-			types.DriverPostgres: "SELECT type, DATE(created_at) as day FROM events GROUP BY type, DATE(created_at)",
+			types.DriverMySQL:    "SELECT `type`, DATE(created_at) as day FROM `events` GROUP BY `type`, DATE(created_at)",
+			types.DriverPostgres: `SELECT "type", DATE(created_at) as day FROM "events" GROUP BY "type", DATE(created_at)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -99,7 +100,7 @@ func TestGroupByWithMultipleRawAndColumns(t *testing.T) {
 	})
 }
 
-func TestGroupByNoColumns(t *testing.T) {
+func TestGroupByNoColumns_ReturnAnError(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("metrics").SetDialect(dialect)
 		sql, bindings, err := qb.
@@ -107,32 +108,9 @@ func TestGroupByNoColumns(t *testing.T) {
 			GroupBy().
 			ToSQL()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT id FROM metrics",
-			types.DriverPostgres: "SELECT id FROM metrics",
-		}
-
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.ErrorIs(t, err, errors.ErrInvalidQuery)
+		assert.Empty(t, sql)
 		assert.Empty(t, bindings)
-		assert.NoError(t, err)
-	})
-}
-
-func TestGroupByDuplicateColumns(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
-		qb := xqb.Table("items").SetDialect(dialect)
-		sql, bindings, err := qb.
-			Select("category_id").
-			GroupBy("category_id", "category_id").
-			ToSQL()
-
-		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT category_id FROM items GROUP BY category_id, category_id",
-			types.DriverPostgres: "SELECT category_id FROM items GROUP BY category_id, category_id",
-		}
-		assert.Equal(t, expectedSql[dialect], sql)
-		assert.Empty(t, bindings)
-		assert.NoError(t, err)
 	})
 }
 
@@ -146,8 +124,8 @@ func TestGroupByWithOrderBy(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT user_id, COUNT(*) as count FROM sessions GROUP BY user_id ORDER BY count DESC",
-			types.DriverPostgres: "SELECT user_id, COUNT(*) as count FROM sessions GROUP BY user_id ORDER BY count DESC",
+			types.DriverMySQL:    "SELECT `user_id`, COUNT(*) as count FROM `sessions` GROUP BY `user_id` ORDER BY `count` DESC",
+			types.DriverPostgres: `SELECT "user_id", COUNT(*) as count FROM "sessions" GROUP BY "user_id" ORDER BY "count" DESC`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Empty(t, bindings)

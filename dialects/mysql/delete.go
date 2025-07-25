@@ -42,12 +42,6 @@ func (mg *MySQLDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any
 		}
 	}
 
-	// Check if there are any errors in building the query
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
-	}
-
 	return sql.String(), bindings, nil
 }
 

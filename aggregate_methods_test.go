@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 
 	"github.com/stretchr/testify/assert"
@@ -20,8 +21,8 @@ func Test_Aggregate(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT SUM(price) AS total_price, username, email FROM users WHERE id = ? LIMIT 1",
-			types.DriverPostgres: "SELECT SUM(price) AS total_price, username, email FROM users WHERE id = $1 LIMIT 1",
+			types.DriverMySQL:    "SELECT SUM(price) AS total_price, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DriverPostgres: `SELECT SUM(price) AS total_price, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -44,8 +45,8 @@ func Test_DialectExpr(t *testing.T) {
 			ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, username, email FROM users WHERE id = ? LIMIT 1",
-			types.DriverPostgres: "SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, username, email FROM users WHERE id = $1 LIMIT 1",
+			types.DriverMySQL:    "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DriverPostgres: `SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -106,35 +107,96 @@ func Test_Coalesce(t *testing.T) {
 	assert.Equal(t, "COALESCE(middle_name, 'N/A') AS coalesced_name", expr.SQL)
 }
 
-func Test_QueryBuilder_Locks(t *testing.T) {
+func Test_QueryBuilder_LockForUpdate(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
-		sql, b, err := xqb.Table("users").LockForUpdate().ToSQL()
-		assert.Equal(t, "SELECT * FROM users FOR UPDATE", sql)
-		assert.Equal(t, []any(nil), b)
+		sql, b, err := xqb.Table("users").SetDialect(dialect).LockForUpdate().ToSQL()
+
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT * FROM `users` FOR UPDATE",
+			types.DriverPostgres: `SELECT * FROM "users" FOR UPDATE`,
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, b)
 		assert.NoError(t, err)
+	})
+}
 
-		qb := xqb.Table("users").SharedLock()
+func Test_QueryBuilder_SharedLock(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect).SharedLock()
 
-		sql, b, _ = qb.ToSQL()
-		assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE", sql)
-		assert.Equal(t, []any(nil), b)
+		sql, b, err := qb.ToSQL()
 
-		qb = xqb.Table("users").SharedLock().NoWaitLocked()
-		sql, b, _ = qb.ToSQL()
-		assert.Equal(t, "SELECT * FROM users LOCK IN SHARE MODE NOWAIT", sql)
-		assert.Equal(t, []any(nil), b)
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT * FROM `users` LOCK IN SHARE MODE",
+			types.DriverPostgres: `SELECT * FROM "users" FOR SHARE`,
+		}
 
-		qb = xqb.Table("users").LockForUpdate().SkipLocked()
-		sql, b, _ = qb.ToSQL()
-		assert.Equal(t, "SELECT * FROM users FOR UPDATE SKIP LOCKED", sql)
-		assert.Equal(t, []any(nil), b)
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, b)
+		assert.NoError(t, err)
+	})
+}
 
-		qb = xqb.Table("users")
-		qb.SetDialect(types.DriverPostgres)
-		qb.Where("id", "=", 15).LockNoKeyUpdate().SkipLocked()
-		sql, b, _ = qb.ToSQL()
-		assert.Equal(t, "SELECT * FROM users WHERE id = $1 FOR NO KEY UPDATE SKIP LOCKED", sql)
-		assert.Equal(t, []any{15}, b)
+func Test_QueryBuilder_SharedLock_NoWait(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect).SharedLock().NoWaitLocked()
+		sql, b, err := qb.ToSQL()
+
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT * FROM `users` LOCK IN SHARE MODE NOWAIT",
+			types.DriverPostgres: `SELECT * FROM "users" FOR SHARE NOWAIT`,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, b)
+		assert.NoError(t, err)
+	})
+}
+
+func Test_QueryBuilder_LockForUpdate_SkipLocked(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		qb := xqb.Table("users").SetDialect(dialect).LockForUpdate().SkipLocked()
+
+		sql, b, err := qb.ToSQL()
+
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "SELECT * FROM `users` FOR UPDATE SKIP LOCKED",
+			types.DriverPostgres: `SELECT * FROM "users" FOR UPDATE SKIP LOCKED`,
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Empty(t, b)
+		assert.NoError(t, err)
+	})
+}
+
+func Test_QueryBuilder_NoKeyUpdate_SkipLocked_Postgres(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+		qb := xqb.Table("users").
+			SetDialect(dialect).
+			Where("id", "=", 15).
+			LockNoKeyUpdate(). // Support only for Postgres
+			SkipLocked()
+
+		sql, b, err := qb.ToSQL()
+		expectedSql := map[types.Driver]string{
+			types.DriverMySQL:    "",
+			types.DriverPostgres: `SELECT * FROM "users" WHERE "id" = $1 FOR NO KEY UPDATE SKIP LOCKED`,
+		}
+		expectedErr := map[types.Driver]error{
+			types.DriverMySQL:    xqbErr.ErrInvalidQuery,
+			types.DriverPostgres: nil,
+		}
+
+		assert.Equal(t, expectedSql[dialect], sql)
+
+		if expectedErr[dialect] != nil {
+			assert.ErrorIs(t, err, expectedErr[dialect])
+			assert.Empty(t, b)
+		} else {
+			assert.NoError(t, err)
+			assert.Equal(t, []any{15}, b)
+		}
 	})
 }
 
@@ -196,8 +258,8 @@ func Test_QueryBuilder_Upper_Length_Trim(t *testing.T) {
 			xqb.Trim("username", "trimmed_username"),
 		).Where("active", "=", true).ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM users WHERE active = ?",
-			types.DriverPostgres: "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM users WHERE active = $1",
+			types.DriverMySQL:    "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM `users` WHERE `active` = ?",
+			types.DriverPostgres: `SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM "users" WHERE "active" = $1`,
 		}
 
 		assert.NoError(t, err)
@@ -215,8 +277,8 @@ func Test_QueryBuilder_DateAdd_DateSub(t *testing.T) {
 		).Where("status", "=", "open").ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM events WHERE status = ?",
-			types.DriverPostgres: "SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM events WHERE status = $1",
+			types.DriverMySQL:    "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM `events` WHERE `status` = ?",
+			types.DriverPostgres: `SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM "events" WHERE "status" = $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -258,14 +320,14 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 				"DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, " +
 				"DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
 				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
-				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM test_table WHERE active = ?",
-			types.DriverPostgres: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
-				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, data->'user'->>'email' AS user_email, " +
-				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
-				"(end_date - start_date) AS days_between, created_at + INTERVAL '1 day' AS next_day, created_at - INTERVAL '1 month' AS prev_month, " +
-				"TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
-				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
-				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM test_table WHERE active = $1",
+				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM `test_table` WHERE `active` = ?",
+			types.DriverPostgres: `SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount,` +
+				` AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, data->'user'->>'email' AS user_email,` +
+				` price * quantity AS total_price, DATE(created_at) AS created_date,` +
+				` (end_date - start_date) AS days_between, created_at + INTERVAL '1 day' AS next_day, created_at - INTERVAL '1 month' AS prev_month,` +
+				` TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name,` +
+				` LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname,` +
+				` REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM "test_table" WHERE "active" = $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -346,15 +408,15 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 				"DATE_FORMAT(created_at, '%Y-%m-%d'), DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), " +
 				"CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, " +
 				"TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), " +
-				"SUBSTRING(description, 1, 10) AS short_desc FROM coverage_table WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10",
-			types.DriverPostgres: "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), " +
-				"MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, data->'user'->>'name', data->'user'->>'name' AS user_name, price * quantity, " +
-				"price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, (end_date - start_date), (end_date - start_date) AS days_between, " +
-				"created_at + INTERVAL '1 day', created_at + INTERVAL '1 day' AS next_day, created_at - INTERVAL '1 month', created_at - INTERVAL '1 month' AS prev_month, " +
-				"TO_CHAR(created_at, '%Y-%m-%d'), TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), " +
-				"CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, " +
-				"TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), " +
-				"SUBSTRING(description, 1, 10) AS short_desc FROM coverage_table WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10",
+				"SUBSTRING(description, 1, 10) AS short_desc FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10",
+			types.DriverPostgres: `SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), ` +
+				`MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, data->'user'->>'name', data->'user'->>'name' AS user_name, price * quantity, ` +
+				`price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, (end_date - start_date), (end_date - start_date) AS days_between, ` +
+				`created_at + INTERVAL '1 day', created_at + INTERVAL '1 day' AS next_day, created_at - INTERVAL '1 month', created_at - INTERVAL '1 month' AS prev_month, ` +
+				`TO_CHAR(created_at, '%Y-%m-%d'), TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), ` +
+				`CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, ` +
+				`TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), ` +
+				`SUBSTRING(description, 1, 10) AS short_desc FROM "coverage_table" WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10`,
 		}
 
 		assert.NoError(t, err)

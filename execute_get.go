@@ -13,18 +13,18 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	qbData := qb.GetData()
 	query, args, err := qb.dialect.Build(qbData)
 	if err != nil {
-		return nil, fmt.Errorf("%w [Get]: Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
+		return nil, fmt.Errorf("%w: Get() Failed to build the sql query, %v", xqbErr.ErrInvalidQuery, err)
 	}
 
 	rows, err := Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Query()
 	if err != nil {
-		return nil, fmt.Errorf("%w [Get]: Invalid query sql query error %v", xqbErr.ErrInvalidExecutedQuerySyntax, err)
+		return nil, fmt.Errorf("%w: Get() Invalid query sql query error %v", xqbErr.ErrQueryFailed, err)
 	}
 	defer rows.Close()
 
 	columns, err := rows.Columns()
 	if err != nil {
-		return nil, fmt.Errorf("%w [Get]: %v", xqbErr.ErrInvalidExecutedQuerySyntax, err)
+		return nil, fmt.Errorf("%w: Get() failed to retrieve columns %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	values := make([]any, len(columns))
@@ -36,7 +36,7 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	var results []map[string]any
 	for rows.Next() {
 		if err := rows.Scan(valuePtrs...); err != nil {
-			return nil, fmt.Errorf("%w [Get]: %v", xqbErr.ErrInvalidResultType, err)
+			return nil, fmt.Errorf("%w: Get() failed to scan result rows %v", xqbErr.ErrInvalidResult, err)
 		}
 
 		result := make(map[string]any)
@@ -53,7 +53,7 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w [Get]: %v", xqbErr.ErrInvalidResultType, err)
+		return nil, fmt.Errorf("%w: Get() failed to scan result rows %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return results, nil
@@ -86,14 +86,14 @@ func (qb *QueryBuilder) Value(column string) (any, error) {
 
 	val, ok := result[column]
 	if !ok {
-		return nil, fmt.Errorf("%w [Value]: column %q not found in result", xqbErr.ErrInvalidResultType, column)
+		return nil, fmt.Errorf("%w: Value() column %q not found in result", xqbErr.ErrInvalidResult, column)
 	}
 
 	return val, nil
 }
 
 // Paginate returns paginated results with optional count metadata
-func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[string]any, map[string]any, error) {
+func (qb *QueryBuilder) Paginate(perPage int, page int, countBy string) ([]map[string]any, map[string]any, error) {
 	if page < 1 {
 		page = 1
 	}
@@ -111,10 +111,10 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 		"current_page": page,
 	}
 
-	if withCount {
-		count, err := qb.Count("*")
+	if countBy != "" {
+		count, err := qb.Count(countBy)
 		if err != nil {
-			return nil, nil, fmt.Errorf("%w [Paginate]: failed to count records: %v", xqbErr.ErrInvalidQuery, err)
+			return nil, nil, fmt.Errorf("%w: Paginate() failed to get count of the records: %v", xqbErr.ErrInvalidQuery, err)
 		}
 
 		lastPage := int(math.Ceil(float64(count) / float64(perPage)))
@@ -139,7 +139,7 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, withCount bool) ([]map[s
 // Chunks processes results in batch and calls the closure for each chunk
 func (qb *QueryBuilder) Chunks(chunkSize int, closure func(results []map[string]any) error) error {
 	if chunkSize <= 0 {
-		return fmt.Errorf("%w [Chunks]: chunk size must be greater than 0", xqbErr.ErrInvalidQuery)
+		return fmt.Errorf("%w: Chunks() chunk size must be greater than 0", xqbErr.ErrInvalidQuery)
 	}
 
 	offset := 0
@@ -158,7 +158,7 @@ func (qb *QueryBuilder) Chunks(chunkSize int, closure func(results []map[string]
 		}
 
 		if err := closure(results); err != nil {
-			return fmt.Errorf("%w [Chunks]: %v", xqbErr.ErrUnsupportedFeature, err)
+			return fmt.Errorf("%w: Chunks() failed to process chunk %v", xqbErr.ErrUnsupportedFeature, err)
 		}
 
 		offset += chunkSize
@@ -176,7 +176,7 @@ func (qb *QueryBuilder) Find(id any) (map[string]any, error) {
 func (qb *QueryBuilder) FindOrFail(id any) (map[string]any, error) {
 	result, err := qb.Find(id)
 	if errors.Is(err, xqbErr.ErrNotFound) {
-		return nil, fmt.Errorf("%w [FindOrFail]: record with ID %v not found", xqbErr.ErrNotFound, id)
+		return nil, fmt.Errorf("%w: FindOrFail() record with ID %v was not found", xqbErr.ErrNotFound, id)
 	}
 	if err != nil {
 		return nil, err

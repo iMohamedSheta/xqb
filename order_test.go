@@ -13,8 +13,8 @@ func TestOrderByWithRawExpressions(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.OrderBy(xqb.Raw("FIELD(status, 'active', 'pending', 'inactive')"), "ASC").ToSQL()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM users ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
-			types.DriverPostgres: "SELECT * FROM users ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
+			types.DriverMySQL:    "SELECT * FROM `users` ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
+			types.DriverPostgres: `SELECT * FROM "users" ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -29,8 +29,8 @@ func TestOrderBySimpleColumn(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM users ORDER BY name ASC",
-			types.DriverPostgres: "SELECT * FROM users ORDER BY name ASC",
+			types.DriverMySQL:    "SELECT * FROM `users` ORDER BY `name` ASC",
+			types.DriverPostgres: `SELECT * FROM "users" ORDER BY "name" ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -45,8 +45,8 @@ func TestOrderByDescShortcut(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM users ORDER BY created_at DESC",
-			types.DriverPostgres: "SELECT * FROM users ORDER BY created_at DESC",
+			types.DriverMySQL:    "SELECT * FROM `users` ORDER BY `created_at` DESC",
+			types.DriverPostgres: `SELECT * FROM "users" ORDER BY "created_at" DESC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -61,8 +61,8 @@ func TestOrderByAscShortcut(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM users ORDER BY email ASC",
-			types.DriverPostgres: "SELECT * FROM users ORDER BY email ASC",
+			types.DriverMySQL:    "SELECT * FROM `users` ORDER BY `email` ASC",
+			types.DriverPostgres: `SELECT * FROM "users" ORDER BY "email" ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -78,8 +78,8 @@ func TestOrderByWithRawExpression(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM products ORDER BY LENGTH(name) DESC",
-			types.DriverPostgres: "SELECT * FROM products ORDER BY LENGTH(name) DESC",
+			types.DriverMySQL:    "SELECT * FROM `products` ORDER BY LENGTH(name) DESC",
+			types.DriverPostgres: `SELECT * FROM "products" ORDER BY LENGTH(name) DESC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -95,8 +95,8 @@ func TestOrderByRawFunction(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM logs ORDER BY FIELD(status, ?, ?, ?)",
-			types.DriverPostgres: "SELECT * FROM logs ORDER BY FIELD(status, $1, $2, $3)",
+			types.DriverMySQL:    "SELECT * FROM `logs` ORDER BY FIELD(status, ?, ?, ?)",
+			types.DriverPostgres: `SELECT * FROM "logs" ORDER BY FIELD(status, $1, $2, $3)`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -114,8 +114,8 @@ func TestOrderByWithFallbackToString(t *testing.T) {
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM items ORDER BY 123 ASC",
-			types.DriverPostgres: "SELECT * FROM items ORDER BY 123 ASC",
+			types.DriverMySQL:    "SELECT * FROM `items` ORDER BY 123 ASC",
+			types.DriverPostgres: `SELECT * FROM "items" ORDER BY 123 ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -126,15 +126,16 @@ func TestOrderByWithFallbackToString(t *testing.T) {
 
 func TestLatestAndOldest(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
-		qb := xqb.Table("comments").Select("*").
+		qb := xqb.Table("comments").SetDialect(dialect).
+			Select("*").
 			Latest("created_at").
 			Oldest("updated_at")
 
 		sql, bindings, err := qb.ToSQL()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM comments ORDER BY created_at DESC, updated_at ASC",
-			types.DriverPostgres: "SELECT * FROM comments ORDER BY created_at DESC, updated_at ASC",
+			types.DriverMySQL:    "SELECT * FROM `comments` ORDER BY `created_at` DESC, `updated_at` ASC",
+			types.DriverPostgres: `SELECT * FROM "comments" ORDER BY "created_at" DESC, "updated_at" ASC`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
