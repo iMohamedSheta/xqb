@@ -14,10 +14,10 @@ func Test_Having_WithRawExpressions(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id", xqb.Raw("SUM(amount) AS total")).
 			GroupBy("user_id").
 			Having(xqb.Raw("SUM(amount)"), ">", 1000).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
 		}
 
@@ -33,10 +33,10 @@ func Test_Having_Simple(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id", xqb.Raw("SUM(amount) AS total")).
 			GroupBy("user_id").
 			Having("SUM(amount)", ">", 500).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -52,10 +52,10 @@ func Test_Having_Raw(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id", xqb.Raw("SUM(amount) AS total")).
 			GroupBy("user_id").
 			HavingRaw("SUM(amount) > ?", 1000).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -71,10 +71,10 @@ func Test_OrHaving_WithExpressions(t *testing.T) {
 			GroupBy("user_id").
 			Having("SUM(amount)", ">", 1000).
 			OrHaving("SUM(discount)", ">", 200).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -90,10 +90,10 @@ func Test_OrHaving_WithRaw(t *testing.T) {
 			GroupBy("user_id").
 			HavingRaw("SUM(amount) > ?", 1000).
 			OrHavingRaw("SUM(discount) > ?", 200).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -109,10 +109,10 @@ func Test_Having_WithMultiple(t *testing.T) {
 			GroupBy("user_id").
 			Having("SUM(amount)", ">", 1000).
 			Having("SUM(discount)", "<", 100).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? AND SUM(discount) < ?",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? AND SUM(discount) < ?",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 AND SUM(discount) < $2`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -130,10 +130,10 @@ func Test_Having_WithExpressionToExpression(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id", xqb.Raw("SUM(amount) AS total")).
 			GroupBy("user_id").
 			Having(expr1, ">", expr2).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > SUM(discount)",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > SUM(discount)",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > SUM(discount)`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -148,10 +148,10 @@ func Test_Having_WithIsNull(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id", xqb.Raw("COUNT(*) AS cnt")).
 			GroupBy("user_id").
 			Having("COUNT(*)", "IS NULL", nil).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, COUNT(*) AS cnt FROM `orders` GROUP BY `user_id` HAVING COUNT(*) IS NULL",
+			types.DriverMySql:    "SELECT `user_id`, COUNT(*) AS cnt FROM `orders` GROUP BY `user_id` HAVING COUNT(*) IS NULL",
 			types.DriverPostgres: `SELECT "user_id", COUNT(*) AS cnt FROM "orders" GROUP BY "user_id" HAVING COUNT(*) IS NULL`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -166,10 +166,10 @@ func Test_Having_WithExpressionValue(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id").
 			GroupBy("user_id").
 			Having(xqb.Raw("SUM(amount)"), ">", xqb.Raw("AVG(amount)")).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > AVG(amount)",
+			types.DriverMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > AVG(amount)",
 			types.DriverPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > AVG(amount)`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -184,10 +184,10 @@ func Test_Having_WithExpressionAndBoundValue(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id").
 			GroupBy("user_id").
 			Having(xqb.Raw("SUM(amount)"), ">", 100).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DriverMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
 			types.DriverPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
 		}
 
@@ -203,10 +203,10 @@ func Test_Having_WithExpressionValueAndBindings(t *testing.T) {
 		sql, bindings, err := qb.Select("user_id").
 			GroupBy("user_id").
 			Having(xqb.Raw("COALESCE(SUM(amount), ?)", 15), "=", xqb.Raw("?", 25)).
-			ToSQL()
+			ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING COALESCE(SUM(amount), ?) = ?",
+			types.DriverMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING COALESCE(SUM(amount), ?) = ?",
 			types.DriverPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING COALESCE(SUM(amount), $1) = $2`,
 		}
 

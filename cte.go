@@ -37,7 +37,7 @@ func (qb *QueryBuilder) withExpr(name string, sql string, recursive bool, bindin
 	qb.withCTEs = append(qb.withCTEs, &types.CTE{
 		Name: name,
 		Expression: &types.Expression{
-			SQL:      sql,
+			Sql:      sql,
 			Bindings: bindings,
 		},
 		Recursive: recursive,

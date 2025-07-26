@@ -56,14 +56,14 @@ func Max(column string, alias string) *types.Expression {
 
 // JsonExtract - builds a JSON_EXTRACT expression with a given path and alias.
 func JsonExtract(column string, path string, alias string) *types.DialectExpression {
-	// Ensure MySQL path starts with "$."
+	// Ensure MySql path starts with "$."
 	if !strings.HasPrefix(path, "$.") {
 		path = "$." + strings.TrimPrefix(path, ".")
 	}
-	// Build MySQL-style access path
+	// Build MySql-style access path
 	mysql := Raw(fmt.Sprintf("JSON_EXTRACT(%s, '%s')", column, path))
 
-	// Build PostgreSQL-style access path
+	// Build PostgreSql-style access path
 	pgPath := strings.TrimPrefix(path, "$.")
 	keys := strings.Split(pgPath, ".")
 	pgExpr := column
@@ -75,8 +75,8 @@ func JsonExtract(column string, path string, alias string) *types.DialectExpress
 	pg := Raw(pgExpr)
 
 	if alias != "" {
-		mysql = Raw(fmt.Sprintf("%s AS %s", mysql.SQL, alias))
-		pg = Raw(fmt.Sprintf("%s AS %s", pg.SQL, alias))
+		mysql = Raw(fmt.Sprintf("%s AS %s", mysql.Sql, alias))
+		pg = Raw(fmt.Sprintf("%s AS %s", pg.Sql, alias))
 	}
 
 	return &types.DialectExpression{
@@ -88,7 +88,7 @@ func JsonExtract(column string, path string, alias string) *types.DialectExpress
 	}
 }
 
-// Math - returns a raw mathematical SQL expression with alias.
+// Math - returns a raw mathematical Sql expression with alias.
 func Math(rawExpr string, alias string) *types.Expression {
 	if alias != "" {
 		rawExpr += " AS " + alias
@@ -126,38 +126,38 @@ func DateDiff(a, b, alias string) *types.DialectExpression {
 
 // DateAdd - returns a DATE_ADD expression using interval and unit.
 func DateAdd(date, interval, unit, alias string) *types.DialectExpression {
-	mysqlSQL := fmt.Sprintf("DATE_ADD(%s, INTERVAL %s %s)", date, interval, unit)
-	pgSQL := fmt.Sprintf("%s + INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+	mysqlSql := fmt.Sprintf("DATE_ADD(%s, INTERVAL %s %s)", date, interval, unit)
+	pgSql := fmt.Sprintf("%s + INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
 
 	if alias != "" {
-		mysqlSQL = fmt.Sprintf("%s AS %s", mysqlSQL, alias)
-		pgSQL = fmt.Sprintf("%s AS %s", pgSQL, alias)
+		mysqlSql = fmt.Sprintf("%s AS %s", mysqlSql, alias)
+		pgSql = fmt.Sprintf("%s AS %s", pgSql, alias)
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    Raw(mysqlSQL),
-			"postgres": Raw(pgSQL),
+			"mysql":    Raw(mysqlSql),
+			"postgres": Raw(pgSql),
 		},
 	}
 }
 
 // DateSub - returns a DATE_SUB expression using interval and unit.
 func DateSub(date, interval, unit, alias string) *types.DialectExpression {
-	mysqlSQL := fmt.Sprintf("DATE_SUB(%s, INTERVAL %s %s)", date, interval, unit)
-	pgSQL := fmt.Sprintf("%s - INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+	mysqlSql := fmt.Sprintf("DATE_SUB(%s, INTERVAL %s %s)", date, interval, unit)
+	pgSql := fmt.Sprintf("%s - INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
 
 	if alias != "" {
-		mysqlSQL = fmt.Sprintf("%s AS %s", mysqlSQL, alias)
-		pgSQL = fmt.Sprintf("%s AS %s", pgSQL, alias)
+		mysqlSql = fmt.Sprintf("%s AS %s", mysqlSql, alias)
+		pgSql = fmt.Sprintf("%s AS %s", pgSql, alias)
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    Raw(mysqlSQL),
-			"postgres": Raw(pgSQL),
+			"mysql":    Raw(mysqlSql),
+			"postgres": Raw(pgSql),
 		},
 	}
 }
@@ -165,11 +165,11 @@ func DateSub(date, interval, unit, alias string) *types.DialectExpression {
 // DateFormat - returns a DATE_FORMAT expression with format and alias.
 func DateFormat(column, format, alias string) *types.DialectExpression {
 	mysqlExpr := Raw(fmt.Sprintf("DATE_FORMAT(%s, '%s')", column, format))
-	pgExpr := Raw(fmt.Sprintf("TO_CHAR(%s, '%s')", column, format)) // PostgreSQL
+	pgExpr := Raw(fmt.Sprintf("TO_CHAR(%s, '%s')", column, format)) // PostgreSql
 
 	if alias != "" {
-		mysqlExpr = Raw(fmt.Sprintf("%s AS %s", mysqlExpr.SQL, alias))
-		pgExpr = Raw(fmt.Sprintf("%s AS %s", pgExpr.SQL, alias))
+		mysqlExpr = Raw(fmt.Sprintf("%s AS %s", mysqlExpr.Sql, alias))
+		pgExpr = Raw(fmt.Sprintf("%s AS %s", pgExpr.Sql, alias))
 	}
 
 	dialects := map[string]*types.Expression{
@@ -245,7 +245,7 @@ func Replace(column, from, to, alias string) *types.Expression {
 	return Raw(raw)
 }
 
-// Substring - extracts a substring (use MySQL-compatible syntax)
+// Substring - extracts a substring (use MySql-compatible syntax)
 func Substring(column string, start, length int, alias string) *types.Expression {
 	raw := fmt.Sprintf("SUBSTRING(%s, %d, %d)", column, start, length)
 	if alias != "" {

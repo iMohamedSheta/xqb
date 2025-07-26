@@ -30,10 +30,10 @@ func (pg *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (stri
 			case string:
 				columns = append(columns, pg.Wrap(v))
 			case *types.Expression:
-				columns = append(columns, v.SQL)
+				columns = append(columns, v.Sql)
 				bindings = append(bindings, v.Bindings...)
 			case *types.DialectExpression:
-				sqlStr, sqlBindings, err := v.ToSQL(pg.GetDriver().String())
+				sqlStr, sqlBindings, err := v.ToSql(pg.GetDriver().String())
 				if err != nil {
 					return "", nil, err
 				}

@@ -10,7 +10,7 @@ import (
 )
 
 // CompileUpdate compiles the update query
-func (mg *MySQLDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := mg.resolveTable(qb, "update", false)
 	if err != nil {
 		return "", nil, err
@@ -57,26 +57,26 @@ func (mg *MySQLDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 }
 
 // validateUpdate checks if the query builder is valid for the update operation
-func (mg *MySQLDialect) validateUpdate(qb *types.QueryBuilderData) error {
+func (mg *MySqlDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	var errs []error
 	if len(qb.UpdatedBindings) == 0 {
 		errs = append(errs, errors.New("no updated fields provided for update operation"))
 	}
 
 	if len(qb.Having) != 0 {
-		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the MySQL driver"))
+		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the MySql driver"))
 	}
 
 	if qb.Offset > 0 {
-		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the MySQL driver"))
+		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the MySql driver"))
 	}
 
 	if len(qb.GroupBy) > 0 {
-		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the MySQL driver"))
+		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the MySql driver"))
 	}
 
 	if len(qb.Unions) > 0 {
-		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the MySQL driver"))
+		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the MySql driver"))
 	}
 
 	if len(qb.Columns) > 0 {

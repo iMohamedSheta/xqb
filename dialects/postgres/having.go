@@ -23,7 +23,7 @@ func (pg *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (stri
 
 			// Use raw expression if available
 			if having.Raw != nil {
-				sql.WriteString(having.Raw.SQL)
+				sql.WriteString(having.Raw.Sql)
 				bindings = append(bindings, having.Raw.Bindings...)
 			} else {
 				sql.WriteString(pg.Wrap(having.Column))

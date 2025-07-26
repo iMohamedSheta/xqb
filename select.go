@@ -14,7 +14,7 @@ func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
 
 // SelectSub add sub queries to select
 func (qb *QueryBuilder) SelectSub(subQuery *QueryBuilder, alias string) *QueryBuilder {
-	sql, bindings, err := subQuery.SetDialect(qb.dialect.GetDriver()).ToSQL()
+	sql, bindings, err := subQuery.SetDialect(qb.dialect.GetDriver()).ToSql()
 	if err != nil {
 		qb.errors = append(qb.errors, err)
 		return qb
@@ -24,7 +24,7 @@ func (qb *QueryBuilder) SelectSub(subQuery *QueryBuilder, alias string) *QueryBu
 	return qb
 }
 
-// SelectRaw adds a raw SQL expression to the SELECT clause
+// SelectRaw adds a raw Sql expression to the SELECT clause
 func (qb *QueryBuilder) SelectRaw(sql string, bindings ...any) *QueryBuilder {
 	return qb.Select(Raw(sql, bindings...))
 }
@@ -35,7 +35,7 @@ func (qb *QueryBuilder) AddSelect(columns ...any) *QueryBuilder {
 	return qb
 }
 
-// SelectRaw adds a raw SQL expression to the SELECT clause
+// SelectRaw adds a raw Sql expression to the SELECT clause
 func (qb *QueryBuilder) AddSelectRaw(sql string, bindings ...any) *QueryBuilder {
 	qb.AddSelect(Raw(sql, bindings...))
 	return qb
@@ -52,7 +52,7 @@ func (qb *QueryBuilder) From(table string) *QueryBuilder {
 // FromSubquery uses a subquery as the FROM clause
 func (qb *QueryBuilder) FromSubquery(subQuery *QueryBuilder, alias string) *QueryBuilder {
 	raw := subQuery.SetDialect(qb.dialect.GetDriver()).ToRawExpr()
-	raw.SQL = "(" + raw.SQL + ")" + " AS " + alias
+	raw.Sql = "(" + raw.Sql + ")" + " AS " + alias
 	qb.table = &types.Table{Raw: raw}
 	return qb
 }

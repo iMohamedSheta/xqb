@@ -12,7 +12,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/wrap"
 )
 
-// PostgresDialect implements Postgres-specific SQL syntax
+// PostgresDialect implements Postgres-specific Sql syntax
 type PostgresDialect struct {
 }
 
@@ -20,7 +20,7 @@ func (pg *PostgresDialect) GetDriver() types.Driver {
 	return types.DriverPostgres
 }
 
-// CompileSelect generates a SELECT SQL statement for Postgres
+// CompileSelect generates a SELECT Sql statement for Postgres
 func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
 		return pg.compileBaseQuery(qb)
@@ -30,24 +30,24 @@ func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []
 	var sql strings.Builder
 
 	// Compile base SELECT
-	baseSQL, baseBindings, err := pg.compileBaseQuery(qb)
+	baseSql, baseBindings, err := pg.compileBaseQuery(qb)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Compile UNIONs
-	unionSQL, unionBindings, err := pg.compileUnionClause(qb)
+	unionSql, unionBindings, err := pg.compileUnionClause(qb)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Wrap base query when unions exist
 	sql.WriteString("(")
-	sql.WriteString(baseSQL)
+	sql.WriteString(baseSql)
 	sql.WriteString(")")
 
 	// Append union part
-	sql.WriteString(unionSQL)
+	sql.WriteString(unionSql)
 
 	// Merge bindings
 	if baseBindings != nil {
@@ -127,7 +127,7 @@ func (pg *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, er
 	return pg.replaceQuestionMarksWithDollar(sql), bindings, nil
 }
 
-// appendClause compiles and appends a clause to the SQL string and bindings
+// appendClause compiles and appends a clause to the Sql string and bindings
 func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.QueryBuilderData) (string, []any, error), qb *types.QueryBuilderData) error {
 	// compile clause closure
 	part, partBindings, err := compiler(qb)
@@ -150,11 +150,11 @@ func (pg *PostgresDialect) appendError(qb *types.QueryBuilderData, err error) (s
 }
 
 func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
-	// First we replace all $n with ? in the SQL string some sql is build with $n
+	// First we replace all $n with ? in the Sql string some sql is build with $n
 	re := regexp.MustCompile(`\$\d+`)
 	sql = re.ReplaceAllString(sql, "?")
 
-	// Then we replace all ? with $n in the SQL string
+	// Then we replace all ? with $n in the Sql string
 	parts := strings.Split(sql, "?")
 	if len(parts) == 1 {
 		return sql
@@ -164,7 +164,7 @@ func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 	for i := 0; i < len(parts)-1; i++ {
 		// Add the part
 		b.WriteString(parts[i])
-		// Add the $n in the end of the SQL string
+		// Add the $n in the end of the Sql string
 		b.WriteString(fmt.Sprintf("$%d", i+1))
 	}
 	// Add the last part
@@ -174,65 +174,3 @@ func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 func (pg *PostgresDialect) Wrap(value string) string {
 	return wrap.Wrap(value, '"')
 }
-
-// func (pg *PostgresDialect) Wrap(value string) string {
-// 	value = strings.TrimSpace(value)
-// 	lower := strings.ToLower(value)
-
-// 	// Handle aliases
-// 	if idx := strings.LastIndex(lower, " as "); idx != -1 {
-// 		left := strings.TrimSpace(value[:idx])
-// 		right := strings.TrimSpace(value[idx+4:])
-// 		return fmt.Sprintf("%s AS %s", pg.Wrap(left), pg.Wrap(right))
-// 	}
-
-// 	// Handle shorthand aliases (e.g., users u)
-// 	parts := strings.Fields(value)
-// 	if len(parts) == 2 && !pg.isLikelyExpr(lower) {
-// 		return fmt.Sprintf("%s %s", pg.Wrap(parts[0]), wrapPgValue(parts[1]))
-// 	}
-
-// 	// Don't wrap expressions like COUNT(id) or SUM(price)
-// 	if pg.isLikelyExpr(lower) || pg.isLiteral(lower) {
-// 		return value
-// 	}
-
-// 	// Handle dot notation like table.column
-// 	segments := strings.Split(value, ".")
-// 	for i := range segments {
-// 		segments[i] = wrapPgValue(segments[i])
-// 	}
-// 	return strings.Join(segments, ".")
-// }
-
-// func (mg *PostgresDialect) isLikelyExpr(s string) bool {
-// 	return strings.ContainsAny(s, "()+*/-")
-// }
-
-// func wrapPgValue(val string) string {
-// 	val = strings.TrimSpace(val)
-// 	if val == "*" {
-// 		return "*"
-// 	}
-// 	// ignore if already wrapped
-// 	if strings.HasPrefix(val, `"`) && strings.HasSuffix(val, `"`) {
-// 		return val
-// 	}
-// 	// escape double quotes in the value like my"value -> my""value
-// 	val = strings.ReplaceAll(val, `"`, `""`)
-
-// 	return `"` + val + `"`
-// }
-
-// func (mg *PostgresDialect) isLiteral(s string) bool {
-// 	if s == "null" || s == "true" || s == "false" {
-// 		return true
-// 	}
-// 	if _, err := strconv.ParseFloat(s, 64); err == nil {
-// 		return true // numeric literal
-// 	}
-// 	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
-// 		return true // string literal
-// 	}
-// 	return false
-// }

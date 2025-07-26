@@ -26,10 +26,10 @@ func (pg *PostgresDialect) compileOrderByClause(qb *types.QueryBuilderData) (str
 				}
 
 				if expr == nil {
-					return "", nil, fmt.Errorf("%w: ORDER BY raw SQL not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, pg.GetDriver().String())
+					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, pg.GetDriver().String())
 				}
 
-				sql.WriteString(expr.SQL)
+				sql.WriteString(expr.Sql)
 				bindings = append(bindings, expr.Bindings...)
 			} else {
 				sql.WriteString(pg.Wrap(order.Column))

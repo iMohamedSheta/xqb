@@ -26,12 +26,12 @@ func TestingSetup() {
 	dsn := "test:test@tcp(127.0.0.1:3306)/test_xqb_db"
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		fmt.Println("❌ Failed to connect to MySQL:", err)
+		fmt.Println("❌ Failed to connect to MySql:", err)
 		os.Exit(1)
 	}
 
 	if err = db.Ping(); err != nil {
-		fmt.Println("❌ Failed to ping MySQL:", err)
+		fmt.Println("❌ Failed to ping MySql:", err)
 		os.Exit(1)
 	}
 

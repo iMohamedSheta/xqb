@@ -8,13 +8,13 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySQLDialect) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
 	for _, join := range qb.Joins {
 		if join.Type == types.FULL_JOIN {
-			return "", nil, fmt.Errorf("%w: FULL JOIN is not supported by MySQL driver", xqbErr.ErrUnsupportedFeature)
+			return "", nil, fmt.Errorf("%w: FULL JOIN is not supported by MySql driver", xqbErr.ErrUnsupportedFeature)
 		}
 
 		sql.WriteString(" ")

@@ -64,7 +64,7 @@ func (qb *QueryBuilder) IntersectUnionAll(secondaryQuery ...*QueryBuilder) *Quer
 	return qb
 }
 
-// IntersectUnionRaw adds a INTERSECT clause using a raw SQL
+// IntersectUnionRaw adds a INTERSECT clause using a raw Sql
 func (qb *QueryBuilder) IntersectUnionRaw(sql string, all bool, bindings ...any) *QueryBuilder {
 	qb.unions = append(qb.unions, &types.Union{
 		Expression: Raw(sql, bindings...),

@@ -8,7 +8,7 @@ import (
 )
 
 // compileSelectClause compiles the SELECT clause
-func (mg *MySQLDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -30,10 +30,10 @@ func (mg *MySQLDialect) compileSelectClause(qb *types.QueryBuilderData) (string,
 			case string:
 				columns = append(columns, mg.Wrap(v))
 			case *types.Expression:
-				columns = append(columns, v.SQL)
+				columns = append(columns, v.Sql)
 				bindings = append(bindings, v.Bindings...)
 			case *types.DialectExpression:
-				sqlStr, sqlBindings, err := v.ToSQL(mg.GetDriver().String())
+				sqlStr, sqlBindings, err := v.ToSql(mg.GetDriver().String())
 				if err != nil {
 					return "", nil, err
 				}

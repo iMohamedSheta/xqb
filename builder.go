@@ -30,13 +30,13 @@ type QueryBuilder struct {
 	tx              *sql.Tx
 	errors          []error
 	deleteFrom      []string
-	options         map[types.Option]any // field for flexible SQL extensions
+	options         map[types.Option]any // field for flexible Sql extensions
 }
 
 // New creates a new QueryBuilder instance
 func New() *QueryBuilder {
 	// Get the driver name from the database connection
-	driverName := types.DriverMySQL // Default to MySQL
+	driverName := types.DriverMySql // Default to MySql
 
 	return &QueryBuilder{
 		queryType:       enums.SELECT,
@@ -63,6 +63,17 @@ func New() *QueryBuilder {
 
 func Query() *QueryBuilder {
 	return New()
+}
+
+type wrappedDialect interface {
+	Wrap(string) string
+}
+
+func (qb *QueryBuilder) Wrap(value string) string {
+	if dialect, ok := qb.dialect.(wrappedDialect); ok {
+		return dialect.Wrap(value)
+	}
+	return value
 }
 
 // Table creates a new QueryBuilder instance for a specific table
@@ -129,20 +140,20 @@ func (qb *QueryBuilder) SetDialect(dialect types.Driver) *QueryBuilder {
 	return qb
 }
 
-// ToSQL compiles the query to SQL
-func (qb *QueryBuilder) ToSQL() (string, []any, error) {
+// ToSql compiles the query to Sql
+func (qb *QueryBuilder) ToSql() (string, []any, error) {
 	return qb.dialect.Build(qb.GetData())
 }
 
-// To Expression compiles the query to SQL and returns the Expression
+// To Expression compiles the query to Sql and returns the Expression
 func (qb *QueryBuilder) ToRawExpr() *types.Expression {
-	sql, bindings, err := qb.ToSQL()
+	sql, bindings, err := qb.ToSql()
 	if err != nil {
 		qb.errors = append(qb.errors, err)
 		return nil
 	}
 	return &types.Expression{
-		SQL:      sql,
+		Sql:      sql,
 		Bindings: bindings,
 	}
 }

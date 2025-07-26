@@ -25,7 +25,7 @@ func (pg *PostgresDialect) compileUnionClause(qbd *types.QueryBuilderData) (stri
 
 		// Add the union query
 		sql += "("
-		sql += union.Expression.SQL
+		sql += union.Expression.Sql
 		sql += ")"
 
 		if len(union.Expression.Bindings) > 0 {

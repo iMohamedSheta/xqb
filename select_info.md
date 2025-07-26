@@ -1,5 +1,5 @@
 ```sql
--- Comprehensive MySQL SELECT query showcasing various features
+-- Comprehensive MySql SELECT query showcasing various features
 SELECT
     -- Basic column selection with aliases
     e.employee_id AS "Employee Id",
@@ -32,7 +32,7 @@ SELECT
     UPPER(d.department_name) AS "Department",
     CHAR_LENGTH(d.department_name) AS "Dept Name Length",
 
-    -- JSON operations (if using MySQL 5.7+)
+    -- JSON operations (if using MySql 5.7+)
     JSON_EXTRACT(e.profile_data, '$.skills') AS "Skills",
     JSON_EXTRACT(e.profile_data, '$.education.degree') AS "Degree",
 

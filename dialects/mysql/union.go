@@ -8,7 +8,7 @@ import (
 )
 
 // compileUnionClause compiles the union clauses for the postgres driver.
-func (pg *MySQLDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
+func (pg *MySqlDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	// Add each union
@@ -17,7 +17,7 @@ func (pg *MySQLDialect) compileUnionClause(qbd *types.QueryBuilderData) (string,
 		case types.UnionTypeUnion:
 			sql += " UNION "
 		case types.UnionTypeIntersect, types.UnionTypeExcept:
-			return "", nil, fmt.Errorf("%w: union type %s is not supported in MySQL", errors.ErrUnsupportedFeature, string(union.Type))
+			return "", nil, fmt.Errorf("%w: union type %s is not supported in MySql", errors.ErrUnsupportedFeature, string(union.Type))
 		}
 
 		if union.All {
@@ -26,7 +26,7 @@ func (pg *MySQLDialect) compileUnionClause(qbd *types.QueryBuilderData) (string,
 
 		// Add the union query
 		sql += "("
-		sql += union.Expression.SQL
+		sql += union.Expression.Sql
 		sql += ")"
 
 		if len(union.Expression.Bindings) > 0 {

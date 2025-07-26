@@ -20,7 +20,7 @@ var (
 	ErrInvalidResult = errors.New("xqb_invalid_result")
 
 	// ErrUnsupportedFeature is returned when a feature is not supported by the underlying driver,
-	// such as streaming, chunking, or advanced SQL syntax.
+	// such as streaming, chunking, or advanced Sql syntax.
 	ErrUnsupportedFeature = errors.New("xqb_unsupported_feature")
 
 	// ErrTransactionFailed is returned when a transaction could not be completed successfully,

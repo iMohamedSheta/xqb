@@ -1,6 +1,6 @@
 # XQB Query Builder
 
-A powerful and flexible SQL query builder for Go with fluent interface for building complex SQL queries.
+A powerful and flexible Sql query builder for Go with fluent interface for building complex Sql queries.
 
 ## Installation
 
@@ -36,40 +36,40 @@ func main() {
 }
 ```
 
-## Raw SQL Expressions
+## Raw Sql Expressions
 
 ### Raw Function
 
 ```go
-// Raw SQL in SELECT
+// Raw Sql in SELECT
 qb := xqb.Table("users").
     Select(
         xqb.Raw("COUNT(*) as total"),
         "name",
         xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name"),
     )
-// SQL: SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users
+// Sql: SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users
 
-// Raw SQL in WHERE
+// Raw Sql in WHERE
 qb := xqb.Table("users").
     Where(xqb.Raw("LOWER(email)"), "LIKE", "%@example.com")
-// SQL: SELECT * FROM users WHERE LOWER(email) LIKE ?
+// Sql: SELECT * FROM users WHERE LOWER(email) LIKE ?
 
-// Raw SQL in ORDER BY
+// Raw Sql in ORDER BY
 qb := xqb.Table("orders").
     OrderBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"), "ASC")
-// SQL: SELECT * FROM orders ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC
+// Sql: SELECT * FROM orders ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC
 
-// Raw SQL in GROUP BY
+// Raw Sql in GROUP BY
 qb := xqb.Table("orders").
     GroupBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"))
-// SQL: SELECT * FROM orders GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+// Sql: SELECT * FROM orders GROUP BY DATE_FORMAT(created_at, '%Y-%m')
 
-// Raw SQL in HAVING
+// Raw Sql in HAVING
 qb := xqb.Table("orders").
     GroupBy("user_id").
     Having(xqb.Raw("SUM(amount)"), ">", 1000)
-// SQL: SELECT * FROM orders GROUP BY user_id HAVING SUM(amount) > ?
+// Sql: SELECT * FROM orders GROUP BY user_id HAVING SUM(amount) > ?
 ```
 
 ### RawDialect Function
@@ -83,8 +83,8 @@ expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
 
 qb := xqb.Table("users").
     Select(expr, "formatted_date")
-// MySQL: SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM users
-// PostgreSQL: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS formatted_date FROM users
+// MySql: SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM users
+// PostgreSql: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS formatted_date FROM users
 
 // Complex dialect-specific expressions
 jsonExpr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
@@ -94,8 +94,8 @@ jsonExpr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
 
 qb := xqb.Table("profiles").
     Select(jsonExpr, "user_email")
-// MySQL: SELECT JSON_EXTRACT(data, '$.user.email') AS user_email FROM profiles
-// PostgreSQL: SELECT data->'user'->>'email' AS user_email FROM profiles
+// MySql: SELECT JSON_EXTRACT(data, '$.user.email') AS user_email FROM profiles
+// PostgreSql: SELECT data->'user'->>'email' AS user_email FROM profiles
 ```
 
 ## Database Connection
@@ -121,19 +121,19 @@ xqb.CloseAll()
 // Simple select
 qb := xqb.Table("users").
     Select("id", "name", "email")
-// SQL: SELECT id, name, email FROM users
+// Sql: SELECT id, name, email FROM users
 
 // Select with conditions
 qb := xqb.Table("users").
     Select("id", "name").
     Where("age", ">", 18)
-// SQL: SELECT id, name FROM users WHERE age > ?
+// Sql: SELECT id, name FROM users WHERE age > ?
 
 // Select distinct
 qb := xqb.Table("users").
     Select("id", "name").
     Distinct()
-// SQL: SELECT DISTINCT id, name FROM users
+// Sql: SELECT DISTINCT id, name FROM users
 ```
 
 ### Joins
@@ -143,32 +143,32 @@ qb := xqb.Table("users").
 qb := xqb.Table("users").
     Select("users.id", "users.name", "orders.id as order_id").
     Join("orders", "users.id = orders.user_id")
-// SQL: SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id
+// Sql: SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id
 
 // Left join
 qb := xqb.Table("users").
     LeftJoin("comments", "users.id = comments.user_id")
-// SQL: SELECT * FROM users LEFT JOIN comments ON users.id = comments.user_id
+// Sql: SELECT * FROM users LEFT JOIN comments ON users.id = comments.user_id
 
 // Right join
 qb := xqb.Table("users").
     RightJoin("logins", "users.id = logins.user_id")
-// SQL: SELECT * FROM users RIGHT JOIN logins ON users.id = logins.user_id
+// Sql: SELECT * FROM users RIGHT JOIN logins ON users.id = logins.user_id
 
 // Full join
 qb := xqb.Table("users").
     FullJoin("sessions", "users.id = sessions.user_id")
-// SQL: SELECT * FROM users FULL JOIN sessions ON users.id = sessions.user_id
+// Sql: SELECT * FROM users FULL JOIN sessions ON users.id = sessions.user_id
 
 // Cross join
 qb := xqb.Table("users").
     CrossJoin("roles")
-// SQL: SELECT * FROM users CROSS JOIN roles
+// Sql: SELECT * FROM users CROSS JOIN roles
 
 // Join with conditions
 qb := xqb.Table("users").
     Join("posts", "users.id = posts.user_id AND posts.status = ?", "active")
-// SQL: SELECT * FROM users JOIN posts ON users.id = posts.user_id AND posts.status = ?
+// Sql: SELECT * FROM users JOIN posts ON users.id = posts.user_id AND posts.status = ?
 ```
 
 ### Subquery Joins
@@ -178,19 +178,19 @@ qb := xqb.Table("users").
 sub := xqb.Table("posts").Where("published", "=", true)
 qb := xqb.Table("users").
     JoinSub(sub, "p", "users.id = p.user_id")
-// SQL: JOIN (SELECT * FROM posts WHERE published = ?) AS p ON users.id = p.user_id
+// Sql: JOIN (SELECT * FROM posts WHERE published = ?) AS p ON users.id = p.user_id
 
 // Left join subquery
 sub := xqb.Table("comments").Where("active", "=", true)
 qb := xqb.Table("users").
     LeftJoinSub(sub, "c", "users.id = c.user_id")
-// SQL: LEFT JOIN (SELECT * FROM comments WHERE active = ?) AS c ON users.id = c.user_id
+// Sql: LEFT JOIN (SELECT * FROM comments WHERE active = ?) AS c ON users.id = c.user_id
 
 // Cross join subquery
 sub := xqb.Table("plans").Where("expired", "=", false)
 qb := xqb.Table("users").
     CrossJoinSub(sub, "p")
-// SQL: CROSS JOIN (SELECT * FROM plans WHERE expired = ?) AS p
+// Sql: CROSS JOIN (SELECT * FROM plans WHERE expired = ?) AS p
 ```
 
 ### Where Conditions
@@ -199,45 +199,45 @@ qb := xqb.Table("users").
 // Basic where
 qb := xqb.Table("users").
     Where("age", ">", 18)
-// SQL: SELECT * FROM users WHERE age > ?
+// Sql: SELECT * FROM users WHERE age > ?
 
 // Multiple conditions
 qb := xqb.Table("users").
     Where("age", ">", 18).
     Where("active", "=", true)
-// SQL: SELECT * FROM users WHERE age > ? AND active = ?
+// Sql: SELECT * FROM users WHERE age > ? AND active = ?
 
 // OR conditions
 qb := xqb.Table("users").
     Where("id", "=", 1).
     OrWhere("email", "=", "admin@example.com")
-// SQL: SELECT * FROM users WHERE id = ? OR email = ?
+// Sql: SELECT * FROM users WHERE id = ? OR email = ?
 
 // IN conditions
 qb := xqb.Table("users").
     WhereIn("id", []any{1, 2, 3})
-// SQL: SELECT * FROM users WHERE id IN (?, ?, ?)
+// Sql: SELECT * FROM users WHERE id IN (?, ?, ?)
 
 // BETWEEN conditions
 qb := xqb.Table("users").
     WhereBetween("age", 18, 65)
-// SQL: SELECT * FROM users WHERE age BETWEEN ? AND ?
+// Sql: SELECT * FROM users WHERE age BETWEEN ? AND ?
 
 // NULL conditions
 qb := xqb.Table("users").
     WhereNull("deleted_at")
-// SQL: SELECT * FROM users WHERE deleted_at IS NULL
+// Sql: SELECT * FROM users WHERE deleted_at IS NULL
 
 // EXISTS conditions
 subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
 qb := xqb.Table("users").
     WhereExists(subQuery)
-// SQL: SELECT * FROM users WHERE EXISTS (SELECT user_id FROM orders WHERE status = ?)
+// Sql: SELECT * FROM users WHERE EXISTS (SELECT user_id FROM orders WHERE status = ?)
 
 // Raw where
 qb := xqb.Table("users").
     WhereRaw("CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?", 1)
-// SQL: SELECT * FROM users WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?
+// Sql: SELECT * FROM users WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?
 
 // Where groups
 qb := xqb.Table("users").
@@ -245,7 +245,7 @@ qb := xqb.Table("users").
     WhereGroup(func(qb *xqb.QueryBuilder) {
         qb.WhereNull("deleted_at").OrWhereNull("disabled_at")
     })
-// SQL: SELECT * FROM users WHERE id = ? AND (deleted_at IS NULL OR disabled_at IS NULL)
+// Sql: SELECT * FROM users WHERE id = ? AND (deleted_at IS NULL OR disabled_at IS NULL)
 ```
 
 ### Group By and Having
@@ -255,14 +255,14 @@ qb := xqb.Table("users").
 qb := xqb.Table("orders").
     Select("user_id", "COUNT(*) as order_count").
     GroupBy("user_id")
-// SQL: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id
+// Sql: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id
 
 // Having
 qb := xqb.Table("orders").
     Select("user_id", "COUNT(*) as order_count").
     GroupBy("user_id").
     Having("order_count", ">", 5)
-// SQL: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?
+// Sql: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?
 ```
 
 ### Order By
@@ -272,13 +272,13 @@ qb := xqb.Table("orders").
 qb := xqb.Table("users").
     Select("id", "name").
     OrderBy("name", "ASC")
-// SQL: SELECT id, name FROM users ORDER BY name ASC
+// Sql: SELECT id, name FROM users ORDER BY name ASC
 
 // Multiple order by
 qb := xqb.Table("users").
     OrderBy("age", "DESC").
     OrderBy("name", "ASC")
-// SQL: SELECT * FROM users ORDER BY age DESC, name ASC
+// Sql: SELECT * FROM users ORDER BY age DESC, name ASC
 ```
 
 ### Limit and Offset
@@ -288,14 +288,14 @@ qb := xqb.Table("users").
 qb := xqb.Table("users").
     Select("id", "name").
     Limit(10)
-// SQL: SELECT id, name FROM users LIMIT 10
+// Sql: SELECT id, name FROM users LIMIT 10
 
 // Limit with offset
 qb := xqb.Table("users").
     Select("id", "name").
     Limit(10).
     Offset(20)
-// SQL: SELECT id, name FROM users LIMIT 10 OFFSET 20
+// Sql: SELECT id, name FROM users LIMIT 10 OFFSET 20
 ```
 
 ### Common Table Expressions (CTE)
@@ -306,7 +306,7 @@ qb := xqb.Table("users").
     WithRaw("user_totals", "SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id").
     Select("users.id", "users.name", "user_totals.total_spent").
     Join("user_totals", "users.id = user_totals.user_id")
-// SQL: WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id
+// Sql: WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id
 
 // Complex CTE
 qb := xqb.Table("products").
@@ -325,13 +325,13 @@ qb := xqb.Table("products").
 qb := xqb.Table("users").
     Select("id", "name").
     LockForUpdate()
-// SQL: SELECT id, name FROM users FOR UPDATE
+// Sql: SELECT id, name FROM users FOR UPDATE
 
 // Shared lock
 qb := xqb.Table("users").
     Select("id", "name").
     SharedLock()
-// SQL: SELECT id, name FROM users LOCK IN SHARE MODE
+// Sql: SELECT id, name FROM users LOCK IN SHARE MODE
 ```
 
 ## Aggregate Functions
@@ -346,7 +346,7 @@ qb := xqb.Table("orders").
         xqb.Min("amount", "min_amount"),
         xqb.Raw("MAX(amount) AS max_amount")
     )
-// SQL: SELECT COUNT(id) AS order_count, SUM(amount) AS total_amount, AVG(amount) AS average_amount, MIN(amount) AS min_amount, MAX(amount) AS max_amount FROM orders
+// Sql: SELECT COUNT(id) AS order_count, SUM(amount) AS total_amount, AVG(amount) AS average_amount, MIN(amount) AS min_amount, MAX(amount) AS max_amount FROM orders
 ```
 
 ## String Functions
@@ -363,7 +363,7 @@ qb := xqb.Table("users").
         xqb.Replace("title", "'foo'", "'bar'", "replaced_title"),
         xqb.Substring("description", 1, 10, "short_desc"),
     )
-// SQL: SELECT CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM users
+// Sql: SELECT CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM users
 ```
 
 ## Date Functions
@@ -378,7 +378,7 @@ qb := xqb.Table("events").
         xqb.DateSub("created_at", "1", "MONTH", "prev_month"),
         xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date"),
     )
-// SQL: SELECT DATE(created_at) AS created_date, DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM events
+// Sql: SELECT DATE(created_at) AS created_date, DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM events
 ```
 
 ## JSON Functions
@@ -390,7 +390,7 @@ qb := xqb.Table("users").
         xqb.JsonExtract("metadata", "preferences.theme", "theme"),
         xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone"),
     )
-// SQL: SELECT JSON_EXTRACT(metadata, '$.preferences.theme') AS theme, JSON_UNQUOTE(data, '$.phone') AS phone FROM users
+// Sql: SELECT JSON_EXTRACT(metadata, '$.preferences.theme') AS theme, JSON_UNQUOTE(data, '$.phone') AS phone FROM users
 ```
 
 ## Math Expressions
@@ -402,7 +402,7 @@ qb := xqb.Table("orders").
         xqb.Math("amount * 1.1", "total_with_tax"),
         xqb.Coalesce([]string{"middle_name", "'N/A'"}, "coalesced_name"),
     )
-// SQL: SELECT amount * 1.1 AS total_with_tax, COALESCE(middle_name, 'N/A') AS coalesced_name FROM orders
+// Sql: SELECT amount * 1.1 AS total_with_tax, COALESCE(middle_name, 'N/A') AS coalesced_name FROM orders
 ```
 
 ## INSERT Queries
@@ -438,7 +438,7 @@ affected, _ := xqb.Table("users").
         "name": "Jane Doe",
         "email": "jane@example.com",
     })
-// SQL: UPDATE users SET name = ?, email = ? WHERE id = ?
+// Sql: UPDATE users SET name = ?, email = ? WHERE id = ?
 
 // Update with multiple conditions
 affected, _ := xqb.Table("users").
@@ -456,7 +456,7 @@ affected, _ := xqb.Table("users").
 affected, _ := xqb.Table("users").
     Where("id", "=", 1).
     Delete()
-// SQL: DELETE FROM users WHERE id = ?
+// Sql: DELETE FROM users WHERE id = ?
 
 // Delete with multiple conditions
 affected, _ := xqb.Table("users").
@@ -465,15 +465,15 @@ affected, _ := xqb.Table("users").
     Delete()
 ```
 
-## Raw SQL
+## Raw Sql
 
 ```go
-// Execute raw SQL
+// Execute raw Sql
 result, _ := xqb.Sql("INSERT INTO users (name, email) VALUES (?, ?)", "John", "john@example.com").
     Connection("secondary_connection").
     Execute()
 
-// Query raw SQL
+// Query raw Sql
 rows, _ := xqb.Sql("SELECT * FROM users WHERE age > ?", 18).
     Query()
 

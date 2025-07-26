@@ -36,7 +36,7 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 		sql, bindings, err := qb.InsertSql(values)
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
+			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
 			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
 		}
 		expectedBindings := []any{
@@ -64,7 +64,7 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 		})
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
+			types.DriverMySql:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
 			types.DriverPostgres: `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
 		}
 		expectedBindings := []any{
@@ -95,7 +95,7 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 		})
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
+			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
 			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
 		}
 
@@ -138,7 +138,7 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 		sql, bindings, err := qb.UpsertSql(insertedValues, []string{"email", "name"}, []string{"age", "email", "name", "password"})
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
+			types.DriverMySql: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
 				"ON DUPLICATE KEY UPDATE `age` = VALUES(`age`), `password` = VALUES(`password`)",
 			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12) ` +
 				`ON CONFLICT ("email", "name") DO UPDATE SET "age" = EXCLUDED."age", "password" = EXCLUDED."password"`,
@@ -223,7 +223,7 @@ func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
 		sql, bindings, err := qb.UpsertSql(values, []string{"email"}, []string{"email", "age"})
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
+			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
 			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
 		}
 		expectedBindings := []any{

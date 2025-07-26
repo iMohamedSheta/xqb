@@ -13,9 +13,9 @@ func Test_Pluck_ValueAndKey(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 
-		sql, bindings, err := qb.PluckSQL("name", "id")
+		sql, bindings, err := qb.PluckSql("name", "id")
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `name`, `id` FROM `users` WHERE `name` LIKE ?",
+			types.DriverMySql:    "SELECT `name`, `id` FROM `users` WHERE `name` LIKE ?",
 			types.DriverPostgres: `SELECT "name", "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
@@ -28,10 +28,10 @@ func Test_Pluck_ValueAndKey(t *testing.T) {
 func Test_Pluck_Value(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
-		sql, bindings, err := qb.PluckSQL("name", "")
+		sql, bindings, err := qb.PluckSql("name", "")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
+			types.DriverMySql:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
 			types.DriverPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
 		}
 
@@ -44,10 +44,10 @@ func Test_Pluck_Value(t *testing.T) {
 func Test_Pluck_Key(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
-		sql, bindings, err := qb.PluckSQL("", "id")
+		sql, bindings, err := qb.PluckSql("", "id")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `id` FROM `users` WHERE `name` LIKE ?",
+			types.DriverMySql:    "SELECT `id` FROM `users` WHERE `name` LIKE ?",
 			types.DriverPostgres: `SELECT "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
@@ -60,10 +60,10 @@ func Test_Pluck_Key(t *testing.T) {
 func Test_Pluck_NoData(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect)
-		sql, bindings, err := qb.PluckSQL("name", "id")
+		sql, bindings, err := qb.PluckSql("name", "id")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `name`, `id` FROM `users`",
+			types.DriverMySql:    "SELECT `name`, `id` FROM `users`",
 			types.DriverPostgres: `SELECT "name", "id" FROM "users"`,
 		}
 
@@ -77,7 +77,7 @@ func Test_Pluck_NoData_NoKey_ReturnError(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		qb.Where("id", "=", 1)
-		sql, bindings, err := qb.PluckSQL("", "")
+		sql, bindings, err := qb.PluckSql("", "")
 
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, xqbErr.ErrInvalidQuery)
@@ -90,10 +90,10 @@ func Test_Pluck_ComplexQuery(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 		qb.Select("id", "name").Where("id", "=", 1)
-		sql, bindings, err := qb.PluckSQL("", "")
+		sql, bindings, err := qb.PluckSql("", "")
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `id` = ?",
+			types.DriverMySql:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `id` = ?",
 			types.DriverPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "id" = $2`,
 		}
 

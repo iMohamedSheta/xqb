@@ -9,7 +9,7 @@ import (
 )
 
 // compileOrderByClause compiles the ORDER BY clause
-func (mg *MySQLDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -26,10 +26,10 @@ func (mg *MySQLDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 				}
 
 				if expr == nil {
-					return "", nil, fmt.Errorf("%w: ORDER BY raw SQL not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, mg.GetDriver().String())
+					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, mg.GetDriver().String())
 				}
 
-				sql.WriteString(expr.SQL)
+				sql.WriteString(expr.Sql)
 				bindings = append(bindings, expr.Bindings...)
 			} else {
 				sql.WriteString(mg.Wrap(order.Column))

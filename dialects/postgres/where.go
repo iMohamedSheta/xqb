@@ -37,7 +37,7 @@ func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (strin
 
 func (pg *PostgresDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
 	if condition.Raw != nil {
-		return condition.Raw.SQL, condition.Raw.Bindings, nil
+		return condition.Raw.Sql, condition.Raw.Bindings, nil
 	} else if len(condition.Group) > 0 {
 		return pg.compileGroupCondition(condition.Group, condition.Connector)
 	}

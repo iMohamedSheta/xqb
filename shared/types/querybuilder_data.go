@@ -25,7 +25,7 @@ type QueryBuilderData struct {
 	UpdatedBindings []*Binding       // Added for update operations
 	Errors          []error
 	DeleteFrom      []string
-	Options         map[Option]any // field for flexible SQL extensions
+	Options         map[Option]any // field for flexible Sql extensions
 }
 
 func (qb *QueryBuilderData) SetOption(key Option, value any) {

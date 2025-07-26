@@ -13,7 +13,7 @@ type CaseWhen struct {
 	alias      string
 }
 
-// Case creates a new CASE WHEN SQL expression builder.
+// Case creates a new CASE WHEN Sql expression builder.
 func Case() *CaseWhen {
 	return &CaseWhen{}
 }
@@ -39,7 +39,7 @@ func (c *CaseWhen) As(alias string) *CaseWhen {
 	return c
 }
 
-// End builds the final CASE WHEN SQL expression.
+// End builds the final CASE WHEN Sql expression.
 func (c *CaseWhen) End() *types.Expression {
 	var raw string
 	if len(c.cases) == 0 {

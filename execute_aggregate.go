@@ -9,7 +9,7 @@ import (
 
 // Count - Returns the number of rows in the result set.
 func (qb *QueryBuilder) Count(column string) (int64, error) {
-	qb.columns = []any{fmt.Sprintf("COUNT(%s) as count_value", column)}
+	qb.columns = []any{fmt.Sprintf("COUNT(%s) as count", qb.Wrap(column))}
 
 	data, err := qb.Get()
 	if err != nil {
@@ -20,7 +20,7 @@ func (qb *QueryBuilder) Count(column string) (int64, error) {
 		return 0, fmt.Errorf("%w: Count() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	count, err := asInt64(data[0]["count_value"])
+	count, err := asInt64(data[0]["count"])
 	if err != nil {
 		return 0, fmt.Errorf("%w: Count() failed to convert result value to int, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -30,7 +30,7 @@ func (qb *QueryBuilder) Count(column string) (int64, error) {
 
 // Avg - Returns the average value of a column.
 func (qb *QueryBuilder) Avg(column string) (float64, error) {
-	qb.columns = []any{fmt.Sprintf("AVG(%s) as avg_value", column)}
+	qb.columns = []any{fmt.Sprintf("AVG(%s) as avg", qb.Wrap(column))}
 
 	data, err := qb.Get()
 	if err != nil {
@@ -41,7 +41,7 @@ func (qb *QueryBuilder) Avg(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Avg() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	avg, err := asFloat64(data[0]["avg_value"])
+	avg, err := asFloat64(data[0]["avg"])
 	if err != nil {
 		return 0, fmt.Errorf("%w: Avg() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -51,7 +51,7 @@ func (qb *QueryBuilder) Avg(column string) (float64, error) {
 
 // Sum - Returns the sum of a column.
 func (qb *QueryBuilder) Sum(column string) (float64, error) {
-	qb.columns = []any{fmt.Sprintf("SUM(%s) as sum_value", column)}
+	qb.columns = []any{fmt.Sprintf("SUM(%s) as sum", qb.Wrap(column))}
 
 	data, err := qb.Get()
 	if err != nil {
@@ -62,7 +62,7 @@ func (qb *QueryBuilder) Sum(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Sum() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	sum, err := asFloat64(data[0]["sum_value"])
+	sum, err := asFloat64(data[0]["sum"])
 	if err != nil {
 		return 0, fmt.Errorf("%w: Sum() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -72,7 +72,7 @@ func (qb *QueryBuilder) Sum(column string) (float64, error) {
 
 // Min - Returns the minimum value of a column.
 func (qb *QueryBuilder) Min(column string) (float64, error) {
-	qb.columns = []any{fmt.Sprintf("MIN(%s) as min_value", column)}
+	qb.columns = []any{fmt.Sprintf("MIN(%s) as min", qb.Wrap(column))}
 
 	data, err := qb.Get()
 	if err != nil {
@@ -83,7 +83,7 @@ func (qb *QueryBuilder) Min(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Min() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	min, err := asFloat64(data[0]["min_value"])
+	min, err := asFloat64(data[0]["min"])
 	if err != nil {
 		return 0, fmt.Errorf("%w: Min() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -93,7 +93,7 @@ func (qb *QueryBuilder) Min(column string) (float64, error) {
 
 // Max - Returns the maximum value of a column.
 func (qb *QueryBuilder) Max(column string) (float64, error) {
-	qb.columns = []any{fmt.Sprintf("MAX(%s) as max_value", column)}
+	qb.columns = []any{fmt.Sprintf("MAX(%s) as max", qb.Wrap(column))}
 
 	data, err := qb.Get()
 	if err != nil {
@@ -104,12 +104,42 @@ func (qb *QueryBuilder) Max(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Max() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	max, err := asFloat64(data[0]["max_value"])
+	max, err := asFloat64(data[0]["max"])
 	if err != nil {
 		return 0, fmt.Errorf("%w: Max() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
 
 	return max, nil
+}
+
+// CountSql - Returns the Sql and bindings for the COUNT aggregate function.
+func (qb *QueryBuilder) CountSql(column string) (string, []any, error) {
+	qb.columns = []any{fmt.Sprintf("COUNT(%s) as count", qb.Wrap(column))}
+	return qb.GetSql()
+}
+
+// AvgSql - Returns the Sql and bindings for the AVG aggregate function.
+func (qb *QueryBuilder) AvgSql(column string) (string, []any, error) {
+	qb.columns = []any{fmt.Sprintf("AVG(%s) as avg", qb.Wrap(column))}
+	return qb.GetSql()
+}
+
+// SumSql - Returns the Sql and bindings for the SUM aggregate function.
+func (qb *QueryBuilder) SumSql(column string) (string, []any, error) {
+	qb.columns = []any{fmt.Sprintf("SUM(%s) as sum", qb.Wrap(column))}
+	return qb.GetSql()
+}
+
+// MinSql - Returns the Sql and bindings for the MIN aggregate function.
+func (qb *QueryBuilder) MinSql(column string) (string, []any, error) {
+	qb.columns = []any{fmt.Sprintf("MIN(%s) as min", qb.Wrap(column))}
+	return qb.GetSql()
+}
+
+// MaxSql - Returns the Sql and bindings for the MAX aggregate function.
+func (qb *QueryBuilder) MaxSql(column string) (string, []any, error) {
+	qb.columns = []any{fmt.Sprintf("MAX(%s) as max", qb.Wrap(column))}
+	return qb.GetSql()
 }
 
 // asInt64 - Converts a value to an int64

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMySQLDialect_CompileSelectClause(t *testing.T) {
+func TestMySqlDialect_CompileSelectClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -41,7 +41,7 @@ func TestMySQLDialect_CompileSelectClause(t *testing.T) {
 		},
 	}
 
-	dialect := &MySQLDialect{}
+	dialect := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestMySQLDialect_CompileSelectClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileFromClause(t *testing.T) {
+func TestMySqlDialect_CompileFromClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -77,7 +77,7 @@ func TestMySQLDialect_CompileFromClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestMySQLDialect_CompileFromClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileJoins(t *testing.T) {
+func TestMySqlDialect_CompileJoins(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -126,7 +126,7 @@ func TestMySQLDialect_CompileJoins(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -137,7 +137,7 @@ func TestMySQLDialect_CompileJoins(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileWhereClause(t *testing.T) {
+func TestMySqlDialect_CompileWhereClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -186,12 +186,12 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 			bindings: []any{18, 65},
 		},
 		{
-			name: "Raw SQL condition",
+			name: "Raw Sql condition",
 			qb: &types.QueryBuilderData{
 				Where: []*types.WhereCondition{
 					{
 						Raw: &types.Expression{
-							SQL:      "EXISTS (SELECT 1 FROM `orders` WHERE orders.user_id = users.id)",
+							Sql:      "EXISTS (SELECT 1 FROM `orders` WHERE orders.user_id = users.id)",
 							Bindings: nil,
 						},
 					},
@@ -202,7 +202,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -213,7 +213,7 @@ func TestMySQLDialect_CompileWhereClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileGroupByClause(t *testing.T) {
+func TestMySqlDialect_CompileGroupByClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -246,7 +246,7 @@ func TestMySQLDialect_CompileGroupByClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -257,7 +257,7 @@ func TestMySQLDialect_CompileGroupByClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileHavingClause(t *testing.T) {
+func TestMySqlDialect_CompileHavingClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -295,7 +295,7 @@ func TestMySQLDialect_CompileHavingClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -306,7 +306,7 @@ func TestMySQLDialect_CompileHavingClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileOrderByClause(t *testing.T) {
+func TestMySqlDialect_CompileOrderByClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -344,7 +344,7 @@ func TestMySQLDialect_CompileOrderByClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -355,7 +355,7 @@ func TestMySQLDialect_CompileOrderByClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileLimitOffsetClause(t *testing.T) {
+func TestMySqlDialect_CompileLimitOffsetClause(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -398,7 +398,7 @@ func TestMySQLDialect_CompileLimitOffsetClause(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -414,7 +414,7 @@ func TestMySQLDialect_CompileLimitOffsetClause(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileCTEs(t *testing.T) {
+func TestMySqlDialect_CompileCTEs(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -428,7 +428,7 @@ func TestMySQLDialect_CompileCTEs(t *testing.T) {
 					{
 						Name: "user_orders",
 						Expression: &types.Expression{
-							SQL:      "SELECT user_id, COUNT(*) AS order_count FROM orders GROUP BY user_id",
+							Sql:      "SELECT user_id, COUNT(*) AS order_count FROM orders GROUP BY user_id",
 							Bindings: nil,
 						},
 					},
@@ -444,14 +444,14 @@ func TestMySQLDialect_CompileCTEs(t *testing.T) {
 					{
 						Name: "active_users",
 						Expression: &types.Expression{
-							SQL:      "SELECT * FROM users WHERE active = ?",
+							Sql:      "SELECT * FROM users WHERE active = ?",
 							Bindings: []any{true},
 						},
 					},
 					{
 						Name: "user_stats",
 						Expression: &types.Expression{
-							SQL:      "SELECT user_id, SUM(amount) AS total FROM orders GROUP BY user_id",
+							Sql:      "SELECT user_id, SUM(amount) AS total FROM orders GROUP BY user_id",
 							Bindings: nil,
 						},
 					},
@@ -470,7 +470,7 @@ func TestMySQLDialect_CompileCTEs(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -481,7 +481,7 @@ func TestMySQLDialect_CompileCTEs(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileSelect(t *testing.T) {
+func TestMySqlDialect_CompileSelect(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -522,7 +522,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 						All:  true,
 						Type: types.UnionTypeUnion,
 						Expression: &types.Expression{
-							SQL:      "SELECT id, name FROM inactive_users",
+							Sql:      "SELECT id, name FROM inactive_users",
 							Bindings: nil,
 						},
 					},
@@ -557,7 +557,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -568,7 +568,7 @@ func TestMySQLDialect_CompileSelect(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileUpdate(t *testing.T) {
+func TestMySqlDialect_CompileUpdate(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -639,7 +639,7 @@ func TestMySQLDialect_CompileUpdate(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -655,7 +655,7 @@ func TestMySQLDialect_CompileUpdate(t *testing.T) {
 	}
 }
 
-func TestMySQLDialect_CompileDelete(t *testing.T) {
+func TestMySqlDialect_CompileDelete(t *testing.T) {
 	tests := []struct {
 		name     string
 		qb       *types.QueryBuilderData
@@ -722,7 +722,7 @@ func TestMySQLDialect_CompileDelete(t *testing.T) {
 		},
 	}
 
-	grammar := &MySQLDialect{}
+	grammar := &MySqlDialect{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

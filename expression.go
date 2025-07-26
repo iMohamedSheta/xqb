@@ -2,10 +2,10 @@ package xqb
 
 import "github.com/iMohamedSheta/xqb/shared/types"
 
-// Raw creates a new raw SQL expression
+// Raw creates a new raw Sql expression
 func Raw(sql string, bindings ...any) *types.Expression {
 	return &types.Expression{
-		SQL:      sql,
+		Sql:      sql,
 		Bindings: bindings,
 	}
 }

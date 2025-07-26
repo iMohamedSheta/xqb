@@ -7,7 +7,7 @@ import (
 )
 
 // compileHavingClause compiles the HAVING clause
-func (mg *MySQLDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -23,7 +23,7 @@ func (mg *MySQLDialect) compileHavingClause(qb *types.QueryBuilderData) (string,
 
 			// Use raw expression if available
 			if having.Raw != nil {
-				sql.WriteString(having.Raw.SQL)
+				sql.WriteString(having.Raw.Sql)
 				bindings = append(bindings, having.Raw.Bindings...)
 			} else {
 				sql.WriteString(mg.Wrap(having.Column))

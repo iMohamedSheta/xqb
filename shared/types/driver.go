@@ -3,7 +3,7 @@ package types
 type Driver string
 
 const (
-	DriverMySQL    Driver = "mysql"
+	DriverMySql    Driver = "mysql"
 	DriverPostgres Driver = "postgres"
 )
 

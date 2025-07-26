@@ -10,8 +10,7 @@ import (
 
 // Get executes the query and returns all results
 func (qb *QueryBuilder) Get() ([]map[string]any, error) {
-	qbData := qb.GetData()
-	query, args, err := qb.dialect.Build(qbData)
+	query, args, err := qb.GetSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: Get() Failed to build the sql query, %v", xqbErr.ErrInvalidQuery, err)
 	}
@@ -57,6 +56,11 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	}
 
 	return results, nil
+}
+
+// GetSql returns the sql query for Get()
+func (qb *QueryBuilder) GetSql() (string, []any, error) {
+	return qb.dialect.Build(qb.GetData())
 }
 
 // First returns the first row

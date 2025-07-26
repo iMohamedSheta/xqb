@@ -22,10 +22,10 @@ func Test_CTE_With(t *testing.T) {
 		assert.Nil(t, cte.Expression)
 		assert.False(t, cte.Recursive)
 
-		sql, bindings, err := mainQB.Select("*").ToSQL()
+		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT *",
+			types.DriverMySql:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT *",
 			types.DriverPostgres: `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT *`,
 		}
 
@@ -45,12 +45,12 @@ func Test_CTE_WithExpression(t *testing.T) {
 		assert.Equal(t, "cte_expr", cte.Name)
 		assert.Nil(t, cte.Query)
 		assert.NotNil(t, cte.Expression)
-		assert.Equal(t, "SELECT ?", cte.Expression.SQL)
+		assert.Equal(t, "SELECT ?", cte.Expression.Sql)
 		assert.Equal(t, []any{42}, cte.Expression.Bindings)
 
-		sql, bindings, err := mainQB.Select("*").ToSQL()
+		sql, bindings, err := mainQB.Select("*").ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte_expr AS (SELECT ?) SELECT *",
+			types.DriverMySql:    "WITH cte_expr AS (SELECT ?) SELECT *",
 			types.DriverPostgres: `WITH cte_expr AS (SELECT $1) SELECT *`,
 		}
 
@@ -69,10 +69,10 @@ func Test_CTE_WithRecursive(t *testing.T) {
 		cte := mainQB.GetData().WithCTEs[0]
 		assert.True(t, cte.Recursive)
 
-		sql, b, err := mainQB.Select("*").ToSQL()
+		sql, b, err := mainQB.Select("*").ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH RECURSIVE cte_tree AS (SELECT `id`, `parent_id` FROM `tree`) SELECT *",
+			types.DriverMySql:    "WITH RECURSIVE cte_tree AS (SELECT `id`, `parent_id` FROM `tree`) SELECT *",
 			types.DriverPostgres: `WITH RECURSIVE cte_tree AS (SELECT "id", "parent_id" FROM "tree") SELECT *`,
 		}
 
@@ -92,10 +92,10 @@ func Test_CTE_WithRaw(t *testing.T) {
 		assert.NotNil(t, cte.Expression)
 		assert.False(t, cte.Recursive)
 
-		sql, bindings, err := mainQB.Select("*").ToSQL()
+		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte_raw AS (SELECT ? AS col) SELECT *",
+			types.DriverMySql:    "WITH cte_raw AS (SELECT ? AS col) SELECT *",
 			types.DriverPostgres: `WITH cte_raw AS (SELECT $1 AS col) SELECT *`,
 		}
 
@@ -113,10 +113,10 @@ func Test_CTE_WithRecursiveRaw(t *testing.T) {
 		cte := mainQB.GetData().WithCTEs[0]
 		assert.True(t, cte.Recursive)
 
-		sql, bindings, err := mainQB.Select("*").ToSQL()
+		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
+			types.DriverMySql:    "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
 			types.DriverPostgres: `WITH RECURSIVE cte_rec_raw AS (SELECT $1 AS col) SELECT *`,
 		}
 
@@ -147,9 +147,9 @@ func Test_CTE_WithAdvancedExpressions(t *testing.T) {
 		mainQB := xqb.New().SetDialect(dialect)
 		mainQB.With("cte_agg", cteQB).Select("*")
 
-		sql, bindings, err := mainQB.ToSQL()
+		sql, bindings, err := mainQB.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte_agg AS (SELECT `status`, SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING `total_amount` > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *",
+			types.DriverMySql:    "WITH cte_agg AS (SELECT `status`, SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING `total_amount` > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *",
 			types.DriverPostgres: `WITH cte_agg AS (SELECT "status", SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM "coverage_table" WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING "total_amount" > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *`,
 		}
 
@@ -167,9 +167,9 @@ func Test_CTE_WithMultipleCTEs(t *testing.T) {
 			WithExpr("cte2", "SELECT 2 AS two").
 			With("cte3", xqb.Table("users").Select("id"))
 
-		sql, b, err := mainQB.Select("*").ToSQL()
+		sql, b, err := mainQB.Select("*").ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT `id` FROM `users`) SELECT *",
+			types.DriverMySql:    "WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT `id` FROM `users`) SELECT *",
 			types.DriverPostgres: `WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT "id" FROM "users") SELECT *`,
 		}
 
@@ -184,10 +184,10 @@ func Test_CTE_WithAliasedExpressions(t *testing.T) {
 		mainQB := xqb.Query().SetDialect(dialect)
 		mainQB.WithExpr("agg_stats", "SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games")
 
-		sql, bindings, err := mainQB.Select("*").ToSQL()
+		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *",
+			types.DriverMySql:    "WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *",
 			types.DriverPostgres: `WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *`,
 		}
 
@@ -205,9 +205,9 @@ func Test_CTE_UsageInMainQuery(t *testing.T) {
 			From("cte_users").
 			Where("id", ">", 5)
 
-		sql, bindings, err := mainQB.ToSQL()
+		sql, bindings, err := mainQB.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?",
+			types.DriverMySql:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?",
 			types.DriverPostgres: `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT * FROM "cte_users" WHERE "id" > $1`,
 		}
 
@@ -224,9 +224,9 @@ func Test_CTE_Recursive_Usage(t *testing.T) {
 			WithRecursive("tree_cte", recQB).
 			WhereNull("parent_id")
 
-		sql, b, err := mainQB.ToSQL()
+		sql, b, err := mainQB.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL",
+			types.DriverMySql:    "WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL",
 			types.DriverPostgres: `WITH RECURSIVE tree_cte AS (SELECT "id", "parent_id" FROM "tree") SELECT * FROM "tree_cte" WHERE "parent_id" IS NULL`,
 		}
 
@@ -246,9 +246,9 @@ func Test_CTE_BindingsOrder(t *testing.T) {
 			From("cte2").
 			Where("two", ">", 3)
 
-		sql, bindings, _ := mainQB.ToSQL()
+		sql, bindings, _ := mainQB.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM `cte2` WHERE `two` > ?",
+			types.DriverMySql:    "WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM `cte2` WHERE `two` > ?",
 			types.DriverPostgres: `WITH cte1 AS (SELECT $1 AS one), cte2 AS (SELECT $2 AS two) SELECT * FROM "cte2" WHERE "two" > $3`,
 		}
 
@@ -260,9 +260,9 @@ func Test_CTE_BindingsOrder(t *testing.T) {
 func Test_CTE_EmptyCTEsShouldNotEmitWith(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("id")
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `id` FROM `users`",
+			types.DriverMySql:    "SELECT `id` FROM `users`",
 			types.DriverPostgres: `SELECT "id" FROM "users"`,
 		}
 
@@ -297,9 +297,9 @@ func Test_CTE_ComplexThreeLevelChain(t *testing.T) {
 			Where("order_count", ">", 5).
 			OrderBy("order_count", "DESC")
 
-		sql, bindings, err := mainQB.ToSQL()
+		sql, bindings, err := mainQB.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL: "WITH " +
+			types.DriverMySql: "WITH " +
 				"high_value_orders AS (SELECT `user_id`, `total` FROM `orders` WHERE `total` > ?), " +
 				"user_order_details AS (SELECT `high_value_orders`.`user_id`, `users`.`name` FROM `high_value_orders` JOIN `users` ON users.id = high_value_orders.user_id), " +
 				"user_order_summary AS (SELECT `name`, COUNT(*) AS order_count FROM `user_order_details` GROUP BY `name`) " +

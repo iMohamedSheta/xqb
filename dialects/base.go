@@ -9,12 +9,12 @@ import (
 // GetDialect returns the appropriate dialect for the given driver
 func GetDialect(driver types.Driver) DialectInterface {
 	switch driver {
-	case types.DriverMySQL:
-		return &mysql.MySQLDialect{}
+	case types.DriverMySql:
+		return &mysql.MySqlDialect{}
 	case types.DriverPostgres:
 		return &postgres.PostgresDialect{}
 	default:
-		return &mysql.MySQLDialect{} // Default to MySQL grammar
+		return &mysql.MySqlDialect{} // Default to MySql grammar
 	}
 }
 

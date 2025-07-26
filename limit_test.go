@@ -11,9 +11,9 @@ import (
 func TestLimit(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Limit(10)
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `users` LIMIT 10",
+			types.DriverMySql:    "SELECT * FROM `users` LIMIT 10",
 			types.DriverPostgres: `SELECT * FROM "users" LIMIT 10`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -25,10 +25,10 @@ func TestLimit(t *testing.T) {
 func TestOffset(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Offset(5)
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `users` OFFSET 5",
+			types.DriverMySql:    "SELECT * FROM `users` OFFSET 5",
 			types.DriverPostgres: `SELECT * FROM "users" OFFSET 5`,
 		}
 
@@ -41,10 +41,10 @@ func TestOffset(t *testing.T) {
 func TestSkipAlias(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Skip(7)
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `users` OFFSET 7",
+			types.DriverMySql:    "SELECT * FROM `users` OFFSET 7",
 			types.DriverPostgres: `SELECT * FROM "users" OFFSET 7`,
 		}
 
@@ -58,10 +58,10 @@ func TestSkipAlias(t *testing.T) {
 func TestTakeAlias(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Take(25)
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `users` LIMIT 25",
+			types.DriverMySql:    "SELECT * FROM `users` LIMIT 25",
 			types.DriverPostgres: `SELECT * FROM "users" LIMIT 25`,
 		}
 
@@ -74,10 +74,10 @@ func TestTakeAlias(t *testing.T) {
 func TestForPage(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").ForPage(3, 15)
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `users` LIMIT 15 OFFSET 30",
+			types.DriverMySql:    "SELECT * FROM `users` LIMIT 15 OFFSET 30",
 			types.DriverPostgres: `SELECT * FROM "users" LIMIT 15 OFFSET 30`,
 		}
 
@@ -96,10 +96,10 @@ func TestLimitOffsetWithWhere(t *testing.T) {
 			Limit(20).
 			Offset(40)
 
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `id`, `name` FROM `products` WHERE `price` > ? ORDER BY `created_at` desc LIMIT 20 OFFSET 40",
+			types.DriverMySql:    "SELECT `id`, `name` FROM `products` WHERE `price` > ? ORDER BY `created_at` desc LIMIT 20 OFFSET 40",
 			types.DriverPostgres: `SELECT "id", "name" FROM "products" WHERE "price" > $1 ORDER BY "created_at" desc LIMIT 20 OFFSET 40`,
 		}
 
@@ -117,10 +117,10 @@ func TestForPageWithWhereAndOrder(t *testing.T) {
 			OrderBy("id", "ASC").
 			ForPage(5, 10)
 
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `id`, `user_id` FROM `orders` WHERE `status` = ? ORDER BY `id` ASC LIMIT 10 OFFSET 40",
+			types.DriverMySql:    "SELECT `id`, `user_id` FROM `orders` WHERE `status` = ? ORDER BY `id` ASC LIMIT 10 OFFSET 40",
 			types.DriverPostgres: `SELECT "id", "user_id" FROM "orders" WHERE "status" = $1 ORDER BY "id" ASC LIMIT 10 OFFSET 40`,
 		}
 
@@ -139,10 +139,10 @@ func TestPaginationWithJoins(t *testing.T) {
 			Limit(50).
 			Offset(100)
 
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `users`.`id`, `profiles`.`bio` FROM `users` JOIN `profiles` ON profiles.user_id = users.id ORDER BY `users`.`created_at` desc LIMIT 50 OFFSET 100",
+			types.DriverMySql:    "SELECT `users`.`id`, `profiles`.`bio` FROM `users` JOIN `profiles` ON profiles.user_id = users.id ORDER BY `users`.`created_at` desc LIMIT 50 OFFSET 100",
 			types.DriverPostgres: `SELECT "users"."id", "profiles"."bio" FROM "users" JOIN "profiles" ON profiles.user_id = users.id ORDER BY "users"."created_at" desc LIMIT 50 OFFSET 100`,
 		}
 
@@ -158,10 +158,10 @@ func TestForPageLargePageNumber(t *testing.T) {
 			Select("*").
 			ForPage(999, 1000)
 
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT * FROM `logs` LIMIT 1000 OFFSET 998000",
+			types.DriverMySql:    "SELECT * FROM `logs` LIMIT 1000 OFFSET 998000",
 			types.DriverPostgres: `SELECT * FROM "logs" LIMIT 1000 OFFSET 998000`,
 		}
 
@@ -179,10 +179,10 @@ func TestForPageWithGroupByHaving(t *testing.T) {
 			Having("SUM(amount)", ">", 1000).
 			ForPage(2, 25)
 
-		sql, bindings, err := qb.ToSQL()
+		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Driver]string{
-			types.DriverMySQL:    "SELECT `user_id`, SUM(amount) as total FROM `transactions` GROUP BY `user_id` HAVING SUM(amount) > ? LIMIT 25 OFFSET 25",
+			types.DriverMySql:    "SELECT `user_id`, SUM(amount) as total FROM `transactions` GROUP BY `user_id` HAVING SUM(amount) > ? LIMIT 25 OFFSET 25",
 			types.DriverPostgres: `SELECT "user_id", SUM(amount) as total FROM "transactions" GROUP BY "user_id" HAVING SUM(amount) > $1 LIMIT 25 OFFSET 25`,
 		}
 

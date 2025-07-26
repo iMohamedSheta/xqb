@@ -37,13 +37,13 @@ func (qb *QueryBuilder) havingClause(column any, operator string, value any, con
 		switch val := value.(type) {
 		case *types.Expression:
 			raw = &types.Expression{
-				SQL:      fmt.Sprintf("%s %s %s", v.SQL, operator, val.SQL),
+				Sql:      fmt.Sprintf("%s %s %s", v.Sql, operator, val.Sql),
 				Bindings: append(v.Bindings, val.Bindings...),
 			}
 		default:
-			sql := v.SQL
+			sql := v.Sql
 			if operator != "" {
-				sql = fmt.Sprintf("%s %s", v.SQL, operator)
+				sql = fmt.Sprintf("%s %s", v.Sql, operator)
 				if val != nil {
 					sql = fmt.Sprintf("%s ?", sql)
 					bindings = append(bindings, val)
@@ -51,7 +51,7 @@ func (qb *QueryBuilder) havingClause(column any, operator string, value any, con
 			}
 
 			raw = &types.Expression{
-				SQL:      sql,
+				Sql:      sql,
 				Bindings: append(v.Bindings, bindings...),
 			}
 		}

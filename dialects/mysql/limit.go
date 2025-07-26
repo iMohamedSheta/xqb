@@ -8,7 +8,7 @@ import (
 )
 
 // compileLimitClause compiles the LIMIT clause
-func (mg *MySQLDialect) compileLimitClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileLimitClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 	if qb.Limit != 0 {
@@ -19,7 +19,7 @@ func (mg *MySQLDialect) compileLimitClause(qb *types.QueryBuilderData) (string, 
 }
 
 // compileOffsetClause compiles the OFFSET clause
-func (mg *MySQLDialect) compileOffsetClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileOffsetClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 	if qb.Offset != 0 {

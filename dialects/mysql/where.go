@@ -8,7 +8,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySQLDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Where) == 0 {
 		return "", nil, nil
 	}
@@ -35,16 +35,16 @@ func (mg *MySQLDialect) compileWhereClause(qb *types.QueryBuilderData) (string, 
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
+func (mg *MySqlDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
 	if condition.Raw != nil {
-		return condition.Raw.SQL, condition.Raw.Bindings, nil
+		return condition.Raw.Sql, condition.Raw.Bindings, nil
 	} else if len(condition.Group) > 0 {
 		return mg.compileGroupCondition(condition.Group, condition.Connector)
 	}
 	return mg.compileBasicCondition(condition)
 }
 
-func (mg *MySQLDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
+func (mg *MySqlDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
 	var sql strings.Builder
 	var bindings []any
 
@@ -67,7 +67,7 @@ func (mg *MySQLDialect) compileGroupCondition(group []*types.WhereCondition, con
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
+func (mg *MySqlDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
 	var sql strings.Builder
 	var bindings []any
 
@@ -82,8 +82,9 @@ func (mg *MySQLDialect) compileBasicCondition(condition *types.WhereCondition) (
 	sql.WriteString(" ")
 	sql.WriteString(op)
 
+	// Check if the value is empty
 	if condition.Value == nil {
-		return sql.String(), bindings, nil
+		return sql.String(), nil, nil
 	}
 
 	switch v := condition.Value.(type) {

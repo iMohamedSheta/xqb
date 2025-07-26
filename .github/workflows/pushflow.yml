@@ -55,7 +55,7 @@ jobs:
           version: "latest"
 
   # --------------------------------------------------------------------------------------
-  # Run tests with MySQL (no Redis/Postgres/migrations needed)
+  # Run tests with MySql (no Redis/Postgres/migrations needed)
   # --------------------------------------------------------------------------------------
   test:
     name: Test
@@ -66,10 +66,10 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: test_xqb_db
-          MYSQL_USER: test
-          MYSQL_PASSWORD: test
+          MYSql_ROOT_PASSWORD: root
+          MYSql_DATABASE: test_xqb_db
+          MYSql_USER: test
+          MYSql_PASSWORD: test
         ports:
           - 3306:3306
         options: >-
@@ -97,10 +97,10 @@ jobs:
       - name: Install dependencies
         run: go mod download
 
-      - name: Wait for MySQL
+      - name: Wait for MySql
         run: |
           until mysqladmin ping -h 127.0.0.1 -u root -proot --silent; do
-            echo "Waiting for MySQL..."
+            echo "Waiting for MySql..."
             sleep 2
           done
 

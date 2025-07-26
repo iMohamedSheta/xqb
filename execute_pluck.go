@@ -35,13 +35,13 @@ func (qb *QueryBuilder) Pluck(value, key string) (map[string]any, error) {
 	return mappedResults, nil
 }
 
-func (qb *QueryBuilder) PluckSQL(value, key string) (string, []any, error) {
+func (qb *QueryBuilder) PluckSql(value, key string) (string, []any, error) {
 	err := qb.updateQueryForPluck(value, key)
 	if err != nil {
 		return "", nil, err
 	}
 
-	sqlString, bindings, err := qb.ToSQL()
+	sqlString, bindings, err := qb.ToSql()
 	if err != nil {
 		return "", nil, err
 	}

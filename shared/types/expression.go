@@ -1,8 +1,8 @@
 package types
 
-// Expression represents a raw SQL expression
+// Expression represents a raw Sql expression
 type Expression struct {
-	SQL      string
+	Sql      string
 	Bindings []any
 }
 
@@ -12,13 +12,13 @@ type DialectExpression struct {
 	Dialects map[string]*Expression // dialect => expression
 }
 
-func (e DialectExpression) ToSQL(dialect string) (string, []any, error) {
+func (e DialectExpression) ToSql(dialect string) (string, []any, error) {
 	if exp, ok := e.Dialects[dialect]; ok {
-		return exp.ToSQL()
+		return exp.ToSql()
 	}
-	return e.Dialects[e.Default].ToSQL()
+	return e.Dialects[e.Default].ToSql()
 }
 
-func (expr *Expression) ToSQL() (string, []any, error) {
-	return expr.SQL, expr.Bindings, nil
+func (expr *Expression) ToSql() (string, []any, error) {
+	return expr.Sql, expr.Bindings, nil
 }

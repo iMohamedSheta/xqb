@@ -11,16 +11,16 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/wrap"
 )
 
-// MySQLDialect implements MySQL-specific SQL syntax
-type MySQLDialect struct {
+// MySqlDialect implements MySql-specific Sql syntax
+type MySqlDialect struct {
 }
 
-func (mg *MySQLDialect) GetDriver() types.Driver {
-	return types.DriverMySQL
+func (mg *MySqlDialect) GetDriver() types.Driver {
+	return types.DriverMySql
 }
 
-// CompileSelect generates a SELECT SQL statement for MySQL
-func (mg *MySQLDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
+// CompileSelect generates a SELECT Sql statement for MySql
+func (mg *MySqlDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
 		return mg.compileBaseQuery(qb)
 	}
@@ -29,24 +29,24 @@ func (mg *MySQLDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any
 	var sql strings.Builder
 
 	// Compile base SELECT
-	baseSQL, baseBindings, err := mg.compileBaseQuery(qb)
+	baseSql, baseBindings, err := mg.compileBaseQuery(qb)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Compile UNIONs
-	unionSQL, unionBindings, err := mg.compileUnionClause(qb)
+	unionSql, unionBindings, err := mg.compileUnionClause(qb)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Wrap base query when unions exist
 	sql.WriteString("(")
-	sql.WriteString(baseSQL)
+	sql.WriteString(baseSql)
 	sql.WriteString(")")
 
 	// Append union part
-	sql.WriteString(unionSQL)
+	sql.WriteString(unionSql)
 
 	// Combine bindings
 	bindings = append(bindings, baseBindings...)
@@ -56,7 +56,7 @@ func (mg *MySQLDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any
 }
 
 // compileBaseQuery compiles a query without unions
-func (mg *MySQLDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
@@ -84,7 +84,7 @@ func (mg *MySQLDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []
 	return sql.String(), bindings, nil
 }
 
-func (mg *MySQLDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	var err error
@@ -116,7 +116,7 @@ func (mg *MySQLDialect) Build(qbd *types.QueryBuilderData) (string, []any, error
 	return sql, bindings, nil
 }
 
-// appendClause compiles and appends a clause to the SQL string and bindings
+// appendClause compiles and appends a clause to the Sql string and bindings
 func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.QueryBuilderData) (string, []any, error), qb *types.QueryBuilderData) error {
 	// compile clause closure
 	part, partBindings, err := compiler(qb)
@@ -133,74 +133,11 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 }
 
 // appendError appends an error to the query builder and returns it
-func (mg *MySQLDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
+func (mg *MySqlDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
 }
 
-func (mg *MySQLDialect) Wrap(value string) string {
+func (mg *MySqlDialect) Wrap(value string) string {
 	return wrap.Wrap(value, '`')
 }
-
-// func (mg *MySQLDialect) Wrap(value string) string {
-// 	value = strings.TrimSpace(value)
-// 	lower := strings.ToLower(value)
-
-// 	// Handle "AS" aliases (e.g., COUNT(id) AS total)
-// 	if idx := strings.LastIndex(lower, " as "); idx != -1 {
-// 		left := strings.TrimSpace(value[:idx])
-// 		right := strings.TrimSpace(value[idx+4:])
-// 		return fmt.Sprintf("%s AS %s", mg.Wrap(left), wrapMysqlValue(right))
-// 	}
-
-// 	// Handle shorthand aliases (e.g., users u)
-// 	parts := strings.Fields(value)
-// 	if len(parts) == 2 && !mg.isLikelyExpr(lower) {
-// 		return fmt.Sprintf("%s %s", mg.Wrap(parts[0]), wrapMysqlValue(parts[1]))
-// 	}
-
-// 	// Don't wrap SQL expressions like COUNT(id)
-// 	if mg.isLikelyExpr(lower) || mg.isLiteral(lower) {
-// 		return value
-// 	}
-
-// 	// Handle table.*
-// 	if strings.HasSuffix(value, ".*") {
-// 		parts := strings.SplitN(value, ".", 2)
-// 		return wrapMysqlValue(parts[0]) + ".*"
-// 	}
-
-// 	// Handle table.column
-// 	segments := strings.Split(value, ".")
-// 	for i := range segments {
-// 		segments[i] = wrapMysqlValue(segments[i])
-// 	}
-// 	return strings.Join(segments, ".")
-// }
-
-// func wrapMysqlValue(value string) string {
-// 	if value == "*" {
-// 		return "*"
-// 	}
-// 	if strings.HasPrefix(value, "`") && strings.HasSuffix(value, "`") {
-// 		return value // already wrapped
-// 	}
-// 	return "`" + strings.Trim(value, "`") + "`"
-// }
-
-// func (mg *MySQLDialect) isLikelyExpr(s string) bool {
-// 	return strings.ContainsAny(s, "()+*/-")
-// }
-
-// func (mg *MySQLDialect) isLiteral(s string) bool {
-// 	if s == "null" || s == "true" || s == "false" {
-// 		return true
-// 	}
-// 	if _, err := strconv.ParseFloat(s, 64); err == nil {
-// 		return true // numeric literal
-// 	}
-// 	if strings.HasPrefix(s, "'") && strings.HasSuffix(s, "'") {
-// 		return true // string literal
-// 	}
-// 	return false
-// }

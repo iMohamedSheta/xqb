@@ -9,7 +9,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySQLDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
 	tableName, _, err := mg.resolveTable(qb, "insert", false)
 	if err != nil {
 		return "", nil, err

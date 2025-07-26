@@ -1,6 +1,6 @@
 # Contributing to XQB
 
-Thank you for your interest in contributing to **XQB**, a powerful and flexible SQL query builder for Go. Whether you're fixing a bug, improving documentation, or adding a new feature — your contribution is highly appreciated!
+Thank you for your interest in contributing to **XQB**, a powerful and flexible Sql query builder for Go. Whether you're fixing a bug, improving documentation, or adding a new feature — your contribution is highly appreciated!
 
 ---
 
@@ -63,7 +63,7 @@ All contributions must include tests under `xqb_test.go` or relevant test files.
 
 Test any of the following if affected:
 
-* SQL compilation logic
+* Sql compilation logic
 * Parameter bindings
 * Transactions
 * Connection behavior
@@ -86,7 +86,7 @@ If you find a bug, open an issue with:
 * A clear title and description.
 * Steps to reproduce.
 * Expected vs actual behavior.
-* Relevant code snippets or SQL output.
+* Relevant code snippets or Sql output.
 
 ---
 

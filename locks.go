@@ -8,19 +8,19 @@ func (qb *QueryBuilder) LockForUpdate() *QueryBuilder {
 	return qb
 }
 
-// SharedLock - adds LOCK IN SHARE MODE (MySQL) or FOR SHARE (PostgreSQL) to lock rows for reading.
+// SharedLock - adds LOCK IN SHARE MODE (MySql) or FOR SHARE (PostgreSql) to lock rows for reading.
 func (qb *QueryBuilder) SharedLock() *QueryBuilder {
 	qb.SetOption(types.OptionLock, types.LockInShare)
 	return qb
 }
 
-// LockNoKeyUpdate - adds FOR NO KEY UPDATE (PostgreSQL) to prevent updates to the row's primary/unique key.
+// LockNoKeyUpdate - adds FOR NO KEY UPDATE (PostgreSql) to prevent updates to the row's primary/unique key.
 func (qb *QueryBuilder) LockNoKeyUpdate() *QueryBuilder {
 	qb.SetOption(types.OptionLock, types.LockNoKeyUpdate)
 	return qb
 }
 
-// LockKeyShare - adds FOR KEY SHARE (PostgreSQL) to allow reading but prevents updates/deletes to referenced keys.
+// LockKeyShare - adds FOR KEY SHARE (PostgreSql) to allow reading but prevents updates/deletes to referenced keys.
 func (qb *QueryBuilder) LockKeyShare() *QueryBuilder {
 	qb.SetOption(types.OptionLock, types.LockKeyShare)
 	return qb

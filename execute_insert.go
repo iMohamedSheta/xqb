@@ -52,7 +52,7 @@ func (qb *QueryBuilder) InsertSql(values []map[string]any) (string, []any, error
 	return qb.dialect.Build(qbData)
 }
 
-// UpsertSql returns a SQL query that can be used to upsert rows into the database using the current connection
+// UpsertSql returns a Sql query that can be used to upsert rows into the database using the current connection
 func (qb *QueryBuilder) UpsertSql(values []map[string]any, uniqueBy []string, updateColumns []string) (string, []any, error) {
 	qb.queryType = enums.INSERT
 

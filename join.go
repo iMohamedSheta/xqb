@@ -8,28 +8,28 @@ import (
 )
 
 func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition any, alias string, values ...any) *QueryBuilder {
-	var tableSQL string
-	var conditionSQL string
+	var tableSql string
+	var conditionSql string
 	var bindings []types.Binding
 
 	// Handle table
 	switch t := table.(type) {
 	case string:
-		tableSQL = t
+		tableSql = t
 	case *QueryBuilder:
-		subSQL, subBindings, err := t.SetDialect(qb.dialect.GetDriver()).ToSQL()
+		subSql, subBindings, err := t.SetDialect(qb.dialect.GetDriver()).ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}
 		if alias == "" {
 			qb.appendError(fmt.Errorf("%w: alias is required for subquery or expression join", xqbErr.ErrInvalidQuery))
 		}
-		tableSQL = fmt.Sprintf("(%s) AS %s", subSQL, alias)
+		tableSql = fmt.Sprintf("(%s) AS %s", subSql, alias)
 		for _, b := range subBindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
 	case *types.Expression:
-		tableSQL = t.SQL
+		tableSql = t.Sql
 		for _, b := range t.Bindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
@@ -38,12 +38,12 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 	// Handle condition
 	switch c := condition.(type) {
 	case string:
-		conditionSQL = c
+		conditionSql = c
 		for _, val := range values {
 			bindings = append(bindings, types.Binding{Value: val})
 		}
 	case *types.Expression:
-		conditionSQL = c.SQL
+		conditionSql = c.Sql
 		for _, b := range c.Bindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
@@ -51,8 +51,8 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 
 	qb.joins = append(qb.joins, &types.Join{
 		Type:      joinType,
-		Table:     tableSQL,
-		Condition: conditionSQL,
+		Table:     tableSql,
+		Condition: conditionSql,
 		Binding:   bindings,
 	})
 

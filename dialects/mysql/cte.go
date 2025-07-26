@@ -7,7 +7,7 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (mg *MySQLDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
+func (mg *MySqlDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}
@@ -28,16 +28,16 @@ func (mg *MySQLDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, 
 
 		if cte.Expression != nil {
 			// Use raw expression if provided
-			sql.WriteString(cte.Expression.SQL)
+			sql.WriteString(cte.Expression.Sql)
 			bindings = append(bindings, cte.Expression.Bindings...)
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
-				cteSQL, cteBindings, err := mg.compileBaseQuery(queryData)
+				cteSql, cteBindings, err := mg.compileBaseQuery(queryData)
 				if err != nil {
 					return "", nil, err
 				}
-				sql.WriteString(cteSQL)
+				sql.WriteString(cteSql)
 				bindings = append(bindings, cteBindings...)
 			}
 		}

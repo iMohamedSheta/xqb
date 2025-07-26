@@ -19,12 +19,12 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 		switch val := value.(type) {
 		case *types.Expression:
 			raw = &types.Expression{
-				SQL:      fmt.Sprintf("(%s) %s (%s)", v.SQL, operator, val.SQL),
+				Sql:      fmt.Sprintf("(%s) %s (%s)", v.Sql, operator, val.Sql),
 				Bindings: append(v.Bindings, val.Bindings...),
 			}
 		default:
 			raw = &types.Expression{
-				SQL:      fmt.Sprintf("%s %s ?", v.SQL, operator),
+				Sql:      fmt.Sprintf("%s %s ?", v.Sql, operator),
 				Bindings: append(v.Bindings, val),
 			}
 		}
@@ -36,17 +36,17 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 	if raw == nil {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+			subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
 			raw = &types.Expression{
-				SQL:      fmt.Sprintf("%s %s (%s)", col, operator, subSQL),
+				Sql:      fmt.Sprintf("%s %s (%s)", col, operator, subSql),
 				Bindings: subBindings,
 			}
 		case *types.Expression:
 			raw = &types.Expression{
-				SQL:      fmt.Sprintf("%s %s (%s)", col, operator, v.SQL),
+				Sql:      fmt.Sprintf("%s %s (%s)", col, operator, v.Sql),
 				Bindings: v.Bindings,
 			}
 		default:
@@ -109,13 +109,13 @@ func (qb *QueryBuilder) OrWhereValue(column string, operator string, value any) 
 }
 
 func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSQL, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSQL()
+	subSql, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.AND,
 		Raw: &types.Expression{
-			SQL:      fmt.Sprintf("%s %s (%s)", column, operator, subSQL),
+			Sql:      fmt.Sprintf("%s %s (%s)", column, operator, subSql),
 			Bindings: subBindings,
 		},
 	})
@@ -123,13 +123,13 @@ func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuild
 }
 
 func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSQL, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSQL()
+	subSql, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
 		Connector: types.OR,
 		Raw: &types.Expression{
-			SQL:      fmt.Sprintf("%s %s (%s)", column, operator, subSQL),
+			Sql:      fmt.Sprintf("%s %s (%s)", column, operator, subSql),
 			Bindings: subBindings,
 		},
 	})
@@ -142,7 +142,7 @@ func (qb *QueryBuilder) WhereExpr(column string, operator string, expr *types.Ex
 		Operator:  operator,
 		Connector: types.AND,
 		Raw: &types.Expression{
-			SQL:      fmt.Sprintf("%s %s (%s)", column, operator, expr.SQL),
+			Sql:      fmt.Sprintf("%s %s (%s)", column, operator, expr.Sql),
 			Bindings: expr.Bindings,
 		},
 	})
@@ -155,7 +155,7 @@ func (qb *QueryBuilder) OrWhereExpr(column string, operator string, expr *types.
 		Operator:  operator,
 		Connector: types.OR,
 		Raw: &types.Expression{
-			SQL:      fmt.Sprintf("%s %s (%s)", column, operator, expr.SQL),
+			Sql:      fmt.Sprintf("%s %s (%s)", column, operator, expr.Sql),
 			Bindings: expr.Bindings,
 		},
 	})
@@ -165,7 +165,7 @@ func (qb *QueryBuilder) OrWhereExpr(column string, operator string, expr *types.
 func (qb *QueryBuilder) whereRawClause(sql string, bindings []any, connector types.WhereConditionEnum) *QueryBuilder {
 	qb.where = append(qb.where, &types.WhereCondition{
 		Raw: &types.Expression{
-			SQL:      sql,
+			Sql:      sql,
 			Bindings: bindings,
 		},
 		Connector: connector,
@@ -237,7 +237,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	for _, value := range values {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+			subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
@@ -247,7 +247,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 				Value:     nil,
 				Connector: connector,
 				Raw: &types.Expression{
-					SQL:      fmt.Sprintf("%s %s (%s)", column, operator, subSQL),
+					Sql:      fmt.Sprintf("%s %s (%s)", column, operator, subSql),
 					Bindings: subBindings,
 				},
 			})
@@ -260,7 +260,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 				Value:     nil,
 				Connector: connector,
 				Raw: &types.Expression{
-					SQL:      fmt.Sprintf("%s %s (%s)", column, operator, v.SQL),
+					Sql:      fmt.Sprintf("%s %s (%s)", column, operator, v.Sql),
 					Bindings: v.Bindings,
 				},
 			})
@@ -323,18 +323,49 @@ func (qb *QueryBuilder) OrWhereNotInQuery(column string, sub *QueryBuilder) *Que
 	return qb.whereInClause(column, []any{sub}, "NOT IN", types.OR)
 }
 
+// WhereBoolClause adds a WHERE boolean condition
+func (qb *QueryBuilder) whereBoolClause(column string, value bool, operator string, connector types.WhereConditionEnum) *QueryBuilder {
+	qb.where = append(qb.where, &types.WhereCondition{
+		Column:    column,
+		Operator:  operator,
+		Value:     value,
+		Connector: connector,
+	})
+	return qb
+}
+
+// WhereTrue adds a WHERE true condition
+func (qb *QueryBuilder) WhereTrue(column string) *QueryBuilder {
+	return qb.whereBoolClause(column, true, "=", types.AND)
+}
+
+// OrWhereTrue adds an OR WHERE true condition
+func (qb *QueryBuilder) OrWhereTrue(column string) *QueryBuilder {
+	return qb.whereBoolClause(column, true, "=", types.OR)
+}
+
+// WhereFalse adds a WHERE false condition
+func (qb *QueryBuilder) WhereFalse(column string) *QueryBuilder {
+	return qb.whereBoolClause(column, false, "=", types.AND)
+}
+
+// OrWhereFalse adds an OR WHERE false condition
+func (qb *QueryBuilder) OrWhereFalse(column string) *QueryBuilder {
+	return qb.whereBoolClause(column, false, "=", types.OR)
+}
+
 func (qb *QueryBuilder) whereBetweenClause(column string, min, max any, operator string, connector types.WhereConditionEnum) *QueryBuilder {
 	// Support expressions for min/max
 	if minExpr, ok := min.(*types.Expression); ok {
 		if maxExpr, ok := max.(*types.Expression); ok {
-			combined := fmt.Sprintf("%s %s %s %s %s", column, operator, minExpr.SQL, connector, maxExpr.SQL)
+			combined := fmt.Sprintf("%s %s %s %s %s", column, operator, minExpr.Sql, connector, maxExpr.Sql)
 			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
 				Value:     nil,
 				Connector: connector,
 				Raw: &types.Expression{
-					SQL:      combined,
+					Sql:      combined,
 					Bindings: append(minExpr.Bindings, maxExpr.Bindings...),
 				},
 			})
@@ -380,7 +411,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 
 	switch v := value.(type) {
 	case *types.Expression:
-		sqlStr, sqlBindings, err := v.ToSQL()
+		sqlStr, sqlBindings, err := v.ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -390,13 +421,13 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 			Value:     nil,
 			Connector: connector,
 			Raw: &types.Expression{
-				SQL:      operator + " (" + sqlStr + ")",
+				Sql:      operator + " (" + sqlStr + ")",
 				Bindings: sqlBindings,
 			},
 		})
 		return qb
 	case *types.DialectExpression:
-		sqlStr, sqlBindings, err := v.ToSQL(qb.dialect.GetDriver().String())
+		sqlStr, sqlBindings, err := v.ToSql(qb.dialect.GetDriver().String())
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -406,14 +437,14 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 			Value:     nil,
 			Connector: connector,
 			Raw: &types.Expression{
-				SQL:      operator + "(" + sqlStr + ")",
+				Sql:      operator + "(" + sqlStr + ")",
 				Bindings: sqlBindings,
 			},
 		})
 		return qb
 
 	case *QueryBuilder:
-		subSQL, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSQL()
+		subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -423,7 +454,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 			Value:     nil,
 			Connector: connector,
 			Raw: &types.Expression{
-				SQL:      operator + " (" + subSQL + ")",
+				Sql:      operator + " (" + subSql + ")",
 				Bindings: subBindings,
 			},
 		})
@@ -472,7 +503,7 @@ func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 
 // 	var groupBindings []any
 
-// 	s, bindings, err := groupBuilder.SetDialect(qb.dialect.GetDriver()).ToSQL()
+// 	s, bindings, err := groupBuilder.SetDialect(qb.dialect.GetDriver()).ToSql()
 // 	DD(s, bindings, err)
 // 	// Process each condition in the group
 // 	for i, condition := range groupBuilder.where {
@@ -483,8 +514,8 @@ func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 // 		}
 
 // 		if condition.Raw != nil {
-// 			// Handle raw SQL expression
-// 			sql.WriteString(condition.Raw.SQL)
+// 			// Handle raw Sql expression
+// 			sql.WriteString(condition.Raw.Sql)
 // 			if len(condition.Raw.Bindings) > 0 {
 // 				groupBindings = append(groupBindings, condition.Raw.Bindings...)
 // 			}
@@ -507,7 +538,7 @@ func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 // 	// Add the group as a raw expression to the main builder
 // 	qb.where = append(qb.where, &types.WhereCondition{
 // 		Raw: &types.Expression{
-// 			SQL:      sql.String(),
+// 			Sql:      sql.String(),
 // 			Bindings: groupBindings,
 // 		},
 // 		Connector: connector,
@@ -528,7 +559,7 @@ func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector ty
 		return qb
 	}
 
-	// Add the group as a structured Group instead of raw SQL
+	// Add the group as a structured Group instead of raw Sql
 	qb.where = append(qb.where, &types.WhereCondition{
 		Group:     groupBuilder.where,
 		Connector: connector,
