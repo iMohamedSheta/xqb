@@ -19,6 +19,8 @@ func TestOnBeforeQueryHook(t *testing.T) {
 		afterCalled = true
 	})
 
+	Setup()
+
 	qb := xqb.Query().Table("users").Where("id", "=", 1)
 
 	_, _, err := qb.ToSql()
