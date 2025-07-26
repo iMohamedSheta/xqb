@@ -1,31 +1,36 @@
 package xqb_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/iMohamedSheta/xqb"
-	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
+// TestOnBeforeQueryHook tests the OnBeforeQuery and OnAfterQuery hooks
 func TestOnBeforeQueryHook(t *testing.T) {
+	beforeCalled := false
+	afterCalled := false
+
+	xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
+		beforeCalled = true
+	})
+
 	xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
-		elapsed := query.Time.String()
-		sql := query.Sql
-		bindings := query.Bindings
-
-		// inject bindings into SQL for debugging
-		boundSql, err := xqb.InjectBindings(query.Dialect, sql, bindings)
-		if err != nil {
-			xqb.Dump(err)
-			return
-		}
-
-		xqb.Dump(fmt.Sprintf("[%s] %s", elapsed, boundSql))
+		afterCalled = true
 	})
 
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
-		qb := xqb.Table("users").SetDialect(dialect)
-		qb.Select("id", "name").Where("id", "=", 1).ToSql()
-	})
+	qb := xqb.Query().Table("users").Where("id", "=", 1)
+
+	_, _, err := qb.ToSql()
+	if err != nil {
+		t.Fatalf("ToSql failed: %v", err)
+	}
+
+	if !beforeCalled {
+		t.Errorf("OnBeforeQuery hook was not called")
+	}
+
+	if !afterCalled {
+		t.Errorf("OnAfterQuery hook was not called")
+	}
 }
