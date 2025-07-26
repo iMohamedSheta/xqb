@@ -36,6 +36,36 @@ func main() {
 }
 ```
 
+## Query Hooks
+
+XQB supports query hooks for logging, profiling, or custom behavior.
+
+### OnBeforeQuery
+
+Executes right before a query is compiled or executed.
+
+```go
+xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
+    fmt.Println("Before Query:", qb.GetTable().Name)
+})
+```
+
+### OnAfterQuery
+
+Executes right after a query is executed.
+
+```go
+xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
+    sql, _ := xqb.InjectBindings(query.Dialect, query.Sql, query.Bindings)
+    fmt.Printf("[%s] %s\n", query.Time, sql)
+})
+```
+
+### Instance-based Hooks
+
+Hooks can be set globally or per query using `WithSettings()`.
+
+
 ## Raw Sql Expressions
 
 ### Raw Function
