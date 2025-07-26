@@ -66,10 +66,10 @@ jobs:
       mysql:
         image: mysql:8
         env:
-          MYSql_ROOT_PASSWORD: root
-          MYSql_DATABASE: test_xqb_db
-          MYSql_USER: test
-          MYSql_PASSWORD: test
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_xqb_db
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
         ports:
           - 3306:3306
         options: >-
