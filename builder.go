@@ -79,6 +79,7 @@ type QueryBuilder struct {
 	options         map[types.Option]any // field for flexible Sql extensions
 	insertedValues  []map[string]any
 	updatedBindings []*types.Binding
+	allowDangerous  bool
 }
 
 func (qb *QueryBuilder) GetDialect() dialects.DialectInterface {
@@ -102,6 +103,11 @@ func (qb *QueryBuilder) GetTable() *types.Table {
 
 func (qb *QueryBuilder) WithSettings(settings *QueryBuilderSettings) *QueryBuilder {
 	qb.settings = settings
+	return qb
+}
+
+func (qb *QueryBuilder) AllowDangerous() *QueryBuilder {
+	qb.allowDangerous = true
 	return qb
 }
 
@@ -142,6 +148,9 @@ func New() *QueryBuilder {
 		settings:        DefaultSettings(),
 		connection:      DBManager().GetDefaultConnectionName(),
 		table:           nil,
+		insertedValues:  nil,
+		updatedBindings: nil,
+		allowDangerous:  false,
 	}
 }
 
@@ -195,6 +204,9 @@ func (qb *QueryBuilder) Reset() {
 	qb.tx = nil
 	qb.options = make(map[types.Option]any)
 	qb.settings = DefaultSettings()
+	qb.insertedValues = nil
+	qb.updatedBindings = nil
+	qb.allowDangerous = false
 }
 
 // GetData returns the QueryBuilderData for use by grammars
@@ -220,6 +232,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 		Options:         qb.options,
 		InsertedValues:  qb.insertedValues,
 		UpdatedBindings: qb.updatedBindings,
+		AllowDangerous:  qb.allowDangerous,
 	}
 }
 

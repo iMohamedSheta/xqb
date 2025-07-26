@@ -26,6 +26,7 @@ type QueryBuilderData struct {
 	Errors          []error
 	DeleteFrom      []string
 	Options         map[Option]any // field for flexible Sql extensions
+	AllowDangerous  bool
 }
 
 func (qb *QueryBuilderData) SetOption(key Option, value any) {

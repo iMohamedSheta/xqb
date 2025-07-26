@@ -18,6 +18,10 @@ func Setup() {
 	// 	sql := query.Sql
 	// 	bindings := query.Bindings
 
+	// 	if sql == "" {
+	// 		return
+	// 	}
+
 	// 	boundSql, err := xqb.InjectBindings(query.Dialect, sql, bindings)
 	// 	if err != nil {
 	// 		xqb.Dump(err)

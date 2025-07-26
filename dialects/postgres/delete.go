@@ -54,8 +54,8 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 func (pg *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
-	if len(qb.Where) == 0 {
-		errs = append(errs, errors.New("DELETE without WHERE clause is dangerous we don't allow that"))
+	if len(qb.Where) == 0 && !qb.AllowDangerous {
+		errs = append(errs, errors.New("DELETE without WHERE clause is dangerous we don't allow that you can add AllowDangerous to allow it"))
 	}
 
 	if qb.Limit > 0 {

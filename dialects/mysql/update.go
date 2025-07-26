@@ -3,6 +3,7 @@ package mysql
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
@@ -26,9 +27,19 @@ func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 	var bindings []any
 	var sql strings.Builder
 
+	// Sort updated bindings by column name
+	sort.SliceStable(qb.UpdatedBindings, func(i, j int) bool {
+		return qb.UpdatedBindings[i].Column < qb.UpdatedBindings[j].Column
+	})
+
 	for _, binding := range qb.UpdatedBindings {
-		setParts = append(setParts, fmt.Sprintf("%s = ?", mg.Wrap(binding.Column)))
-		bindings = append(bindings, binding.Value)
+		if expr, ok := binding.Value.(*types.Expression); ok {
+			setParts = append(setParts, fmt.Sprintf("%s = %s", mg.Wrap(binding.Column), expr.Sql))
+			bindings = append(bindings, expr.Bindings...)
+		} else {
+			setParts = append(setParts, fmt.Sprintf("%s = ?", mg.Wrap(binding.Column)))
+			bindings = append(bindings, binding.Value)
+		}
 	}
 
 	sql.WriteString(fmt.Sprintf("UPDATE %s", tableName))
@@ -59,6 +70,11 @@ func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 // validateUpdate checks if the query builder is valid for the update operation
 func (mg *MySqlDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	var errs []error
+
+	if len(qb.Where) == 0 && !qb.AllowDangerous {
+		errs = append(errs, errors.New("UPDATE without WHERE clause is dangerous we don't allow that you can add AllowDangerous to allow it"))
+	}
+
 	if len(qb.UpdatedBindings) == 0 {
 		errs = append(errs, errors.New("no updated fields provided for update operation"))
 	}

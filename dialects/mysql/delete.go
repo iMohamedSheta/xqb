@@ -49,7 +49,7 @@ func (mg *MySqlDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any
 func (mg *MySqlDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
-	if len(qb.Where) == 0 {
+	if len(qb.Where) == 0 && !qb.AllowDangerous {
 		errs = append(errs, errors.New("DELETE without WHERE clause is dangerous; we don't allow that"))
 	}
 

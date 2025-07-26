@@ -588,8 +588,8 @@ func TestPostgresDialect_CompileUpdate(t *testing.T) {
 					{Column: `id`, Operator: `=`, Value: 1},
 				},
 			},
-			expected: `UPDATE "users" SET "name" = ?, "email" = ? WHERE "id" = ?`,
-			bindings: []any{`John Updated`, `john.updated@example.com`, 1},
+			expected: `UPDATE "users" SET "email" = ?, "name" = ? WHERE "id" = ?`,
+			bindings: []any{`john.updated@example.com`, `John Updated`, 1},
 			wantErr:  false,
 		},
 		{

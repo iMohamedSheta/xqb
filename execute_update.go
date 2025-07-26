@@ -21,7 +21,16 @@ func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
 
 // core implementation of the update method
 func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
+	query, args, err := qb.UpdateSql(data)
+	if err != nil {
+		return nil, fmt.Errorf("%w: Update() Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
+	}
 
+	return Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+}
+
+// UpdateSql return sql query and bindings for Update()
+func (qb *QueryBuilder) UpdateSql(data map[string]any) (string, []any, error) {
 	qb.queryType = enums.UPDATE
 
 	for column, value := range data {
@@ -32,10 +41,5 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 		qb.updatedBindings = append(qb.updatedBindings, binding)
 	}
 
-	query, args, err := qb.ToSql()
-	if err != nil {
-		return nil, fmt.Errorf("%w: Update() Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
-	}
-
-	return Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+	return qb.ToSql()
 }

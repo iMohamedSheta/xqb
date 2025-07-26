@@ -79,6 +79,15 @@ func (qb *QueryBuilder) First() (map[string]any, error) {
 	return results[0], nil
 }
 
+// FirstSql returns the sql query for First()
+func (qb *QueryBuilder) FirstSql() (string, []any, error) {
+	originalLimit := qb.limit
+	qb.limit = 1
+	defer func() { qb.limit = originalLimit }()
+
+	return qb.ToSql()
+}
+
 // Value gets a single value from the first row
 func (qb *QueryBuilder) Value(column string) (any, error) {
 	qb.columns = []any{column}
@@ -94,6 +103,15 @@ func (qb *QueryBuilder) Value(column string) (any, error) {
 	}
 
 	return val, nil
+}
+
+// ValueSql returns the sql query for Value()
+func (qb *QueryBuilder) ValueSql(column string) (string, []any, error) {
+	originalCols := qb.columns
+	qb.columns = []any{column}
+	defer func() { qb.columns = originalCols }()
+
+	return qb.FirstSql()
 }
 
 // Paginate returns paginated results with optional count metadata
@@ -171,9 +189,26 @@ func (qb *QueryBuilder) Chunks(chunkSize int, closure func(results []map[string]
 	return nil
 }
 
+// PaginateSql returns the sql query for Paginate()
+func (qb *QueryBuilder) PaginateSql(perPage, page int) (string, []any, error) {
+	if page < 1 {
+		page = 1
+	}
+
+	qb.limit = perPage
+	qb.offset = (page - 1) * perPage
+
+	return qb.ToSql()
+}
+
 // Find finds the first result by ID
 func (qb *QueryBuilder) Find(id any) (map[string]any, error) {
 	return qb.Where("id", "=", id).First()
+}
+
+// FindSql returns the sql query for Find()
+func (qb *QueryBuilder) FindSql(id any) (string, []any, error) {
+	return qb.Where("id", "=", id).FirstSql()
 }
 
 // FindOrFail finds the first result by ID or returns a "not found" error

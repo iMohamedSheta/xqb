@@ -12,15 +12,20 @@ func (qb *QueryBuilder) Delete() (int64, error) {
 	return qb.delete()
 }
 
-// core delete execution method
-func (qb *QueryBuilder) delete(table ...string) (int64, error) {
+// DeleteSql returns the sql query for deleting rows
+func (qb *QueryBuilder) DeleteSql(table ...string) (string, []any, error) {
 	if len(table) != 0 {
 		qb.deleteFrom = table
 	}
 
 	qb.queryType = enums.DELETE
 
-	query, args, err := qb.ToSql()
+	return qb.ToSql()
+}
+
+// core delete execution method
+func (qb *QueryBuilder) delete(table ...string) (int64, error) {
+	query, args, err := qb.DeleteSql(table...)
 	if err != nil {
 		return 0, err
 	}
