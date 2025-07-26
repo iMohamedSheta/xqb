@@ -1,8 +1,6 @@
 package postgres
 
 import (
-	"strings"
-
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -13,22 +11,21 @@ func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []an
 	}
 
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
-	sql.WriteString("WITH ")
+	sql += "WITH "
 	for i, cte := range qb.WithCTEs {
 		if i > 0 {
-			sql.WriteString(", ")
+			sql += ", "
 		}
 		if cte.Recursive {
-			sql.WriteString("RECURSIVE ")
+			sql += "RECURSIVE "
 		}
-		sql.WriteString(cte.Name)
-		sql.WriteString(" AS (")
+		sql += cte.Name + " AS ("
 
 		if cte.Expression != nil {
 			// Use raw expression if provided
-			sql.WriteString(cte.Expression.Sql)
+			sql += cte.Expression.Sql
 			bindings = append(bindings, cte.Expression.Bindings...)
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
@@ -37,13 +34,13 @@ func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []an
 				if err != nil {
 					return "", nil, err
 				}
-				sql.WriteString(cteSql)
+				sql += cteSql
 				bindings = append(bindings, cteBindings...)
 			}
 		}
 
-		sql.WriteString(")")
+		sql += ")"
 	}
 
-	return sql.String() + " ", bindings, nil
+	return sql + " ", bindings, nil
 }

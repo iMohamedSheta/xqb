@@ -26,7 +26,7 @@ func (mg *MySqlDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any
 	}
 
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	// Compile base SELECT
 	baseSql, baseBindings, err := mg.compileBaseQuery(qb)
@@ -40,19 +40,14 @@ func (mg *MySqlDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any
 		return "", nil, err
 	}
 
-	// Wrap base query when unions exist
-	sql.WriteString("(")
-	sql.WriteString(baseSql)
-	sql.WriteString(")")
-
-	// Append union part
-	sql.WriteString(unionSql)
+	// Wrap base query when unions exist then append union part
+	sql += "(" + baseSql + ")" + unionSql
 
 	// Combine bindings
 	bindings = append(bindings, baseBindings...)
 	bindings = append(bindings, unionBindings...)
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }
 
 // compileBaseQuery compiles a query without unions

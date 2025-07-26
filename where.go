@@ -36,7 +36,7 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 	if raw == nil {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
+			subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
@@ -109,7 +109,7 @@ func (qb *QueryBuilder) OrWhereValue(column string, operator string, value any) 
 }
 
 func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSql, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSql()
+	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -123,7 +123,7 @@ func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuild
 }
 
 func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSql, subBindings, _ := sub.SetDialect(qb.dialect.GetDriver()).ToSql()
+	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -237,7 +237,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	for _, value := range values {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
+			subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
@@ -427,7 +427,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 		})
 		return qb
 	case *types.DialectExpression:
-		sqlStr, sqlBindings, err := v.ToSql(qb.dialect.GetDriver().String())
+		sqlStr, sqlBindings, err := v.ToSql(qb.GetDialect().GetDriver().String())
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -444,7 +444,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 		return qb
 
 	case *QueryBuilder:
-		subSql, subBindings, err := v.SetDialect(qb.dialect.GetDriver()).ToSql()
+		subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -484,68 +484,6 @@ func (qb *QueryBuilder) WhereNotExists(subquery any) *QueryBuilder {
 func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 	return qb.whereExistsClause(subquery, "NOT EXISTS", types.OR)
 }
-
-// func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
-// 	// Create a temporary builder to capture the conditions in the group
-// 	groupBuilder := &QueryBuilder{}
-
-// 	// Execute the function to populate the group builder's conditions
-// 	fn(groupBuilder)
-
-// 	// If no conditions were added in the group, return the original builder
-// 	if len(groupBuilder.where) == 0 {
-// 		return qb
-// 	}
-
-// 	// Create a raw expression for the group
-// 	var sql strings.Builder
-// 	sql.WriteString("(")
-
-// 	var groupBindings []any
-
-// 	s, bindings, err := groupBuilder.SetDialect(qb.dialect.GetDriver()).ToSql()
-// 	DD(s, bindings, err)
-// 	// Process each condition in the group
-// 	for i, condition := range groupBuilder.where {
-// 		if i > 0 {
-// 			sql.WriteString(" ")
-// 			sql.WriteString(string(condition.Connector))
-// 			sql.WriteString(" ")
-// 		}
-
-// 		if condition.Raw != nil {
-// 			// Handle raw Sql expression
-// 			sql.WriteString(condition.Raw.Sql)
-// 			if len(condition.Raw.Bindings) > 0 {
-// 				groupBindings = append(groupBindings, condition.Raw.Bindings...)
-// 			}
-// 		} else {
-// 			// Handle regular condition
-// 			sql.WriteString(condition.Column)
-// 			if condition.Operator != "" {
-// 				sql.WriteString(" ")
-// 				sql.WriteString(condition.Operator)
-// 				if condition.Value != nil {
-// 					sql.WriteString(" ?")
-// 					groupBindings = append(groupBindings, condition.Value)
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	sql.WriteString(")")
-
-// 	// Add the group as a raw expression to the main builder
-// 	qb.where = append(qb.where, &types.WhereCondition{
-// 		Raw: &types.Expression{
-// 			Sql:      sql.String(),
-// 			Bindings: groupBindings,
-// 		},
-// 		Connector: connector,
-// 	})
-
-// 	return qb
-// }
 
 func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
 	// Create a temporary builder to capture the conditions in the group

@@ -1,24 +1,18 @@
 package postgres
 
 import (
-	"strings"
-
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 func (pg *PostgresDialect) compileJoins(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	for _, join := range qb.Joins {
-		sql.WriteString(" ")
-		sql.WriteString(string(join.Type))
-		sql.WriteString(" ")
-		sql.WriteString(pg.Wrap(join.Table))
+		sql += " " + string(join.Type) + " " + pg.Wrap(join.Table)
 
 		if join.Type != types.CROSS_JOIN && join.Condition != "" {
-			sql.WriteString(" ON ")
-			sql.WriteString(join.Condition)
+			sql += " ON " + join.Condition
 		}
 
 		for _, binding := range join.Binding {
@@ -26,5 +20,5 @@ func (pg *PostgresDialect) compileJoins(qb *types.QueryBuilderData) (string, []a
 		}
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }

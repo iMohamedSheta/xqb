@@ -46,16 +46,12 @@ func (qb *QueryBuilder) Upsert(values []map[string]any, uniqueBy []string, updat
 // InsertSql returns the sql query for inserting new rows into the database
 func (qb *QueryBuilder) InsertSql(values []map[string]any) (string, []any, error) {
 	qb.queryType = enums.INSERT
-	qbData := qb.GetData()
-	qbData.InsertedValues = values
-
-	return qb.dialect.Build(qbData)
+	qb.insertedValues = values
+	return qb.ToSql()
 }
 
 // UpsertSql returns a Sql query that can be used to upsert rows into the database using the current connection
 func (qb *QueryBuilder) UpsertSql(values []map[string]any, uniqueBy []string, updateColumns []string) (string, []any, error) {
-	qb.queryType = enums.INSERT
-
 	if len(values) == 0 || len(uniqueBy) == 0 || len(updateColumns) == 0 {
 		return "", nil, fmt.Errorf("%w: Upsert() values, uniqueBy and updateColumns must not be empty", xqbErr.ErrInvalidQuery)
 	}
@@ -77,10 +73,7 @@ func (qb *QueryBuilder) UpsertSql(values []map[string]any, uniqueBy []string, up
 	qb.options[types.OptionUpsertUniqueBy] = uniqueBy
 	qb.options[types.OptionUpsertUpdatedCols] = updateColumns
 
-	qbData := qb.GetData()
-	qbData.InsertedValues = values
-
-	return qb.dialect.Build(qbData)
+	return qb.InsertSql(values)
 }
 
 // insert inserts new rows into the database using the current connection

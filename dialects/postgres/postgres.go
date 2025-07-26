@@ -27,7 +27,7 @@ func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []
 	}
 
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	// Compile base SELECT
 	baseSql, baseBindings, err := pg.compileBaseQuery(qb)
@@ -41,29 +41,14 @@ func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []
 		return "", nil, err
 	}
 
-	// Wrap base query when unions exist
-	sql.WriteString("(")
-	sql.WriteString(baseSql)
-	sql.WriteString(")")
-
-	// Append union part
-	sql.WriteString(unionSql)
+	// Wrap base query when unions exist then append union part
+	sql += "(" + baseSql + ")" + unionSql
 
 	// Merge bindings
-	if baseBindings != nil {
-		bindings = append(bindings, baseBindings...)
-	}
-	if unionBindings != nil {
-		bindings = append(bindings, unionBindings...)
-	}
+	bindings = append(bindings, baseBindings...)
+	bindings = append(bindings, unionBindings...)
 
-	// Check if there are any errors in building the query
-	if len(qb.Errors) > 0 {
-		errs := errors.Join(qb.Errors...)
-		return "", nil, fmt.Errorf("%w: %s", xqbErr.ErrInvalidQuery, errs)
-	}
-
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }
 
 // compileBaseQuery compiles a query without unions
@@ -160,16 +145,15 @@ func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 		return sql
 	}
 
-	var b strings.Builder
+	var b string
 	for i := 0; i < len(parts)-1; i++ {
-		// Add the part
-		b.WriteString(parts[i])
-		// Add the $n in the end of the Sql string
-		b.WriteString(fmt.Sprintf("$%d", i+1))
+		// Add the part then Add the $n in the end of the Sql string
+		b += parts[i] + fmt.Sprintf("$%d", i+1)
 	}
 	// Add the last part
-	b.WriteString(parts[len(parts)-1])
-	return b.String()
+	b += parts[len(parts)-1]
+
+	return b
 }
 func (pg *PostgresDialect) Wrap(value string) string {
 	return wrap.Wrap(value, '"')

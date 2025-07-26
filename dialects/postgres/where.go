@@ -13,26 +13,24 @@ func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (strin
 		return "", nil, nil
 	}
 
-	var sql strings.Builder
+	var sql string
 	var bindings []any
 
-	sql.WriteString(" WHERE ")
+	sql = " WHERE "
 	for i, condition := range qb.Where {
 		if i > 0 {
-			sql.WriteString(" ")
-			sql.WriteString(string(condition.Connector))
-			sql.WriteString(" ")
+			sql += " " + string(condition.Connector) + " "
 		}
 
 		clause, b, err := pg.compileWhereCondition(condition)
 		if err != nil {
 			return "", nil, err
 		}
-		sql.WriteString(clause)
+		sql += clause
 		bindings = append(bindings, b...)
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }
 
 func (pg *PostgresDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
@@ -45,46 +43,43 @@ func (pg *PostgresDialect) compileWhereCondition(condition *types.WhereCondition
 }
 
 func (pg *PostgresDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
-	var sql strings.Builder
+	var sql string
 	var bindings []any
 
-	sql.WriteString("(")
+	sql += "("
 	for i, cond := range group {
 		if i > 0 {
-			sql.WriteString(" ")
-			sql.WriteString(string(cond.Connector))
-			sql.WriteString(" ")
+			sql += " " + string(cond.Connector) + " "
 		}
 		clause, b, err := pg.compileWhereCondition(cond)
 		if err != nil {
 			return "", nil, err
 		}
-		sql.WriteString(clause)
+		sql += clause
 		bindings = append(bindings, b...)
 	}
-	sql.WriteString(")")
+	sql += ")"
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }
 
 func (pg *PostgresDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
-	var sql strings.Builder
+	var sql string
 	var bindings []any
 
-	sql.WriteString(pg.Wrap(condition.Column))
+	sql += pg.Wrap(condition.Column)
 
 	if condition.Operator == "" {
 		return "", nil, fmt.Errorf("%w: missing operator for column %q", xqbErr.ErrInvalidQuery, condition.Column)
 	}
 
 	op := strings.ToUpper(condition.Operator)
-
-	sql.WriteString(" ")
-	sql.WriteString(op)
+	sql += " " + op
 
 	if condition.Value == nil {
-		return sql.String(), bindings, nil
+		return sql, bindings, nil
 	}
+
 	switch v := condition.Value.(type) {
 	case []any:
 		switch op {
@@ -97,22 +92,20 @@ func (pg *PostgresDialect) compileBasicCondition(condition *types.WhereCondition
 				placeholders[i] = "?"
 				bindings = append(bindings, v[i])
 			}
-			sql.WriteString(" (")
-			sql.WriteString(strings.Join(placeholders, ", "))
-			sql.WriteString(")")
+			sql += " (" + strings.Join(placeholders, ", ") + ")"
 		case "BETWEEN", "NOT BETWEEN":
 			if len(v) != 2 {
 				return "", nil, fmt.Errorf("%w: BETWEEN operator requires exactly 2 values", xqbErr.ErrInvalidQuery)
 			}
-			sql.WriteString(" ? AND ?")
+			sql += " ? AND ?"
 			bindings = append(bindings, v[0], v[1])
 		default:
 			return "", nil, fmt.Errorf("%w: unsupported operator %q for slice value in column %q", xqbErr.ErrInvalidQuery, op, condition.Column)
 		}
 	default:
-		sql.WriteString(" ?")
+		sql += " ?"
 		bindings = append(bindings, v)
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }

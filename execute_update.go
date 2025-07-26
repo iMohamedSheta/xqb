@@ -23,17 +23,16 @@ func (qb *QueryBuilder) Update(data map[string]any) (int64, error) {
 func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 
 	qb.queryType = enums.UPDATE
-	qbData := qb.GetData()
 
 	for column, value := range data {
 		binding := &types.Binding{
 			Column: column,
 			Value:  value,
 		}
-		qbData.UpdatedBindings = append(qbData.UpdatedBindings, binding)
+		qb.updatedBindings = append(qb.updatedBindings, binding)
 	}
 
-	query, args, err := qb.dialect.Build(qbData)
+	query, args, err := qb.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("%w: Update() Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
 	}

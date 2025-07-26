@@ -1,25 +1,23 @@
 package postgres
 
 import (
-	"strings"
-
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
 // compileGroupByClause compiles the GROUP BY clause
 func (pg *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	if len(qb.GroupBy) > 0 {
-		sql.WriteString(" GROUP BY ")
+		sql += " GROUP BY "
 		for i, column := range qb.GroupBy {
 			if i > 0 {
-				sql.WriteString(", ")
+				sql += ", "
 			}
-			sql.WriteString(pg.Wrap(column))
+			sql += pg.Wrap(column)
 		}
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }

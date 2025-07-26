@@ -10,17 +10,17 @@ import (
 // compileSelectClause compiles the SELECT clause
 func (mg *MySqlDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
-	sql.WriteString("SELECT")
+	sql += "SELECT"
 
 	if qb.IsUsingDistinct {
-		sql.WriteString(" DISTINCT")
+		sql += " DISTINCT"
 	}
 
 	// Handle columns
 	if len(qb.Columns) == 0 {
-		sql.WriteString(" *")
+		sql += " *"
 	} else {
 		columns := make([]string, 0)
 
@@ -44,9 +44,8 @@ func (mg *MySqlDialect) compileSelectClause(qb *types.QueryBuilderData) (string,
 			}
 		}
 
-		sql.WriteString(" ")
-		sql.WriteString(strings.Join(columns, ", "))
+		sql += " " + strings.Join(columns, ", ")
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }

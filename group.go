@@ -21,7 +21,7 @@ func (qb *QueryBuilder) GroupBy(columns ...any) *QueryBuilder {
 		case string:
 			col = v
 		case *types.DialectExpression:
-			col, bindings, err = v.ToSql(qb.dialect.GetDriver().String())
+			col, bindings, err = v.ToSql(qb.GetDialect().GetDriver().String())
 			if err != nil {
 				qb.appendError(fmt.Errorf("%w: GroupBy() invalid DialectExpression - %v", xqbErr.ErrInvalidQuery, err))
 			}

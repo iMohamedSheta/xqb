@@ -14,7 +14,7 @@ func (qb *QueryBuilder) Select(columns ...any) *QueryBuilder {
 
 // SelectSub add sub queries to select
 func (qb *QueryBuilder) SelectSub(subQuery *QueryBuilder, alias string) *QueryBuilder {
-	sql, bindings, err := subQuery.SetDialect(qb.dialect.GetDriver()).ToSql()
+	sql, bindings, err := subQuery.SetDialect(qb.GetDialect().GetDriver()).ToSql()
 	if err != nil {
 		qb.errors = append(qb.errors, err)
 		return qb
@@ -51,7 +51,7 @@ func (qb *QueryBuilder) From(table string) *QueryBuilder {
 
 // FromSubquery uses a subquery as the FROM clause
 func (qb *QueryBuilder) FromSubquery(subQuery *QueryBuilder, alias string) *QueryBuilder {
-	raw := subQuery.SetDialect(qb.dialect.GetDriver()).ToRawExpr()
+	raw := subQuery.SetDialect(qb.GetDialect().GetDriver()).ToRawExpr()
 	raw.Sql = "(" + raw.Sql + ")" + " AS " + alias
 	qb.table = &types.Table{Raw: raw}
 	return qb

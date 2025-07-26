@@ -60,7 +60,7 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 
 // GetSql returns the sql query for Get()
 func (qb *QueryBuilder) GetSql() (string, []any, error) {
-	return qb.dialect.Build(qb.GetData())
+	return qb.ToSql()
 }
 
 // First returns the first row

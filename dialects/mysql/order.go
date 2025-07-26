@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"strings"
 
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
@@ -11,13 +10,13 @@ import (
 // compileOrderByClause compiles the ORDER BY clause
 func (mg *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	if len(qb.OrderBy) > 0 {
-		sql.WriteString(" ORDER BY ")
+		sql += " ORDER BY "
 		for i, order := range qb.OrderBy {
 			if i > 0 {
-				sql.WriteString(", ")
+				sql += ", "
 			}
 			if order.Raw != nil {
 				expr := order.Raw.Dialects[mg.GetDriver().String()]
@@ -29,18 +28,17 @@ func (mg *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, mg.GetDriver().String())
 				}
 
-				sql.WriteString(expr.Sql)
+				sql += expr.Sql
 				bindings = append(bindings, expr.Bindings...)
 			} else {
-				sql.WriteString(mg.Wrap(order.Column))
+				sql += mg.Wrap(order.Column)
 			}
 
 			if order.Direction != "" {
-				sql.WriteString(" ")
-				sql.WriteString(order.Direction)
+				sql += " " + order.Direction
 			}
 		}
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }

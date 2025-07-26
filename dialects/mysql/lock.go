@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"fmt"
-	"strings"
 
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
@@ -11,15 +10,15 @@ import (
 // compileLockingClause compiles the locking clause
 func (mg *MySqlDialect) compileLockingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
-	var sql strings.Builder
+	var sql string
 
 	// Check lock mode
 	if lockVal, ok := qb.GetOption(types.OptionLock); ok {
 		switch lockVal {
 		case types.LockForUpdate:
-			sql.WriteString(" FOR UPDATE")
+			sql += " FOR UPDATE"
 		case types.LockInShare:
-			sql.WriteString(" LOCK IN SHARE MODE")
+			sql += " LOCK IN SHARE MODE"
 		default:
 			return "", nil, fmt.Errorf("%w: invalid lock mode %q for MySql dialect", xqbErr.ErrInvalidQuery, lockVal)
 		}
@@ -28,14 +27,14 @@ func (mg *MySqlDialect) compileLockingClause(qb *types.QueryBuilderData) (string
 		if waitVal, ok := qb.GetOption(types.OptionLockWait); ok {
 			switch waitVal {
 			case types.LockNoWait:
-				sql.WriteString(" NOWAIT")
+				sql += " NOWAIT"
 			case types.LockSkipLocked:
-				sql.WriteString(" SKIP LOCKED")
+				sql += " SKIP LOCKED"
 			default:
 				return "", nil, fmt.Errorf("%w: invalid lock wait behavior %q for MySql dialect", xqbErr.ErrInvalidQuery, waitVal)
 			}
 		}
 	}
 
-	return sql.String(), bindings, nil
+	return sql, bindings, nil
 }
