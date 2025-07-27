@@ -6,7 +6,6 @@ import (
 
 	"github.com/iMohamedSheta/xqb"
 	"github.com/iMohamedSheta/xqb/shared/errors"
-	"github.com/iMohamedSheta/xqb/shared/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +16,7 @@ func Test_ConnectionLifecycle(t *testing.T) {
 	xqb.AddConnection(&xqb.Connection{
 		Name:    name,
 		DB:      db,
-		Dialect: types.DialectMySql,
+		Dialect: xqb.DialectMySql,
 	})
 	assert.False(t, xqb.HasConnection(name), "HasConnection should return false for nil connection")
 
@@ -52,12 +51,12 @@ func Test_CloseAllConnections(t *testing.T) {
 	xqb.AddConnection(&xqb.Connection{
 		Name:    "db1",
 		DB:      db1,
-		Dialect: types.DialectMySql,
+		Dialect: xqb.DialectMySql,
 	})
 	xqb.AddConnection(&xqb.Connection{
 		Name:    "db2",
 		DB:      db2,
-		Dialect: types.DialectMySql,
+		Dialect: xqb.DialectMySql,
 	})
 
 	err := xqb.CloseAll()

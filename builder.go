@@ -155,7 +155,7 @@ func New() *QueryBuilder {
 		return qb
 	}
 
-	qb.dialect = dialects.GetDialect(defaultConnection.Dialect)
+	qb.dialect = dialects.GetDialect(defaultConnection.Dialect.MappedDialect())
 	qb.connection = defaultConnection.Name
 	return qb
 }
@@ -195,7 +195,7 @@ func (qb *QueryBuilder) Reset() {
 		qb.appendError(err)
 	}
 	qb.connection = defaultConnection.Name
-	qb.dialect = dialects.GetDialect(defaultConnection.Dialect)
+	qb.dialect = dialects.GetDialect(defaultConnection.Dialect.MappedDialect())
 	qb.queryType = enums.SELECT
 	qb.table = nil
 	qb.columns = nil

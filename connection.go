@@ -10,10 +10,21 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
+type Dialect string
+
+const (
+	DialectMySql    Dialect = "mysql"
+	DialectPostgres Dialect = "postgres"
+)
+
+func (d Dialect) MappedDialect() types.Dialect {
+	return types.Dialect(d)
+}
+
 type Connection struct {
 	Name    string
 	DB      *sql.DB
-	Dialect types.Dialect
+	Dialect Dialect
 }
 
 type DBM struct {
@@ -84,7 +95,7 @@ func (m *DBM) ConnectionDB(name string) (*sql.DB, error) {
 	return conn.DB, nil
 }
 
-func (m *DBM) SetDialect(name string, dialect types.Dialect) error {
+func (m *DBM) SetDialect(name string, dialect Dialect) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	conn, ok := m.connections[name]
@@ -95,7 +106,7 @@ func (m *DBM) SetDialect(name string, dialect types.Dialect) error {
 	return nil
 }
 
-func (m *DBM) GetDialect(name string) (types.Dialect, error) {
+func (m *DBM) GetDialect(name string) (Dialect, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	conn, ok := m.connections[name]

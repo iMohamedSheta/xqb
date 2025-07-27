@@ -22,7 +22,22 @@ import (
 func main() {
     // Setup database connection
     db, _ := sql.Open("mysql", "user:password@tcp(localhost:3306)/database")
-    xqb.AddConnection("default", db)
+
+    xqb.AddConnection(&xqb.Connection{
+      Name:    "default", // Default connection name
+      Dialect: xqb.DialectMySql,
+      DB:      db,
+    })
+
+    // Or if you want different connection name and set it as default connection
+    myDefaultConnection := "my_connection"
+    xqb.AddConnection(&xqb.Connection{
+      Name:     myDefaultConnection,
+      Dialect: xqb.DialectMySql,
+      DB:      db,
+    })
+    // Set default connection as my_connection
+    xqb.SetDefaultConnection(myDefaultConnection)
 
     // Build and execute query
     qb := xqb.Table("users").

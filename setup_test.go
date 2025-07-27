@@ -35,7 +35,7 @@ func Setup() {
 	// Default connection settings for testing it will allow creating sql but not executing it
 	xqb.AddConnection(&xqb.Connection{
 		Name:    "default", // Default connection name
-		Dialect: types.DialectMySql,
+		Dialect: xqb.DialectMySql,
 		DB:      nil,
 	})
 }
