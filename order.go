@@ -12,7 +12,7 @@ func (qb *QueryBuilder) OrderBy(column any, direction string) *QueryBuilder {
 	var col string
 	var dialectExpr *types.DialectExpression
 
-	dialect := qb.GetDialect().GetDriver().String()
+	dialect := qb.GetDialect().Getdialect().String()
 
 	switch v := column.(type) {
 	case string:

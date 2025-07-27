@@ -16,27 +16,27 @@ import (
 type PostgresDialect struct {
 }
 
-func (pg *PostgresDialect) GetDriver() types.Driver {
-	return types.DriverPostgres
+func (d *PostgresDialect) Getdialect() types.Dialect {
+	return types.DialectPostgres
 }
 
 // CompileSelect generates a SELECT Sql statement for Postgres
-func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Unions) == 0 {
-		return pg.compileBaseQuery(qb)
+		return d.compileBaseQuery(qb)
 	}
 
 	var bindings []any
 	var sql string
 
 	// Compile base SELECT
-	baseSql, baseBindings, err := pg.compileBaseQuery(qb)
+	baseSql, baseBindings, err := d.compileBaseQuery(qb)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// Compile UNIONs
-	unionSql, unionBindings, err := pg.compileUnionClause(qb)
+	unionSql, unionBindings, err := d.compileUnionClause(qb)
 	if err != nil {
 		return "", nil, err
 	}
@@ -52,27 +52,27 @@ func (pg *PostgresDialect) CompileSelect(qb *types.QueryBuilderData) (string, []
 }
 
 // compileBaseQuery compiles a query without unions
-func (pg *PostgresDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileBaseQuery(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql strings.Builder
 
 	// Compile each part of the query in order
 	clauses := []func(*types.QueryBuilderData) (string, []any, error){
-		pg.compileCTEs,
-		pg.compileSelectClause,
-		pg.compileFromClause,
-		pg.compileJoins,
-		pg.compileWhereClause,
-		pg.compileGroupByClause,
-		pg.compileHavingClause,
-		pg.compileOrderByClause,
-		pg.compileLimitClause,
-		pg.compileOffsetClause,
-		pg.compileLockingClause,
+		d.compileCTEs,
+		d.compileSelectClause,
+		d.compileFromClause,
+		d.compileJoins,
+		d.compileWhereClause,
+		d.compileGroupByClause,
+		d.compileHavingClause,
+		d.compileOrderByClause,
+		d.compileLimitClause,
+		d.compileOffsetClause,
+		d.compileLockingClause,
 	}
 
 	for _, compiler := range clauses {
-		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
+		if err := d.AppendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
 		}
 	}
@@ -80,20 +80,20 @@ func (pg *PostgresDialect) compileBaseQuery(qb *types.QueryBuilderData) (string,
 	return sql.String(), bindings, nil
 }
 
-func (pg *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	var err error
 
 	switch qbd.QueryType {
 	case enums.SELECT:
-		sql, bindings, err = pg.CompileSelect(qbd)
+		sql, bindings, err = d.CompileSelect(qbd)
 	case enums.INSERT:
-		sql, bindings, err = pg.CompileInsert(qbd)
+		sql, bindings, err = d.CompileInsert(qbd)
 	case enums.UPDATE:
-		sql, bindings, err = pg.CompileUpdate(qbd)
+		sql, bindings, err = d.CompileUpdate(qbd)
 	case enums.DELETE:
-		sql, bindings, err = pg.CompileDelete(qbd)
+		sql, bindings, err = d.CompileDelete(qbd)
 	}
 
 	if err != nil {
@@ -109,11 +109,11 @@ func (pg *PostgresDialect) Build(qbd *types.QueryBuilderData) (string, []any, er
 		return "", nil, errors.Join(qbd.Errors...)
 	}
 
-	return pg.replaceQuestionMarksWithDollar(sql), bindings, nil
+	return d.replaceQuestionMarksWithDollar(sql), bindings, nil
 }
 
 // appendClause compiles and appends a clause to the Sql string and bindings
-func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.QueryBuilderData) (string, []any, error), qb *types.QueryBuilderData) error {
+func (d *PostgresDialect) AppendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.QueryBuilderData) (string, []any, error), qb *types.QueryBuilderData) error {
 	// compile clause closure
 	part, partBindings, err := compiler(qb)
 	if err != nil {
@@ -129,12 +129,12 @@ func appendClause(sql *strings.Builder, bindings *[]any, compiler func(*types.Qu
 }
 
 // appendError appends an error to the query builder and returns it
-func (pg *PostgresDialect) appendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
+func (d *PostgresDialect) AppendError(qb *types.QueryBuilderData, err error) (string, []any, error) {
 	qb.Errors = append(qb.Errors, err)
 	return "", nil, err
 }
 
-func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
+func (d *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 	// First we replace all $n with ? in the Sql string some sql is build with $n
 	re := regexp.MustCompile(`\$\d+`)
 	sql = re.ReplaceAllString(sql, "?")
@@ -155,6 +155,6 @@ func (pg *PostgresDialect) replaceQuestionMarksWithDollar(sql string) string {
 
 	return b
 }
-func (pg *PostgresDialect) Wrap(value string) string {
+func (d *PostgresDialect) Wrap(value string) string {
 	return wrap.Wrap(value, '"')
 }

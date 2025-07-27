@@ -11,14 +11,14 @@ import (
 )
 
 // CompileUpdate compiles the update query
-func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
-	tableName, _, err := mg.resolveTable(qb, "update", false)
+func (d *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
+	tableName, _, err := d.resolveTable(qb, "update", false)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// validate query builder update build
-	if err := mg.validateUpdate(qb); err != nil {
+	if err := d.validateUpdate(qb); err != nil {
 		return "", nil, err
 	}
 
@@ -34,17 +34,17 @@ func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 
 	for _, binding := range qb.UpdatedBindings {
 		if expr, ok := binding.Value.(*types.Expression); ok {
-			setParts = append(setParts, fmt.Sprintf("%s = %s", mg.Wrap(binding.Column), expr.Sql))
+			setParts = append(setParts, fmt.Sprintf("%s = %s", d.Wrap(binding.Column), expr.Sql))
 			bindings = append(bindings, expr.Bindings...)
 		} else {
-			setParts = append(setParts, fmt.Sprintf("%s = ?", mg.Wrap(binding.Column)))
+			setParts = append(setParts, fmt.Sprintf("%s = ?", d.Wrap(binding.Column)))
 			bindings = append(bindings, binding.Value)
 		}
 	}
 
 	sql.WriteString(fmt.Sprintf("UPDATE %s", tableName))
 
-	if err := appendClause(&sql, &bindings, mg.compileJoins, qb); err != nil {
+	if err := d.AppendClause(&sql, &bindings, d.compileJoins, qb); err != nil {
 		return "", nil, err
 	}
 
@@ -53,13 +53,13 @@ func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 
 	// Compile each part of the query in order
 	clauses := []func(*types.QueryBuilderData) (string, []any, error){
-		mg.compileWhereClause,
-		mg.compileOrderByClause,
-		mg.compileLimitClause,
+		d.compileWhereClause,
+		d.compileOrderByClause,
+		d.compileLimitClause,
 	}
 
 	for _, compiler := range clauses {
-		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
+		if err := d.AppendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
 		}
 	}
@@ -68,7 +68,7 @@ func (mg *MySqlDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any
 }
 
 // validateUpdate checks if the query builder is valid for the update operation
-func (mg *MySqlDialect) validateUpdate(qb *types.QueryBuilderData) error {
+func (d *MySqlDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	var errs []error
 
 	if len(qb.Where) == 0 && !qb.AllowDangerous {
@@ -80,19 +80,19 @@ func (mg *MySqlDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	}
 
 	if len(qb.Having) != 0 {
-		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the MySql driver"))
+		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the MySql dialect"))
 	}
 
 	if qb.Offset > 0 {
-		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the MySql driver"))
+		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the MySql dialect"))
 	}
 
 	if len(qb.GroupBy) > 0 {
-		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the MySql driver"))
+		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the MySql dialect"))
 	}
 
 	if len(qb.Unions) > 0 {
-		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the MySql driver"))
+		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the MySql dialect"))
 	}
 
 	if len(qb.Columns) > 0 {

@@ -5,7 +5,7 @@ import (
 )
 
 // compileHavingClause compiles the HAVING clause
-func (pg *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql string
 
@@ -22,7 +22,7 @@ func (pg *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (stri
 				sql += having.Raw.Sql
 				bindings = append(bindings, having.Raw.Bindings...)
 			} else {
-				sql += pg.Wrap(having.Column) + " " + having.Operator
+				sql += d.Wrap(having.Column) + " " + having.Operator
 				if having.Value != nil {
 					sql += " ?"
 					bindings = append(bindings, having.Value)

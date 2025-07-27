@@ -8,7 +8,7 @@ import (
 )
 
 // compileSelectClause compiles the SELECT clause
-func (pg *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql string
 
@@ -27,12 +27,12 @@ func (pg *PostgresDialect) compileSelectClause(qb *types.QueryBuilderData) (stri
 		for _, column := range qb.Columns {
 			switch v := column.(type) {
 			case string:
-				columns = append(columns, pg.Wrap(v))
+				columns = append(columns, d.Wrap(v))
 			case *types.Expression:
 				columns = append(columns, v.Sql)
 				bindings = append(bindings, v.Bindings...)
 			case *types.DialectExpression:
-				sqlStr, sqlBindings, err := v.ToSql(pg.GetDriver().String())
+				sqlStr, sqlBindings, err := v.ToSql(d.Getdialect().String())
 				if err != nil {
 					return "", nil, err
 				}

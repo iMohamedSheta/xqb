@@ -6,12 +6,12 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// GetDialect returns the appropriate dialect for the given driver
-func GetDialect(driver types.Driver) DialectInterface {
-	switch driver {
-	case types.DriverMySql:
+// GetDialect returns the appropriate dialect for the given dialect
+func GetDialect(dialect types.Dialect) DialectInterface {
+	switch dialect {
+	case types.DialectMySql:
 		return &mysql.MySqlDialect{}
-	case types.DriverPostgres:
+	case types.DialectPostgres:
 		return &postgres.PostgresDialect{}
 	default:
 		return &mysql.MySqlDialect{} // Default to MySql grammar
@@ -20,7 +20,7 @@ func GetDialect(driver types.Driver) DialectInterface {
 
 // DialectInterface defines the methods that all grammars must implement
 type DialectInterface interface {
-	GetDriver() types.Driver
+	Getdialect() types.Dialect
 	CompileSelect(*types.QueryBuilderData) (string, []any, error)
 	CompileInsert(*types.QueryBuilderData) (string, []any, error)
 	CompileUpdate(*types.QueryBuilderData) (string, []any, error)

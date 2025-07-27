@@ -5,7 +5,7 @@ import (
 )
 
 // compileGroupByClause compiles the GROUP BY clause
-func (pg *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql string
 
@@ -15,7 +15,7 @@ func (pg *PostgresDialect) compileGroupByClause(qb *types.QueryBuilderData) (str
 			if i > 0 {
 				sql += ", "
 			}
-			sql += pg.Wrap(column)
+			sql += d.Wrap(column)
 		}
 	}
 

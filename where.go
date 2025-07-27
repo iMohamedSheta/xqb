@@ -36,7 +36,7 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 	if raw == nil {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+			subSql, subBindings, err := v.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
@@ -109,7 +109,7 @@ func (qb *QueryBuilder) OrWhereValue(column string, operator string, value any) 
 }
 
 func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -123,7 +123,7 @@ func (qb *QueryBuilder) WhereSub(column string, operator string, sub *QueryBuild
 }
 
 func (qb *QueryBuilder) OrWhereSub(column string, operator string, sub *QueryBuilder) *QueryBuilder {
-	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+	subSql, subBindings, _ := sub.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -237,7 +237,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 	for _, value := range values {
 		switch v := value.(type) {
 		case *QueryBuilder:
-			subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+			subSql, subBindings, err := v.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 			if err != nil {
 				qb.appendError(err)
 			}
@@ -427,7 +427,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 		})
 		return qb
 	case *types.DialectExpression:
-		sqlStr, sqlBindings, err := v.ToSql(qb.GetDialect().GetDriver().String())
+		sqlStr, sqlBindings, err := v.ToSql(qb.GetDialect().Getdialect().String())
 		if err != nil {
 			qb.appendError(err)
 		}
@@ -444,7 +444,7 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 		return qb
 
 	case *QueryBuilder:
-		subSql, subBindings, err := v.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+		subSql, subBindings, err := v.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}

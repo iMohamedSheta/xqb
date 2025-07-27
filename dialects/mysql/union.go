@@ -7,8 +7,8 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// compileUnionClause compiles the union clauses for the postgres driver.
-func (pg *MySqlDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
+// compileUnionClause compiles the union clauses for the postgres dialect.
+func (d *MySqlDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, []any, error) {
 	var sql string
 	var bindings []any
 	// Add each union

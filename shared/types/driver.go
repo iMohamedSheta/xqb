@@ -1,12 +1,12 @@
 package types
 
-type Driver string
+type Dialect string
 
 const (
-	DriverMySql    Driver = "mysql"
-	DriverPostgres Driver = "postgres"
+	DialectMySql    Dialect = "mysql"
+	DialectPostgres Dialect = "postgres"
 )
 
-func (d Driver) String() string {
+func (d Dialect) String() string {
 	return string(d)
 }

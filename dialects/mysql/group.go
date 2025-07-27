@@ -5,7 +5,7 @@ import (
 )
 
 // compileGroupByClause compiles the GROUP BY clause
-func (mg *MySqlDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *MySqlDialect) compileGroupByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql string
 
@@ -15,7 +15,7 @@ func (mg *MySqlDialect) compileGroupByClause(qb *types.QueryBuilderData) (string
 			if i > 0 {
 				sql += ", "
 			}
-			sql += mg.Wrap(column)
+			sql += d.Wrap(column)
 		}
 	}
 

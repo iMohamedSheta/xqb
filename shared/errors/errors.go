@@ -19,7 +19,7 @@ var (
 	// Commonly used to signal a mismatch between expected and actual result types.
 	ErrInvalidResult = errors.New("xqb_invalid_result")
 
-	// ErrUnsupportedFeature is returned when a feature is not supported by the underlying driver,
+	// ErrUnsupportedFeature is returned when a feature is not supported by the underlying dialect,
 	// such as streaming, chunking, or advanced Sql syntax.
 	ErrUnsupportedFeature = errors.New("xqb_unsupported_feature")
 

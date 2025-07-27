@@ -24,7 +24,7 @@ func (User) Table() string {
 }
 
 func Test_Query_WithModel(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		sql, bindings, err := xqb.Model(User{}).SetDialect(dialect).
 			Select("id", "name", "email", "active", "created_at").
 			Where("username", "=", "ali").
@@ -34,9 +34,9 @@ func Test_Query_WithModel(t *testing.T) {
 			AddSelect("password").
 			ToSql()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
-			types.DriverPostgres: `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = $1 OR "username" = $2 ORDER BY "created_at" DESC LIMIT 1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
+			types.DialectPostgres: `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = $1 OR "username" = $2 ORDER BY "created_at" DESC LIMIT 1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

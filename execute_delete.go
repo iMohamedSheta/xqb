@@ -32,22 +32,9 @@ func (qb *QueryBuilder) delete(table ...string) (int64, error) {
 
 	var result sql.Result
 
-	if qb.tx != nil {
-		result, err = qb.tx.Exec(query, args...)
-		if err != nil {
-			return 0, fmt.Errorf("delete failed:  %w", err)
-		}
-
-	} else {
-		db, err := GetConnection(qb.connection)
-		if err != nil {
-			return 0, err
-		}
-
-		result, err = db.Exec(query, args...)
-		if err != nil {
-			return 0, fmt.Errorf("delete failed: %w", err)
-		}
+	result, err = Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+	if err != nil {
+		return 0, fmt.Errorf("delete failed:  %w", err)
 	}
 
 	return result.RowsAffected()

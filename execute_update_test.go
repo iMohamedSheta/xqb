@@ -10,7 +10,7 @@ import (
 )
 
 func Test_Update(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		data := map[string]any{
 			"first_name": "John",
@@ -27,7 +27,7 @@ func Test_Update(t *testing.T) {
 }
 
 func Test_UpdateWhere(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		data := map[string]any{
 			"first_name": "John",
@@ -37,9 +37,9 @@ func Test_UpdateWhere(t *testing.T) {
 
 		sql, bindings, err := qb.Where("id", "=", 1).UpdateSql(data)
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
-			types.DriverPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3 WHERE "id" = $4`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
+			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3 WHERE "id" = $4`,
 		}
 
 		assert.NoError(t, err)
@@ -49,7 +49,7 @@ func Test_UpdateWhere(t *testing.T) {
 }
 
 func Test_Update_AllowDangerous(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).AllowDangerous()
 		data := map[string]any{
 			"first_name": "John",
@@ -59,9 +59,9 @@ func Test_Update_AllowDangerous(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
-			types.DriverPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
+			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3`,
 		}
 
 		assert.NoError(t, err)
@@ -71,7 +71,7 @@ func Test_Update_AllowDangerous(t *testing.T) {
 }
 
 func Test_UpdateWithExpressionValue(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).
 			Where("id", "=", 1)
 
@@ -81,9 +81,9 @@ func Test_UpdateWithExpressionValue(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
-			types.DriverPostgres: `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = $1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
+			types.DialectPostgres: `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = $1`,
 		}
 
 		assert.NoError(t, err)
@@ -93,7 +93,7 @@ func Test_UpdateWithExpressionValue(t *testing.T) {
 }
 
 func Test_Update_MixedFieldsAndComplexWhere(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).
 			Where("status", "!=", "banned").
 			WhereGroup(func(q *xqb.QueryBuilder) {
@@ -109,9 +109,9 @@ func Test_Update_MixedFieldsAndComplexWhere(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
-			types.DriverPostgres: `UPDATE "users" SET "active" = $1, "email" = $2, "last_login_at" = NOW() WHERE "status" != $3 AND ("age" > $4 OR "role" = $5) AND "id" = $6`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
+			types.DialectPostgres: `UPDATE "users" SET "active" = $1, "email" = $2, "last_login_at" = NOW() WHERE "status" != $3 AND ("age" > $4 OR "role" = $5) AND "id" = $6`,
 		}
 
 		assert.NoError(t, err)

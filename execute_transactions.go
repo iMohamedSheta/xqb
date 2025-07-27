@@ -18,7 +18,7 @@ func BeginTxOn(connection string) (*sql.Tx, error) {
 		return nil, fmt.Errorf("%w: invalid connection %s", xqbErr.ErrNoConnection, connection)
 	}
 
-	db, err := DBManager().Connection(connection)
+	db, err := DBManager().ConnectionDB(connection)
 	if err != nil {
 		return nil, err
 	}

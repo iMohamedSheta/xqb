@@ -8,7 +8,7 @@ import (
 )
 
 // compileOrderByClause compiles the ORDER BY clause
-func (mg *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
 	var bindings []any
 	var sql string
 
@@ -19,19 +19,19 @@ func (mg *MySqlDialect) compileOrderByClause(qb *types.QueryBuilderData) (string
 				sql += ", "
 			}
 			if order.Raw != nil {
-				expr := order.Raw.Dialects[mg.GetDriver().String()]
+				expr := order.Raw.Dialects[d.Getdialect().String()]
 				if expr == nil {
 					expr = order.Raw.Dialects[order.Raw.Default]
 				}
 
 				if expr == nil {
-					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, mg.GetDriver().String())
+					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, d.Getdialect().String())
 				}
 
 				sql += expr.Sql
 				bindings = append(bindings, expr.Bindings...)
 			} else {
-				sql += mg.Wrap(order.Column)
+				sql += d.Wrap(order.Column)
 			}
 
 			if order.Direction != "" {

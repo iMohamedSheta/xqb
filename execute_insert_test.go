@@ -10,7 +10,7 @@ import (
 )
 
 func Test_InsertSql_ConsistentOrder(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		values := []map[string]any{
 			{
 				"email":    "mohamed@gmail.com",
@@ -35,9 +35,9 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 
 		sql, bindings, err := qb.InsertSql(values)
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
-			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
+			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
 		}
 		expectedBindings := []any{
 			20, "mohamed@gmail.com", "mohamed", "hashed_password",
@@ -51,7 +51,7 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 }
 
 func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.InsertSql([]map[string]any{
 			{
@@ -63,9 +63,9 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 			},
 		})
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
-			types.DriverPostgres: `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
+			types.DialectPostgres: `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
 		}
 		expectedBindings := []any{
 			"mohamed",
@@ -78,7 +78,7 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 }
 
 func Test_InsertSql_NullableColumns(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.InsertSql([]map[string]any{
 			{
@@ -94,9 +94,9 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 			},
 		})
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
-			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
+			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
 		}
 
 		expectedBindings := []any{
@@ -111,7 +111,7 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 }
 
 func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		insertedValues := []map[string]any{
@@ -137,10 +137,10 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 
 		sql, bindings, err := qb.UpsertSql(insertedValues, []string{"email", "name"}, []string{"age", "email", "name", "password"})
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
 				"ON DUPLICATE KEY UPDATE `age` = VALUES(`age`), `password` = VALUES(`password`)",
-			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12) ` +
+			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12) ` +
 				`ON CONFLICT ("email", "name") DO UPDATE SET "age" = EXCLUDED."age", "password" = EXCLUDED."password"`,
 		}
 		expectedBindings := []any{
@@ -154,7 +154,7 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 	})
 }
 func Test_UpsertSql_ErrorOnMissingUpdateColumns(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		insertedValues := []map[string]any{
@@ -173,7 +173,7 @@ func Test_UpsertSql_ErrorOnMissingUpdateColumns(t *testing.T) {
 }
 
 func Test_UpsertSql_EmptyValues(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		_, _, err := qb.UpsertSql([]map[string]any{}, []string{"email"}, []string{"name"})
@@ -183,7 +183,7 @@ func Test_UpsertSql_EmptyValues(t *testing.T) {
 }
 
 func Test_UpsertSql_EmptyUpdateColumns(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		_, _, err := qb.UpsertSql([]map[string]any{
@@ -195,7 +195,7 @@ func Test_UpsertSql_EmptyUpdateColumns(t *testing.T) {
 }
 
 func Test_UpsertSql_UpdateColumnNotInInsert(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		sql, bindings, err := qb.UpsertSql([]map[string]any{
@@ -210,7 +210,7 @@ func Test_UpsertSql_UpdateColumnNotInInsert(t *testing.T) {
 }
 
 func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		values := []map[string]any{
@@ -222,9 +222,9 @@ func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
 		}
 		sql, bindings, err := qb.UpsertSql(values, []string{"email"}, []string{"email", "age"})
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
-			types.DriverPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
+			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
 		}
 		expectedBindings := []any{
 			30, "mohamed@gmail.com", "mohamed",

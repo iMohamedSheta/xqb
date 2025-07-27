@@ -8,7 +8,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Where) == 0 {
 		return "", nil, nil
 	}
@@ -22,7 +22,7 @@ func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (strin
 			sql += " " + string(condition.Connector) + " "
 		}
 
-		clause, b, err := pg.compileWhereCondition(condition)
+		clause, b, err := d.compileWhereCondition(condition)
 		if err != nil {
 			return "", nil, err
 		}
@@ -33,16 +33,16 @@ func (pg *PostgresDialect) compileWhereClause(qb *types.QueryBuilderData) (strin
 	return sql, bindings, nil
 }
 
-func (pg *PostgresDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
+func (d *PostgresDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
 	if condition.Raw != nil {
 		return condition.Raw.Sql, condition.Raw.Bindings, nil
 	} else if len(condition.Group) > 0 {
-		return pg.compileGroupCondition(condition.Group, condition.Connector)
+		return d.compileGroupCondition(condition.Group, condition.Connector)
 	}
-	return pg.compileBasicCondition(condition)
+	return d.compileBasicCondition(condition)
 }
 
-func (pg *PostgresDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
+func (d *PostgresDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
 	var sql string
 	var bindings []any
 
@@ -51,7 +51,7 @@ func (pg *PostgresDialect) compileGroupCondition(group []*types.WhereCondition, 
 		if i > 0 {
 			sql += " " + string(cond.Connector) + " "
 		}
-		clause, b, err := pg.compileWhereCondition(cond)
+		clause, b, err := d.compileWhereCondition(cond)
 		if err != nil {
 			return "", nil, err
 		}
@@ -63,11 +63,11 @@ func (pg *PostgresDialect) compileGroupCondition(group []*types.WhereCondition, 
 	return sql, bindings, nil
 }
 
-func (pg *PostgresDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
+func (d *PostgresDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
 	var sql string
 	var bindings []any
 
-	sql += pg.Wrap(condition.Column)
+	sql += d.Wrap(condition.Column)
 
 	if condition.Operator == "" {
 		return "", nil, fmt.Errorf("%w: missing operator for column %q", xqbErr.ErrInvalidQuery, condition.Column)

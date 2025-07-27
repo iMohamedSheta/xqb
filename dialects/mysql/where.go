@@ -8,7 +8,7 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (mg *MySqlDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *MySqlDialect) compileWhereClause(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.Where) == 0 {
 		return "", nil, nil
 	}
@@ -22,7 +22,7 @@ func (mg *MySqlDialect) compileWhereClause(qb *types.QueryBuilderData) (string, 
 			sql += " " + string(condition.Connector) + " "
 		}
 
-		clause, b, err := mg.compileWhereCondition(condition)
+		clause, b, err := d.compileWhereCondition(condition)
 		if err != nil {
 			return "", nil, err
 		}
@@ -33,16 +33,16 @@ func (mg *MySqlDialect) compileWhereClause(qb *types.QueryBuilderData) (string, 
 	return sql, bindings, nil
 }
 
-func (mg *MySqlDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
+func (d *MySqlDialect) compileWhereCondition(condition *types.WhereCondition) (string, []any, error) {
 	if condition.Raw != nil {
 		return condition.Raw.Sql, condition.Raw.Bindings, nil
 	} else if len(condition.Group) > 0 {
-		return mg.compileGroupCondition(condition.Group, condition.Connector)
+		return d.compileGroupCondition(condition.Group, condition.Connector)
 	}
-	return mg.compileBasicCondition(condition)
+	return d.compileBasicCondition(condition)
 }
 
-func (mg *MySqlDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
+func (d *MySqlDialect) compileGroupCondition(group []*types.WhereCondition, connector types.WhereConditionEnum) (string, []any, error) {
 	var sql string
 	var bindings []any
 
@@ -51,7 +51,7 @@ func (mg *MySqlDialect) compileGroupCondition(group []*types.WhereCondition, con
 		if i > 0 {
 			sql += " " + string(cond.Connector) + " "
 		}
-		clause, b, err := mg.compileWhereCondition(cond)
+		clause, b, err := d.compileWhereCondition(cond)
 		if err != nil {
 			return "", nil, err
 		}
@@ -63,10 +63,10 @@ func (mg *MySqlDialect) compileGroupCondition(group []*types.WhereCondition, con
 	return sql, bindings, nil
 }
 
-func (mg *MySqlDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
+func (d *MySqlDialect) compileBasicCondition(condition *types.WhereCondition) (string, []any, error) {
 	var bindings []any
 
-	sql := mg.Wrap(condition.Column)
+	sql := d.Wrap(condition.Column)
 
 	if condition.Operator == "" {
 		return "", nil, fmt.Errorf("%w: missing operator for column %q", xqbErr.ErrInvalidQuery, condition.Column)

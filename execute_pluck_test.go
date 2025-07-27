@@ -10,13 +10,13 @@ import (
 )
 
 func Test_Pluck_ValueAndKey(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 
 		sql, bindings, err := qb.PluckSql("name", "id")
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `name`, `id` FROM `users` WHERE `name` LIKE ?",
-			types.DriverPostgres: `SELECT "name", "id" FROM "users" WHERE "name" LIKE $1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `name`, `id` FROM `users` WHERE `name` LIKE ?",
+			types.DialectPostgres: `SELECT "name", "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -26,13 +26,13 @@ func Test_Pluck_ValueAndKey(t *testing.T) {
 }
 
 func Test_Pluck_Value(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 		sql, bindings, err := qb.PluckSql("name", "")
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
-			types.DriverPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
+			types.DialectPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -42,13 +42,13 @@ func Test_Pluck_Value(t *testing.T) {
 }
 
 func Test_Pluck_Key(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 		sql, bindings, err := qb.PluckSql("", "id")
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id` FROM `users` WHERE `name` LIKE ?",
-			types.DriverPostgres: `SELECT "id" FROM "users" WHERE "name" LIKE $1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id` FROM `users` WHERE `name` LIKE ?",
+			types.DialectPostgres: `SELECT "id" FROM "users" WHERE "name" LIKE $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -58,13 +58,13 @@ func Test_Pluck_Key(t *testing.T) {
 }
 
 func Test_Pluck_NoData(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.PluckSql("name", "id")
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `name`, `id` FROM `users`",
-			types.DriverPostgres: `SELECT "name", "id" FROM "users"`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `name`, `id` FROM `users`",
+			types.DialectPostgres: `SELECT "name", "id" FROM "users"`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -74,7 +74,7 @@ func Test_Pluck_NoData(t *testing.T) {
 }
 
 func Test_Pluck_NoData_NoKey_ReturnError(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		qb.Where("id", "=", 1)
 		sql, bindings, err := qb.PluckSql("", "")
@@ -87,14 +87,14 @@ func Test_Pluck_NoData_NoKey_ReturnError(t *testing.T) {
 }
 
 func Test_Pluck_ComplexQuery(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 		qb.Select("id", "name").Where("id", "=", 1)
 		sql, bindings, err := qb.PluckSql("", "")
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `id` = ?",
-			types.DriverPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "id" = $2`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `id` = ?",
+			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "id" = $2`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

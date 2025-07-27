@@ -9,7 +9,7 @@ import (
 )
 
 func Test_QueryBuilder_GetSql(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").
 			SetDialect(dialect).
 			Select("id", "name").
@@ -18,9 +18,9 @@ func Test_QueryBuilder_GetSql(t *testing.T) {
 
 		sql, bindings, err := qb.GetSql()
 
-		expectedSQL := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id`, `name` FROM `users` WHERE `status` = ? ORDER BY `created_at` DESC",
-			types.DriverPostgres: `SELECT "id", "name" FROM "users" WHERE "status" = $1 ORDER BY "created_at" DESC`,
+		expectedSQL := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `status` = ? ORDER BY `created_at` DESC",
+			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "status" = $1 ORDER BY "created_at" DESC`,
 		}
 
 		assert.NoError(t, err)
@@ -30,14 +30,14 @@ func Test_QueryBuilder_GetSql(t *testing.T) {
 }
 
 func Test_FirstSql(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("id", "=", 10)
 
 		sql, bindings, err := qb.FirstSql()
 
-		expected := map[types.Driver]string{
-			types.DriverMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DriverPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
 		assert.NoError(t, err)
@@ -47,14 +47,14 @@ func Test_FirstSql(t *testing.T) {
 }
 
 func Test_ValueSql(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("id", "=", 1)
 
 		sql, bindings, err := qb.ValueSql("email")
 
-		expected := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `email` FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DriverPostgres: `SELECT "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres: `SELECT "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
 		assert.NoError(t, err)
@@ -64,14 +64,14 @@ func Test_ValueSql(t *testing.T) {
 }
 
 func Test_FindSql(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		sql, bindings, err := qb.FindSql(42)
 
-		expected := map[types.Driver]string{
-			types.DriverMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DriverPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
 		assert.NoError(t, err)
@@ -81,14 +81,14 @@ func Test_FindSql(t *testing.T) {
 }
 
 func Test_PaginateSql(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("active", "=", true)
 
 		sql, bindings, err := qb.PaginateSql(10, 3)
 
-		expected := map[types.Driver]string{
-			types.DriverMySql:    "SELECT * FROM `users` WHERE `active` = ? LIMIT 10 OFFSET 20",
-			types.DriverPostgres: `SELECT * FROM "users" WHERE "active" = $1 LIMIT 10 OFFSET 20`,
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT * FROM `users` WHERE `active` = ? LIMIT 10 OFFSET 20",
+			types.DialectPostgres: `SELECT * FROM "users" WHERE "active" = $1 LIMIT 10 OFFSET 20`,
 		}
 
 		assert.NoError(t, err)

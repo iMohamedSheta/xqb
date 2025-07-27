@@ -10,15 +10,15 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// CompileUpdate compiles the update operation for postgres driver
-func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
-	tableName, _, err := pg.resolveTable(qb, "update", false)
+// CompileUpdate compiles the update operation for postgres dialect
+func (d *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []any, error) {
+	tableName, _, err := d.resolveTable(qb, "update", false)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// validate query builder update build
-	if err := pg.validateUpdate(qb); err != nil {
+	if err := d.validateUpdate(qb); err != nil {
 		return "", nil, err
 	}
 
@@ -34,17 +34,17 @@ func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []
 
 	for _, binding := range qb.UpdatedBindings {
 		if expr, ok := binding.Value.(*types.Expression); ok {
-			setParts = append(setParts, fmt.Sprintf("%s = %s", pg.Wrap(binding.Column), expr.Sql))
+			setParts = append(setParts, fmt.Sprintf("%s = %s", d.Wrap(binding.Column), expr.Sql))
 			bindings = append(bindings, expr.Bindings...)
 		} else {
-			setParts = append(setParts, fmt.Sprintf("%s = ?", pg.Wrap(binding.Column)))
+			setParts = append(setParts, fmt.Sprintf("%s = ?", d.Wrap(binding.Column)))
 			bindings = append(bindings, binding.Value)
 		}
 	}
 
 	sql.WriteString(fmt.Sprintf("UPDATE %s", tableName))
 
-	if err := appendClause(&sql, &bindings, pg.compileJoins, qb); err != nil {
+	if err := d.AppendClause(&sql, &bindings, d.compileJoins, qb); err != nil {
 		return "", nil, err
 	}
 
@@ -53,12 +53,12 @@ func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []
 
 	// Compile each part of the query in order
 	clauses := []func(*types.QueryBuilderData) (string, []any, error){
-		pg.compileWhereClause,
-		pg.compileLimitClause,
+		d.compileWhereClause,
+		d.compileLimitClause,
 	}
 
 	for _, compiler := range clauses {
-		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
+		if err := d.AppendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
 		}
 	}
@@ -67,7 +67,7 @@ func (pg *PostgresDialect) CompileUpdate(qb *types.QueryBuilderData) (string, []
 }
 
 // validateUpdate checks if the query builder is valid for the update operation
-func (pg *PostgresDialect) validateUpdate(qb *types.QueryBuilderData) error {
+func (d *PostgresDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	var errs []error
 
 	if len(qb.Where) == 0 && !qb.AllowDangerous {
@@ -79,19 +79,19 @@ func (pg *PostgresDialect) validateUpdate(qb *types.QueryBuilderData) error {
 	}
 
 	if len(qb.Having) != 0 {
-		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the Postgres driver"))
+		errs = append(errs, errors.New("HAVING is not allowed in UPDATE operations in the Postgres dialect"))
 	}
 
 	if qb.Offset > 0 {
-		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the Postgres driver"))
+		errs = append(errs, errors.New("OFFSET is not allowed in UPDATE in the Postgres dialect"))
 	}
 
 	if len(qb.GroupBy) > 0 {
-		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the Postgres driver"))
+		errs = append(errs, errors.New("GROUP BY is not allowed in UPDATE in the Postgres dialect"))
 	}
 
 	if len(qb.Unions) > 0 {
-		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the Postgres driver"))
+		errs = append(errs, errors.New("UNION is not allowed in UPDATE in the Postgres dialect"))
 	}
 
 	if len(qb.Columns) > 0 {

@@ -21,7 +21,7 @@ func Test_CaseWhen(t *testing.T) {
 }
 
 func Test_CaseWhen_UsageInQuery(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		caseExpr := xqb.Case().
 			When("age >= ?", "adult", 18).
@@ -34,9 +34,9 @@ func Test_CaseWhen_UsageInQuery(t *testing.T) {
 			Having(xqb.Count("id", ""), ">", 10).
 			ToSql()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id`, CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group FROM `users` WHERE CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group = ? HAVING COUNT(id) > ?",
-			types.DriverPostgres: `SELECT "id", CASE WHEN age >= $1 THEN $2 WHEN age < $3 THEN $4 ELSE $5 END AS age_group FROM "users" WHERE CASE WHEN age >= $6 THEN $7 WHEN age < $8 THEN $9 ELSE $10 END AS age_group = $11 HAVING COUNT(id) > $12`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id`, CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group FROM `users` WHERE CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group = ? HAVING COUNT(id) > ?",
+			types.DialectPostgres: `SELECT "id", CASE WHEN age >= $1 THEN $2 WHEN age < $3 THEN $4 ELSE $5 END AS age_group FROM "users" WHERE CASE WHEN age >= $6 THEN $7 WHEN age < $8 THEN $9 ELSE $10 END AS age_group = $11 HAVING COUNT(id) > $12`,
 		}
 		assert.Equal(t, expectedSql[dialect], sql)
 		assert.Equal(t, []any{18, "adult", 18, "minor", "unknown", 18, "adult", 18, "minor", "unknown", "adult", 10}, bindings)
@@ -125,7 +125,7 @@ func Test_CaseWhen_ComplexConditions(t *testing.T) {
 }
 
 func Test_CaseWhen_SelectWithConditionalExpressions(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("orders").SetDialect(dialect)
 		qb.Select(
 			"id",
@@ -138,9 +138,9 @@ func Test_CaseWhen_SelectWithConditionalExpressions(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "SELECT `id`, CASE WHEN status = ? THEN ? ELSE ? END AS status_text FROM `orders`",
-			types.DriverPostgres: `SELECT "id", CASE WHEN status = $1 THEN $2 ELSE $3 END AS status_text FROM "orders"`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT `id`, CASE WHEN status = ? THEN ? ELSE ? END AS status_text FROM `orders`",
+			types.DialectPostgres: `SELECT "id", CASE WHEN status = $1 THEN $2 ELSE $3 END AS status_text FROM "orders"`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

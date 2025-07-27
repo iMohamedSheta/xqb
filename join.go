@@ -17,7 +17,7 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 	case string:
 		tableSql = t
 	case *QueryBuilder:
-		subSql, subBindings, err := t.SetDialect(qb.GetDialect().GetDriver()).ToSql()
+		subSql, subBindings, err := t.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 		if err != nil {
 			qb.appendError(err)
 		}

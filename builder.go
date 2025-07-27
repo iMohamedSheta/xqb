@@ -116,16 +116,13 @@ type QueryExecuted struct {
 	Bindings   []any
 	Time       time.Duration
 	Connection string
-	Dialect    types.Driver
+	Dialect    types.Dialect
 	Err        error
 }
 
 // New creates a new QueryBuilder instance
 func New() *QueryBuilder {
-	// Get the driver name from the database connection
-	driverName := types.DriverMySql // Default to MySql
-
-	return &QueryBuilder{
+	qb := &QueryBuilder{
 		queryType:       enums.SELECT,
 		columns:         []any{},
 		where:           nil,
@@ -137,7 +134,6 @@ func New() *QueryBuilder {
 		joins:           nil,
 		unions:          nil,
 		bindings:        nil,
-		dialect:         dialects.GetDialect(driverName),
 		distinct:        false,
 		withCTEs:        nil,
 		isUsingDistinct: false,
@@ -146,12 +142,22 @@ func New() *QueryBuilder {
 		deleteFrom:      nil,
 		options:         make(map[types.Option]any),
 		settings:        DefaultSettings(),
-		connection:      DBManager().GetDefaultConnectionName(),
 		table:           nil,
 		insertedValues:  nil,
 		updatedBindings: nil,
 		allowDangerous:  false,
 	}
+
+	// Get the dialect name from the database connection
+	defaultConnection, err := DBManager().GetDefaultConnection()
+	if err != nil {
+		qb.appendError(err)
+		return qb
+	}
+
+	qb.dialect = dialects.GetDialect(defaultConnection.Dialect)
+	qb.connection = defaultConnection.Name
+	return qb
 }
 
 func Query() *QueryBuilder {
@@ -183,8 +189,14 @@ func (qb *QueryBuilder) Table(table string) *QueryBuilder {
 
 // Reset resets the QueryBuilder instance
 func (qb *QueryBuilder) Reset() {
+	qb.errors = nil
+	defaultConnection, err := DBManager().GetDefaultConnection()
+	if err != nil {
+		qb.appendError(err)
+	}
+	qb.connection = defaultConnection.Name
+	qb.dialect = dialects.GetDialect(defaultConnection.Dialect)
 	qb.queryType = enums.SELECT
-	qb.connection = DBManager().GetDefaultConnectionName()
 	qb.table = nil
 	qb.columns = nil
 	qb.where = nil
@@ -199,7 +211,6 @@ func (qb *QueryBuilder) Reset() {
 	qb.distinct = false
 	qb.withCTEs = nil
 	qb.isUsingDistinct = false
-	qb.errors = nil
 	qb.deleteFrom = nil
 	qb.tx = nil
 	qb.options = make(map[types.Option]any)
@@ -236,7 +247,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 	}
 }
 
-func (qb *QueryBuilder) SetDialect(dialect types.Driver) *QueryBuilder {
+func (qb *QueryBuilder) SetDialect(dialect types.Dialect) *QueryBuilder {
 	qb.dialect = dialects.GetDialect(dialect)
 	return qb
 }
@@ -254,7 +265,7 @@ func (qb *QueryBuilder) ToSql() (string, []any, error) {
 		Bindings:   bindings,
 		Time:       time.Duration(time.Now().UnixNano() - start.UnixNano()),
 		Connection: qb.connection,
-		Dialect:    qb.dialect.GetDriver(),
+		Dialect:    qb.dialect.Getdialect(),
 		Err:        err,
 	}
 
@@ -311,7 +322,7 @@ func (qb *QueryBuilder) ToSqlView() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	finalSql, err := InjectBindings(qb.dialect.GetDriver(), sql, bindings)
+	finalSql, err := InjectBindings(qb.dialect.Getdialect(), sql, bindings)
 	if err != nil {
 		return "", err
 	}
@@ -319,17 +330,17 @@ func (qb *QueryBuilder) ToSqlView() (string, error) {
 	return finalSql, nil
 }
 
-func InjectBindings(dialect types.Driver, sql string, bindings []any) (string, error) {
+func InjectBindings(dialect types.Dialect, sql string, bindings []any) (string, error) {
 	var finalSql string
 	switch dialect {
-	case types.DriverMySql:
+	case types.DialectMySql:
 		// Replace `?` one by one with corresponding value
 		for _, b := range bindings {
 			sql = strings.Replace(sql, "?", formatBinding(b), 1)
 		}
 		finalSql = sql
 
-	case types.DriverPostgres:
+	case types.DialectPostgres:
 		// Replace `$1`, `$2`, ... with corresponding value
 		for i, b := range bindings {
 			placeholder := fmt.Sprintf("$%d", i+1)

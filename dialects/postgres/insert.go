@@ -9,29 +9,29 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-func (pg *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
-	tableName, _, err := pg.resolveTable(qb, "insert", false)
+func (d *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
+	tableName, _, err := d.resolveTable(qb, "insert", false)
 	if err != nil {
 		return "", nil, err
 	}
 
 	if len(qb.InsertedValues) == 0 {
-		return fmt.Sprintf("INSERT INTO %s DEFAULT VALUES", pg.Wrap(tableName)), nil, nil
+		return fmt.Sprintf("INSERT INTO %s DEFAULT VALUES", d.Wrap(tableName)), nil, nil
 	}
 
 	columns := getSortedColumns(qb.InsertedValues[0])
-	columnStr := wrapColumns(columns, pg.Wrap)
+	columnStr := wrapColumns(columns, d.Wrap)
 
 	valueStrings, bindings := buildValuePlaceholders(qb.InsertedValues, columns)
 
 	sql := fmt.Sprintf("INSERT INTO %s (%s) VALUES %s",
-		pg.Wrap(tableName),
+		d.Wrap(tableName),
 		columnStr,
 		strings.Join(valueStrings, ", "),
 	)
 
 	if isUpsert, ok := qb.GetOption(types.OptionIsUpsert); ok && isUpsert.(bool) {
-		upsertClause, err := buildUpsertClause(qb, columns, pg.Wrap)
+		upsertClause, err := buildUpsertClause(qb, columns, d.Wrap)
 		if err != nil {
 			return "", nil, err
 		}

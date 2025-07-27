@@ -15,7 +15,7 @@ package main
 
 import (
     "database/sql"
-    _ "github.com/go-sql-driver/mysql"
+    _ "github.com/go-sql-dialect/mysql"
     "github.com/iMohamedSheta/xqb"
 )
 
@@ -64,7 +64,6 @@ xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
 ### Instance-based Hooks
 
 Hooks can be set globally or per query using `WithSettings()`.
-
 
 ## Raw Sql Expressions
 

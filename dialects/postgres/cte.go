@@ -5,7 +5,7 @@ import (
 )
 
 // compileCTEs compiles Common Table Expressions
-func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
+func (d *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, error) {
 	if len(qb.WithCTEs) == 0 {
 		return "", nil, nil
 	}
@@ -30,7 +30,7 @@ func (pg *PostgresDialect) compileCTEs(qb *types.QueryBuilderData) (string, []an
 		} else if cte.Query != nil {
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
-				cteSql, cteBindings, err := pg.compileBaseQuery(queryData)
+				cteSql, cteBindings, err := d.compileBaseQuery(queryData)
 				if err != nil {
 					return "", nil, err
 				}

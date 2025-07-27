@@ -9,15 +9,15 @@ import (
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
-// CompileDelete compiles the delete operation for postgres driver
-func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
-	tableName, _, err := pg.resolveTable(qb, "delete", false)
+// CompileDelete compiles the delete operation for postgres dialect
+func (d *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []any, error) {
+	tableName, _, err := d.resolveTable(qb, "delete", false)
 	if err != nil {
 		return "", nil, err
 	}
 
 	// validate query builder delete build
-	if err := pg.validateDelete(qb); err != nil {
+	if err := d.validateDelete(qb); err != nil {
 		return "", nil, err
 	}
 
@@ -25,7 +25,7 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 	var sql strings.Builder
 
 	// Compile the cte first
-	cteSql, cteBindings, err := pg.compileCTEs(qb)
+	cteSql, cteBindings, err := d.compileCTEs(qb)
 	if err != nil {
 		return "", nil, err
 	}
@@ -38,11 +38,11 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 
 	// Compile each part of the query in order
 	clauses := []func(*types.QueryBuilderData) (string, []any, error){
-		pg.compileWhereClause,
+		d.compileWhereClause,
 	}
 
 	for _, compiler := range clauses {
-		if err := appendClause(&sql, &bindings, compiler, qb); err != nil {
+		if err := d.AppendClause(&sql, &bindings, compiler, qb); err != nil {
 			return "", nil, err
 		}
 	}
@@ -50,8 +50,8 @@ func (pg *PostgresDialect) CompileDelete(qb *types.QueryBuilderData) (string, []
 	return sql.String(), bindings, nil
 }
 
-// validateDelete validates the delete operation for postgres driver
-func (pg *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
+// validateDelete validates the delete operation for postgres dialect
+func (d *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
 	var errs []error
 
 	if len(qb.Where) == 0 && !qb.AllowDangerous {
@@ -59,31 +59,31 @@ func (pg *PostgresDialect) validateDelete(qb *types.QueryBuilderData) error {
 	}
 
 	if qb.Limit > 0 {
-		errs = append(errs, errors.New("LIMIT is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("LIMIT is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if len(qb.OrderBy) > 0 {
-		errs = append(errs, errors.New("ORDER BY is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("ORDER BY is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if len(qb.Having) != 0 {
-		errs = append(errs, errors.New("HAVING is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("HAVING is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if qb.Offset > 0 {
-		errs = append(errs, errors.New("OFFSET is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("OFFSET is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if len(qb.GroupBy) > 0 {
-		errs = append(errs, errors.New("GROUP BY is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("GROUP BY is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if len(qb.Joins) > 0 {
-		errs = append(errs, errors.New("JOINs (USING clause) not supported in DELETE Postgres driver"))
+		errs = append(errs, errors.New("JOINs (USING clause) not supported in DELETE Postgres dialect"))
 	}
 
 	if len(qb.Unions) > 0 {
-		errs = append(errs, errors.New("UNION is not allowed in DELETE in the Postgres driver"))
+		errs = append(errs, errors.New("UNION is not allowed in DELETE in the Postgres dialect"))
 	}
 
 	if len(qb.Columns) > 0 {

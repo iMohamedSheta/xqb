@@ -10,7 +10,7 @@ import (
 )
 
 func Test_Delete(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		sql, bindings, err := qb.DeleteSql()
@@ -22,14 +22,14 @@ func Test_Delete(t *testing.T) {
 }
 
 func Test_DeleteWhere(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect)
 
 		sql, bindings, err := qb.Where("id", "=", 1).DeleteSql()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "DELETE FROM `users` WHERE `id` = ?",
-			types.DriverPostgres: `DELETE FROM "users" WHERE "id" = $1`,
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "DELETE FROM `users` WHERE `id` = ?",
+			types.DialectPostgres: `DELETE FROM "users" WHERE "id" = $1`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -39,21 +39,21 @@ func Test_DeleteWhere(t *testing.T) {
 }
 
 func Test_DeleteWithLimit(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).
 			Where("status", "=", "inactive").
 			Limit(10)
 
 		sql, bindings, err := qb.DeleteSql()
 
-		expectedSql := map[types.Driver]string{
-			types.DriverMySql:    "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
-			types.DriverPostgres: ``, // PostgreSQL doesn't support LIMIT on DELETE
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
+			types.DialectPostgres: ``, // PostgreSQL doesn't support LIMIT on DELETE
 		}
 
-		expectedErr := map[types.Driver]error{
-			types.DriverMySql:    nil,
-			types.DriverPostgres: xqbErr.ErrInvalidQuery,
+		expectedErr := map[types.Dialect]error{
+			types.DialectMySql:    nil,
+			types.DialectPostgres: xqbErr.ErrInvalidQuery,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
@@ -69,7 +69,7 @@ func Test_DeleteWithLimit(t *testing.T) {
 }
 
 func Test_DeleteWithOffset(t *testing.T) {
-	forEachDialect(t, func(t *testing.T, dialect types.Driver) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).
 			Where("status", "=", "inactive").
 			Offset(10)
