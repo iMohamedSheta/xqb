@@ -2,7 +2,6 @@ package xqb
 
 import (
 	"database/sql"
-	"errors"
 )
 
 type SqlQuery struct {
@@ -10,8 +9,8 @@ type SqlQuery struct {
 	tx         *sql.Tx
 	sql        string
 	args       []any
-	beforeExec func() error
-	afterExec  func() error
+	beforeExec func()
+	afterExec  func()
 }
 
 func Sql(sql string, args ...any) *SqlQuery {
@@ -31,12 +30,12 @@ func (s *SqlQuery) Connection(connection string) *SqlQuery {
 	return s
 }
 
-func (s *SqlQuery) WithBeforeExec(f func() error) *SqlQuery {
+func (s *SqlQuery) WithBeforeExec(f func()) *SqlQuery {
 	s.beforeExec = f
 	return s
 }
 
-func (s *SqlQuery) WithAfterExec(f func() error) *SqlQuery {
+func (s *SqlQuery) WithAfterExec(f func()) *SqlQuery {
 	s.afterExec = f
 	return s
 }
@@ -51,9 +50,7 @@ func (s *SqlQuery) WithTx(tx *sql.Tx) *SqlQuery {
 func (s *SqlQuery) Execute() (sql.Result, error) {
 	// Run before exec callback if set
 	if s.beforeExec != nil {
-		if err := s.beforeExec(); err != nil {
-			return nil, err
-		}
+		safeCall(s.beforeExec)
 	}
 
 	// If tx is set, use it to execute the sql statement
@@ -71,12 +68,7 @@ func (s *SqlQuery) Execute() (sql.Result, error) {
 
 	// Run after exec callback if set
 	if s.afterExec != nil {
-		if hookErr := s.afterExec(); hookErr != nil {
-			if execErr == nil {
-				return result, hookErr
-			}
-			return result, errors.Join(execErr, hookErr)
-		}
+		safeCall(s.afterExec)
 	}
 
 	return result, execErr
@@ -86,9 +78,7 @@ func (s *SqlQuery) Execute() (sql.Result, error) {
 func (s *SqlQuery) Query() (*sql.Rows, error) {
 	// Run before exec callback if set
 	if s.beforeExec != nil {
-		if err := s.beforeExec(); err != nil {
-			return nil, err
-		}
+		safeCall(s.beforeExec)
 	}
 
 	// If tx is set, use it to query the sql statement
@@ -106,12 +96,7 @@ func (s *SqlQuery) Query() (*sql.Rows, error) {
 
 	// Run after exec callback if set
 	if s.afterExec != nil {
-		if hookErr := s.afterExec(); hookErr != nil {
-			if execErr == nil {
-				return rows, hookErr
-			}
-			return rows, errors.Join(execErr, hookErr)
-		}
+		safeCall(s.afterExec)
 	}
 
 	return rows, execErr
@@ -121,9 +106,7 @@ func (s *SqlQuery) Query() (*sql.Rows, error) {
 // Example: Sql("SELECT * FROM users WHERE id = ?", 1).QueryRow(&user)
 func (s *SqlQuery) QueryRow(dest ...any) error {
 	if s.beforeExec != nil {
-		if err := s.beforeExec(); err != nil {
-			return err
-		}
+		safeCall(s.beforeExec)
 	}
 
 	var row *sql.Row
@@ -140,13 +123,16 @@ func (s *SqlQuery) QueryRow(dest ...any) error {
 	scanErr := row.Scan(dest...)
 
 	if s.afterExec != nil {
-		if hookErr := s.afterExec(); hookErr != nil {
-			if scanErr == nil {
-				return hookErr
-			}
-			return errors.Join(scanErr, hookErr)
-		}
+		safeCall(s.afterExec)
 	}
 
 	return scanErr
+}
+
+// Use safeCall to avoid panic if the callback function panics
+func safeCall(f func()) {
+	defer func() {
+		_ = recover() // absorb panic
+	}()
+	f()
 }

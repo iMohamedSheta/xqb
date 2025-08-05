@@ -290,7 +290,9 @@ func (qb *QueryBuilder) SetDialect(dialect types.Dialect) *QueryBuilder {
 // ToSql compiles the query to Sql
 func (qb *QueryBuilder) ToSql() (string, []any, error) {
 	if before := qb.GetSettings().GetOnBeforeQuery(); before != nil {
-		before(qb)
+		safeCall(func() {
+			before(qb)
+		})
 	}
 	start := time.UnixMicro(time.Now().UnixMicro())
 
@@ -305,7 +307,9 @@ func (qb *QueryBuilder) ToSql() (string, []any, error) {
 	}
 
 	if after := qb.GetSettings().GetOnAfterQuery(); after != nil {
-		after(queryExecuted)
+		safeCall(func() {
+			after(queryExecuted)
+		})
 	}
 
 	return sql, bindings, err
