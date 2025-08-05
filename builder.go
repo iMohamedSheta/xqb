@@ -14,9 +14,12 @@ import (
 )
 
 type QueryBuilderSettings struct {
-	mu                    sync.RWMutex
-	onBeforeQueryCallback func(qb *QueryBuilder)
-	onAfterQueryCallback  func(query *QueryExecuted)
+	mu sync.RWMutex
+
+	onBeforeQueryCallback  func(qb *QueryBuilder)
+	onAfterQueryCallback   func(query *QueryExecuted)
+	onBeforeQueryExecution func()
+	onAfterQueryExecution  func()
 }
 
 func NewQueryBuilderSettings() *QueryBuilderSettings {
@@ -29,28 +32,60 @@ func DefaultSettings() *QueryBuilderSettings {
 	return defaultSettings
 }
 
-func (settings *QueryBuilderSettings) OnBeforeQuery(onBeforeQuery func(qb *QueryBuilder)) {
-	settings.mu.Lock()
-	defer settings.mu.Unlock()
-	settings.onBeforeQueryCallback = onBeforeQuery
+// OnBeforeQuery sets a callback to be executed before the query is built
+func (s *QueryBuilderSettings) OnBeforeQuery(cb func(qb *QueryBuilder)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onBeforeQueryCallback = cb
 }
 
-func (settings *QueryBuilderSettings) OnAfterQuery(onAfterQuery func(query *QueryExecuted)) {
-	settings.mu.Lock()
-	defer settings.mu.Unlock()
-	settings.onAfterQueryCallback = onAfterQuery
+// GetOnBeforeQuery returns the callback to be executed before the query is built
+func (s *QueryBuilderSettings) GetOnBeforeQuery() func(qb *QueryBuilder) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onBeforeQueryCallback
 }
 
-func (settings *QueryBuilderSettings) GetOnBeforeQuery() func(qb *QueryBuilder) {
-	settings.mu.RLock()
-	defer settings.mu.RUnlock()
-	return settings.onBeforeQueryCallback
+// OnAfterQuery sets a callback to be executed after the query is built
+func (s *QueryBuilderSettings) OnAfterQuery(cb func(query *QueryExecuted)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onAfterQueryCallback = cb
 }
 
-func (settings *QueryBuilderSettings) GetOnAfterQuery() func(query *QueryExecuted) {
-	settings.mu.RLock()
-	defer settings.mu.RUnlock()
-	return settings.onAfterQueryCallback
+// GetOnAfterQuery returns the callback to be executed after the query is built
+func (s *QueryBuilderSettings) GetOnAfterQuery() func(query *QueryExecuted) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onAfterQueryCallback
+}
+
+// OnBeforeQueryExecution sets a callback to be executed before the query is executed
+func (s *QueryBuilderSettings) OnBeforeQueryExecution(cb func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onBeforeQueryExecution = cb
+}
+
+// GetOnBeforeQueryExecution returns the callback to be executed before the query is executed
+func (s *QueryBuilderSettings) GetOnBeforeQueryExecution() func() {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onBeforeQueryExecution
+}
+
+// OnAfterQueryExecution sets a callback to be executed after the query is executed
+func (s *QueryBuilderSettings) OnAfterQueryExecution(cb func()) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.onAfterQueryExecution = cb
+}
+
+// GetOnAfterQueryExecution returns the callback to be executed after the query is executed
+func (s *QueryBuilderSettings) GetOnAfterQueryExecution() func() {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.onAfterQueryExecution
 }
 
 // QueryBuilder structure with all possible SELECT components
