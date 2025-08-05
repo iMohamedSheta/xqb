@@ -32,7 +32,13 @@ func (qb *QueryBuilder) delete(table ...string) (int64, error) {
 
 	var result sql.Result
 
-	result, err = Sql(query, args...).WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).Connection(qb.connection).WithTx(qb.tx).Execute()
+	result, err = Sql(query, args...).
+		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
+		Connection(qb.connection).
+		WithTx(qb.tx).
+		Execute()
+
 	if err != nil {
 		return 0, fmt.Errorf("delete failed:  %w", err)
 	}

@@ -35,7 +35,13 @@ func (qb *QueryBuilder) Upsert(values []map[string]any, uniqueBy []string, updat
 		return 0, err
 	}
 
-	result, err := Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+	result, err := Sql(query, args...).
+		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
+		Connection(qb.connection).
+		WithTx(qb.tx).
+		Execute()
+
 	if err != nil {
 		return 0, err
 	}
@@ -83,7 +89,13 @@ func (qb *QueryBuilder) insert(values []map[string]any) (sql.Result, error) {
 		return nil, err
 	}
 
-	result, err := Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+	result, err := Sql(query, args...).
+		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
+		Connection(qb.connection).
+		WithTx(qb.tx).
+		Execute()
+
 	if err != nil {
 		return nil, err
 	}

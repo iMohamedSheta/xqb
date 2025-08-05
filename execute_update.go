@@ -26,7 +26,12 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 		return nil, fmt.Errorf("%w: Update() Failed to build the sql, %v", xqbErr.ErrInvalidQuery, err)
 	}
 
-	return Sql(query, args...).Connection(qb.connection).WithTx(qb.tx).Execute()
+	return Sql(query, args...).
+		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
+		Connection(qb.connection).
+		WithTx(qb.tx).
+		Execute()
 }
 
 // UpdateSql return sql query and bindings for Update()
