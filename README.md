@@ -76,6 +76,17 @@ xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
 })
 ```
 
+### OnAfterQueryExecution
+
+Execute right after a query is executed.
+
+```go
+xqb.DefaultSettings().OnAfterQueryExecution(func(ctx context.Context) {
+    reqId, _ := q.Context.Value(enums.ContextKeyRequestId.String()).(string)
+    fmt.Printf("request_id: %s", reqId)
+})
+```
+
 ### Instance-based Hooks
 
 Hooks can be set globally or per query using `WithSettings()`.
