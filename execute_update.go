@@ -27,7 +27,7 @@ func (qb *QueryBuilder) update(data map[string]any) (sql.Result, error) {
 	}
 
 	return Sql(query, args...).
-		// WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithContext(qb.ctx).
 		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
 		Connection(qb.connection).
 		WithTx(qb.tx).

@@ -16,7 +16,7 @@ func (qb *QueryBuilder) Get() ([]map[string]any, error) {
 	}
 
 	rows, err := Sql(query, args...).
-		// WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		WithContext(qb.ctx).
 		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
 		Connection(qb.connection).
 		WithTx(qb.tx).
