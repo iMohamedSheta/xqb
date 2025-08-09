@@ -1,6 +1,7 @@
 package xqb
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -16,10 +17,9 @@ import (
 type QueryBuilderSettings struct {
 	mu sync.RWMutex
 
-	onBeforeQueryCallback  func(qb *QueryBuilder)
-	onAfterQueryCallback   func(query *QueryExecuted)
-	onBeforeQueryExecution func()
-	onAfterQueryExecution  func()
+	onBeforeQueryCallback func(qb *QueryBuilder)
+	onAfterQueryCallback  func(query *QueryExecuted)
+	onAfterQueryExecution func(ctx context.Context)
 }
 
 func NewQueryBuilderSettings() *QueryBuilderSettings {
@@ -60,29 +60,29 @@ func (s *QueryBuilderSettings) GetOnAfterQuery() func(query *QueryExecuted) {
 	return s.onAfterQueryCallback
 }
 
-// OnBeforeQueryExecution sets a callback to be executed before the query is executed
-func (s *QueryBuilderSettings) OnBeforeQueryExecution(cb func()) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.onBeforeQueryExecution = cb
-}
+// // OnBeforeQueryExecution sets a callback to be executed before the query is executed
+// func (s *QueryBuilderSettings) OnBeforeQueryExecution(cb func(ctx context.Context)) {
+// 	s.mu.Lock()
+// 	defer s.mu.Unlock()
+// 	s.onBeforeQueryExecution = cb
+// }
 
-// GetOnBeforeQueryExecution returns the callback to be executed before the query is executed
-func (s *QueryBuilderSettings) GetOnBeforeQueryExecution() func() {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	return s.onBeforeQueryExecution
-}
+// // GetOnBeforeQueryExecution returns the callback to be executed before the query is executed
+// func (s *QueryBuilderSettings) GetOnBeforeQueryExecution() func(ctx context.Context) {
+// 	s.mu.RLock()
+// 	defer s.mu.RUnlock()
+// 	return s.onBeforeQueryExecution
+// }
 
 // OnAfterQueryExecution sets a callback to be executed after the query is executed
-func (s *QueryBuilderSettings) OnAfterQueryExecution(cb func()) {
+func (s *QueryBuilderSettings) OnAfterQueryExecution(cb func(ctx context.Context)) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.onAfterQueryExecution = cb
 }
 
 // GetOnAfterQueryExecution returns the callback to be executed after the query is executed
-func (s *QueryBuilderSettings) GetOnAfterQueryExecution() func() {
+func (s *QueryBuilderSettings) GetOnAfterQueryExecution() func(ctx context.Context) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.onAfterQueryExecution
@@ -115,6 +115,7 @@ type QueryBuilder struct {
 	insertedValues  []map[string]any
 	updatedBindings []*types.Binding
 	allowDangerous  bool
+	ctx             context.Context
 }
 
 func (qb *QueryBuilder) GetDialect() dialects.DialectInterface {
@@ -153,6 +154,7 @@ type QueryExecuted struct {
 	Connection string
 	Dialect    types.Dialect
 	Err        error
+	Context    context.Context
 }
 
 // New creates a new QueryBuilder instance
@@ -326,6 +328,15 @@ func (qb *QueryBuilder) ToRawExpr() *types.Expression {
 		Sql:      sql,
 		Bindings: bindings,
 	}
+}
+
+func (qb *QueryBuilder) WithContext(ctx context.Context) *QueryBuilder {
+	qb.ctx = ctx
+	return qb
+}
+
+func (qb *QueryBuilder) GetContext() context.Context {
+	return qb.ctx
 }
 
 func (qb *QueryBuilder) WithTx(tx *sql.Tx) *QueryBuilder {

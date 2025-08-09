@@ -36,7 +36,7 @@ func (qb *QueryBuilder) Upsert(values []map[string]any, uniqueBy []string, updat
 	}
 
 	result, err := Sql(query, args...).
-		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		// WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
 		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
 		Connection(qb.connection).
 		WithTx(qb.tx).
@@ -90,7 +90,7 @@ func (qb *QueryBuilder) insert(values []map[string]any) (sql.Result, error) {
 	}
 
 	result, err := Sql(query, args...).
-		WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
+		// WithBeforeExec(qb.settings.GetOnBeforeQueryExecution()).
 		WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
 		Connection(qb.connection).
 		WithTx(qb.tx).

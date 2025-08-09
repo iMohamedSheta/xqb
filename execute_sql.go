@@ -1,6 +1,7 @@
 package xqb
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -9,8 +10,9 @@ type SqlQuery struct {
 	tx         *sql.Tx
 	sql        string
 	args       []any
-	beforeExec func()
-	afterExec  func()
+	ctx        context.Context // new field
+	// beforeExec func(context.Context)
+	afterExec func(context.Context)
 }
 
 func Sql(sql string, args ...any) *SqlQuery {
@@ -30,12 +32,17 @@ func (s *SqlQuery) Connection(connection string) *SqlQuery {
 	return s
 }
 
-func (s *SqlQuery) WithBeforeExec(f func()) *SqlQuery {
-	s.beforeExec = f
+func (s *SqlQuery) WithContext(ctx context.Context) *SqlQuery {
+	s.ctx = ctx
 	return s
 }
 
-func (s *SqlQuery) WithAfterExec(f func()) *SqlQuery {
+// func (s *SqlQuery) WithBeforeExec(f func(ctx context.Context)) *SqlQuery {
+// 	s.beforeExec = f
+// 	return s
+// }
+
+func (s *SqlQuery) WithAfterExec(f func(ctx context.Context)) *SqlQuery {
 	s.afterExec = f
 	return s
 }
@@ -48,85 +55,111 @@ func (s *SqlQuery) WithTx(tx *sql.Tx) *SqlQuery {
 
 // ExecuteSql - execute raw sql statement
 func (s *SqlQuery) Execute() (sql.Result, error) {
-	// Run before exec callback if set
-	if s.beforeExec != nil {
-		safeCall(s.beforeExec)
+	// if s.beforeExec != nil {
+	// 	safeCall(func() {
+	// 		s.beforeExec(s.ctx)
+	// 	})
+	// }
+
+	var (
+		result sql.Result
+		err    error
+	)
+
+	if s.ctx == nil {
+		s.ctx = context.Background()
 	}
 
-	// If tx is set, use it to execute the sql statement
 	if s.tx != nil {
-		return s.tx.Exec(s.sql, s.args...)
+		result, err = s.tx.ExecContext(s.ctx, s.sql, s.args...)
+	} else {
+		db, errConn := GetConnectionDB(s.connection)
+		if errConn != nil {
+			return nil, errConn
+		}
+		result, err = db.ExecContext(s.ctx, s.sql, s.args...)
 	}
 
-	// Otherwise, get the connection's sql.DB and execute the statement
-	db, err := GetConnectionDB(s.connection)
-	if err != nil {
-		return nil, err
-	}
-
-	result, execErr := db.Exec(s.sql, s.args...)
-
-	// Run after exec callback if set
 	if s.afterExec != nil {
-		safeCall(s.afterExec)
+		safeCall(func() {
+			s.afterExec(s.ctx)
+		})
 	}
 
-	return result, execErr
+	return result, err
 }
 
 // QuerySql - query raw sql statement
 func (s *SqlQuery) Query() (*sql.Rows, error) {
-	// Run before exec callback if set
-	if s.beforeExec != nil {
-		safeCall(s.beforeExec)
+	// if s.beforeExec != nil {
+	// 	safeCall(func() {
+	// 		s.beforeExec(s.ctx)
+	// 	})
+	// }
+
+	if s.ctx == nil {
+		s.ctx = context.Background()
 	}
 
-	// If tx is set, use it to query the sql statement
+	var (
+		rows *sql.Rows
+		err  error
+	)
+
 	if s.tx != nil {
-		return s.tx.Query(s.sql, s.args...)
+		rows, err = s.tx.QueryContext(s.ctx, s.sql, s.args...)
+	} else {
+		db, errConn := GetConnectionDB(s.connection)
+		if errConn != nil {
+			return nil, errConn
+		}
+		rows, err = db.QueryContext(s.ctx, s.sql, s.args...)
 	}
 
-	// Otherwise, get the connection's sql.DB and execute the statement
-	db, err := GetConnectionDB(s.connection)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, execErr := db.Query(s.sql, s.args...)
-
-	// Run after exec callback if set
 	if s.afterExec != nil {
-		safeCall(s.afterExec)
+		safeCall(func() {
+			s.afterExec(s.ctx)
+		})
 	}
 
-	return rows, execErr
+	return rows, err
 }
 
 // QueryRow - query raw sql statement and scan the result into the pointed dest variable
 // Example: Sql("SELECT * FROM users WHERE id = ?", 1).QueryRow(&user)
 func (s *SqlQuery) QueryRow(dest ...any) error {
-	if s.beforeExec != nil {
-		safeCall(s.beforeExec)
+	// if s.beforeExec != nil {
+	// 	safeCall(func() {
+	// 		s.beforeExec(s.ctx)
+	// 	})
+	// }
+
+	if s.ctx == nil {
+		s.ctx = context.Background()
 	}
 
 	var row *sql.Row
+
 	if s.tx != nil {
-		row = s.tx.QueryRow(s.sql, s.args...)
+		row = s.tx.QueryRowContext(s.ctx, s.sql, s.args...)
 	} else {
 		db, err := GetConnectionDB(s.connection)
 		if err != nil {
 			return err
 		}
-		row = db.QueryRow(s.sql, s.args...)
+		row = db.QueryRowContext(s.ctx, s.sql, s.args...)
 	}
 
-	scanErr := row.Scan(dest...)
+	// don't return error before running afterExec hook
+	err := row.Scan(dest...)
 
 	if s.afterExec != nil {
-		safeCall(s.afterExec)
+		safeCall(func() {
+			s.afterExec(s.ctx)
+		})
 	}
 
-	return scanErr
+	return err
 }
 
 // Use safeCall to avoid panic if the callback function panics
