@@ -306,6 +306,7 @@ func (qb *QueryBuilder) ToSql() (string, []any, error) {
 		Connection: qb.connection,
 		Dialect:    qb.dialect.Getdialect(),
 		Err:        err,
+		Context:    qb.ctx,
 	}
 
 	if after := qb.GetSettings().GetOnAfterQuery(); after != nil {
