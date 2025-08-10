@@ -57,7 +57,7 @@ XQB supports query hooks for logging, profiling, or custom behavior.
 
 ### OnBeforeQuery
 
-Executes right before a query is compiled or executed.
+Executes right before a query is built.
 
 ```go
 xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
@@ -67,7 +67,7 @@ xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
 
 ### OnAfterQuery
 
-Executes right after a query is executed.
+Executes right after a query is built.
 
 ```go
 xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
