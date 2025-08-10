@@ -91,6 +91,51 @@ xqb.DefaultSettings().OnAfterQueryExecution(func(ctx context.Context) {
 
 Hooks can be set globally or per query using `WithSettings()`.
 
+Sure! Here's a simpler, more straightforward version for your docs:
+
+---
+
+### Query Models
+
+To create a model, just make a struct with fields tagged by `xqb` to match your database columns.
+
+```go
+type User struct {
+    ID        int            `xqb:"id"`
+    Name      string         `xqb:"name"`
+    Email     sql.NullString `xqb:"email"`
+    Active    sql.NullBool   `xqb:"active"`
+    CreatedAt sql.NullTime   `xqb:"created_at"`
+    Password  string         `xqb:"-"` // ignore this field in model binding
+}
+
+func (User) Table() string {
+    return "users"
+}
+```
+```go
+data, err := xqb.Model(User{}).SetDialect(dialect).
+    Select("id", "name", "email", "active", "created_at").
+    Where("username", "=", "ali").
+    OrWhere("username", "=", "mohamed").
+    Latest("created_at").
+    First()
+
+if err != nil {
+    // handle error
+}
+
+var user User
+xqb.Bind(data, &user)
+
+// Now use the `user` struct model in your code
+```
+
+**How it works:**
+
+1. You fetch data with the query.
+2. You fill your struct with `xqb.Bind()`.
+
 ## Raw Sql Expressions
 
 ### Raw Function

@@ -16,7 +16,7 @@ type User struct {
 	Email     sql.NullString `xqb:"email"`
 	Active    sql.NullBool   `xqb:"active"`
 	CreatedAt sql.NullTime   `xqb:"created_at"`
-	Password  string         `xqb:"-"` // should be ignored
+	Password  string         `xqb:"-"` // ignored
 }
 
 func (User) Table() string {
