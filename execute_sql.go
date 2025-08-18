@@ -10,9 +10,8 @@ type SqlQuery struct {
 	tx         *sql.Tx
 	sql        string
 	args       []any
-	ctx        context.Context // new field
-	// beforeExec func(context.Context)
-	afterExec func(context.Context)
+	ctx        context.Context
+	afterExec  func(context.Context)
 }
 
 func Sql(sql string, args ...any) *SqlQuery {
@@ -37,11 +36,6 @@ func (s *SqlQuery) WithContext(ctx context.Context) *SqlQuery {
 	return s
 }
 
-// func (s *SqlQuery) WithBeforeExec(f func(ctx context.Context)) *SqlQuery {
-// 	s.beforeExec = f
-// 	return s
-// }
-
 func (s *SqlQuery) WithAfterExec(f func(ctx context.Context)) *SqlQuery {
 	s.afterExec = f
 	return s
@@ -55,12 +49,6 @@ func (s *SqlQuery) WithTx(tx *sql.Tx) *SqlQuery {
 
 // ExecuteSql - execute raw sql statement
 func (s *SqlQuery) Execute() (sql.Result, error) {
-	// if s.beforeExec != nil {
-	// 	safeCall(func() {
-	// 		s.beforeExec(s.ctx)
-	// 	})
-	// }
-
 	var (
 		result sql.Result
 		err    error
@@ -91,12 +79,6 @@ func (s *SqlQuery) Execute() (sql.Result, error) {
 
 // QuerySql - query raw sql statement
 func (s *SqlQuery) Query() (*sql.Rows, error) {
-	// if s.beforeExec != nil {
-	// 	safeCall(func() {
-	// 		s.beforeExec(s.ctx)
-	// 	})
-	// }
-
 	if s.ctx == nil {
 		s.ctx = context.Background()
 	}
@@ -128,12 +110,6 @@ func (s *SqlQuery) Query() (*sql.Rows, error) {
 // QueryRow - query raw sql statement and scan the result into the pointed dest variable
 // Example: Sql("SELECT * FROM users WHERE id = ?", 1).QueryRow(&user)
 func (s *SqlQuery) QueryRow(dest ...any) error {
-	// if s.beforeExec != nil {
-	// 	safeCall(func() {
-	// 		s.beforeExec(s.ctx)
-	// 	})
-	// }
-
 	if s.ctx == nil {
 		s.ctx = context.Background()
 	}

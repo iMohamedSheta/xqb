@@ -40,6 +40,11 @@ func (d *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []a
 		}
 	}
 
+	// Add RETURNING clause if OptionReturningId is set to true
+	if returningId, ok := qb.GetOption(types.OptionReturningId); ok && returningId.(bool) {
+		sql += " RETURNING id"
+	}
+
 	return sql, bindings, nil
 }
 

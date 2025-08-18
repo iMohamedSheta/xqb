@@ -234,3 +234,27 @@ func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func Test_Insert_GetId(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
+		qb := xqb.Table("users").SetDialect(dialect)
+		sql, bindings, err := qb.InsertGetIdSql([]map[string]any{
+			{
+				"email": "mohamed@gmail.com",
+				"name":  "mohamed",
+				"age":   20,
+			},
+		})
+
+		expectedSql := map[types.Dialect]string{
+			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?)",
+			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) RETURNING id`,
+		}
+		expectedBindings := []any{
+			20, "mohamed@gmail.com", "mohamed",
+		}
+		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedBindings, bindings)
+		assert.NoError(t, err)
+	})
+}
