@@ -117,9 +117,252 @@ func TestBind_ErrorCases(t *testing.T) {
 	err = xqb.Bind(map[string]any{}, &invalidType)
 	assert.Error(t, err)
 
-	err = xqb.Bind([]map[string]any{}, &User{}) // dest is not a slice
-	assert.Error(t, err)
-
 	err = xqb.Bind(map[string]any{}, nil)
 	assert.Error(t, err)
+}
+
+func TestBind_NestedStructs(t *testing.T) {
+	type Address struct {
+		Street string `xqb:"street"`
+		City   string `xqb:"city"`
+		State  string `xqb:"state"`
+	}
+
+	type User struct {
+		ID       int     `xqb:"id"`
+		Name     string  `xqb:"name"`
+		Email    string  `xqb:"email"`
+		Address  Address `xqb:"address"`
+		Password string  `xqb:"-"` // ignored
+	}
+
+	data := map[string]any{
+		"id":             1,
+		"name":           "Ali",
+		"email":          "ali@example.com",
+		"address.street": "123 Main St",
+		"address.city":   "Cairo",
+		"address.state":  "Cairo Governorate",
+		"password":       "super-secret", // should be ignored
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, user.ID)
+	assert.Equal(t, "Ali", user.Name)
+	assert.Equal(t, "ali@example.com", user.Email)
+	assert.Equal(t, "123 Main St", user.Address.Street)
+	assert.Equal(t, "Cairo", user.Address.City)
+	assert.Equal(t, "Cairo Governorate", user.Address.State)
+	assert.Empty(t, user.Password)
+}
+
+func TestBind_NestedPointerStructs(t *testing.T) {
+	type Address struct {
+		Street string `xqb:"street"`
+		City   string `xqb:"city"`
+		State  string `xqb:"state"`
+	}
+
+	type User struct {
+		ID      int      `xqb:"id"`
+		Name    string   `xqb:"name"`
+		Email   string   `xqb:"email"`
+		Address *Address `xqb:"address"` // pointer to nested struct
+	}
+
+	data := map[string]any{
+		"id":             2,
+		"name":           "Sara",
+		"email":          "sara@example.com",
+		"address.street": "456 Elm St",
+		"address.city":   "Alexandria",
+		"address.state":  "Alexandria Governorate",
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, user.ID)
+	assert.Equal(t, "Sara", user.Name)
+	assert.Equal(t, "sara@example.com", user.Email)
+	assert.NotNil(t, user.Address)
+	assert.Equal(t, "456 Elm St", user.Address.Street)
+	assert.Equal(t, "Alexandria", user.Address.City)
+	assert.Equal(t, "Alexandria Governorate", user.Address.State)
+}
+
+func TestBind_CastsAndTimestamps(t *testing.T) {
+	type User struct {
+		ID        int          `xqb:"id"`
+		Name      string       `xqb:"name"`
+		CreatedAt sql.NullTime `xqb:"created_at"`
+		UpdatedAt sql.NullTime `xqb:"updated_at"`
+	}
+
+	now := time.Now()
+	data := map[string]any{
+		"id":         1,
+		"name":       "Ali",
+		"created_at": now,
+		"updated_at": now,
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, now, user.CreatedAt.Time)
+	assert.Equal(t, now, user.UpdatedAt.Time)
+	assert.True(t, user.CreatedAt.Valid)
+	assert.True(t, user.UpdatedAt.Valid)
+}
+
+func TestBind_SoftDeletes(t *testing.T) {
+	type User struct {
+		ID        int          `xqb:"id"`
+		Name      string       `xqb:"name"`
+		DeletedAt sql.NullTime `xqb:"deleted_at"`
+	}
+
+	now := time.Now()
+	data := map[string]any{
+		"id":         1,
+		"name":       "Ali",
+		"deleted_at": now,
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, now, user.DeletedAt.Time)
+	assert.True(t, user.DeletedAt.Valid)
+}
+
+func TestBind_MassAssignmentProtection(t *testing.T) {
+	type User struct {
+		ID       int    `xqb:"id"`
+		Name     string `xqb:"name"`
+		Password string `xqb:"-"` // ignored
+	}
+
+	data := map[string]any{
+		"id":       1,
+		"name":     "Ali",
+		"password": "secret", // should be ignored
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, user.ID)
+	assert.Equal(t, "Ali", user.Name)
+	assert.Empty(t, user.Password) // protected
+}
+
+func TestBind_NestedSliceRelations(t *testing.T) {
+	type Post struct {
+		ID    int    `xqb:"id"`
+		Title string `xqb:"title"`
+	}
+
+	type User struct {
+		ID    int    `xqb:"id"`
+		Name  string `xqb:"name"`
+		Posts []Post `xqb:"posts"`
+	}
+
+	data := map[string]any{
+		"id":   1,
+		"name": "Ali",
+		"posts": []map[string]any{
+			{
+				"title": "First Post",
+			},
+			{
+				"title": "Second Post",
+			},
+		},
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Len(t, user.Posts, 2)
+	assert.Equal(t, "First Post", user.Posts[0].Title)
+	assert.Equal(t, "Second Post", user.Posts[1].Title)
+}
+
+func TestBind_NestedSliceRelationss(t *testing.T) {
+	type Post struct {
+		ID    int    `xqb:"id"`
+		Name  string `xqb:"name"`
+		Title string `xqb:"title"`
+	}
+
+	type User struct {
+		ID    int    `xqb:"id"`
+		Name  string `xqb:"name"`
+		Posts []Post `xqb:"posts"`
+	}
+
+	data := []map[string]any{
+		{
+			"id":          1,
+			"name":        "Ali",
+			"posts_title": "First Post",
+		},
+		{
+			"id":          2,
+			"name":        "Ahmed",
+			"posts_title": "Second Post",
+			"posts_name":  "Third Post",
+		},
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Len(t, user.Posts, 2)
+	assert.Equal(t, "First Post", user.Posts[0].Title)
+	assert.Equal(t, "Second Post", user.Posts[1].Title)
+}
+
+func TestBind_SpecialCase(t *testing.T) {
+	type Post struct {
+		ID     int    `xqb:"id"`
+		Name   string `xqb:"name"`
+		Title  string `xqb:"title"`
+		Serial string `xqb:"serial"`
+	}
+
+	type User struct {
+		ID         int    `xqb:"id"`
+		Name       string `xqb:"name"`
+		PostSerial string `xqb:"post_serial"`
+		Posts      []Post `xqb:"posts" table:"posts"`
+	}
+
+	data := []map[string]any{
+		{
+			"id":           1,
+			"name":         "Ali",
+			"posts_title":  "First Post",
+			"posts_serial": "55555",
+		},
+		{
+			"id":           2,
+			"name":         "Ahmed",
+			"posts_title":  "Second Post",
+			"posts_name":   "Third Post",
+			"posts_serial": "66666",
+		},
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Len(t, user.Posts, 2)
+	assert.Equal(t, "First Post", user.Posts[0].Title)
+	assert.Equal(t, "Second Post", user.Posts[1].Title)
 }
