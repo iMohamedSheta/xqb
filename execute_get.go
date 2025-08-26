@@ -140,7 +140,9 @@ func (qb *QueryBuilder) Paginate(perPage int, page int, countBy string) ([]map[s
 	}
 
 	if countBy != "" {
-		count, err := qb.Count(countBy)
+		copy := qb.Clone()
+		copy.resetForPaginationCount()
+		count, err := copy.Count(countBy)
 		if err != nil {
 			return nil, nil, fmt.Errorf("%w: Paginate() failed to get count of the records: %v", xqbErr.ErrInvalidQuery, err)
 		}

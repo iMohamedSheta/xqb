@@ -60,20 +60,6 @@ func (s *QueryBuilderSettings) GetOnAfterQuery() func(query *QueryExecuted) {
 	return s.onAfterQueryCallback
 }
 
-// // OnBeforeQueryExecution sets a callback to be executed before the query is executed
-// func (s *QueryBuilderSettings) OnBeforeQueryExecution(cb func(ctx context.Context)) {
-// 	s.mu.Lock()
-// 	defer s.mu.Unlock()
-// 	s.onBeforeQueryExecution = cb
-// }
-
-// // GetOnBeforeQueryExecution returns the callback to be executed before the query is executed
-// func (s *QueryBuilderSettings) GetOnBeforeQueryExecution() func(ctx context.Context) {
-// 	s.mu.RLock()
-// 	defer s.mu.RUnlock()
-// 	return s.onBeforeQueryExecution
-// }
-
 // OnAfterQueryExecution sets a callback to be executed after the query is executed
 func (s *QueryBuilderSettings) OnAfterQueryExecution(cb func(ctx context.Context)) {
 	s.mu.Lock()
@@ -255,6 +241,70 @@ func (qb *QueryBuilder) Reset() {
 	qb.insertedValues = nil
 	qb.updatedBindings = nil
 	qb.allowDangerous = false
+}
+
+func (qb *QueryBuilder) resetForPaginationCount() {
+	qb.queryType = enums.SELECT
+	qb.columns = nil
+	qb.orderBy = nil
+	qb.limit = 0
+	qb.offset = 0
+	qb.unions = nil
+	qb.distinct = false
+	qb.isUsingDistinct = false
+}
+
+func (qb *QueryBuilder) Clone() *QueryBuilder {
+	clone := *qb
+
+	if qb.columns != nil {
+		clone.columns = append([]any(nil), qb.columns...)
+	}
+	if qb.where != nil {
+		clone.where = append([]*types.WhereCondition(nil), qb.where...)
+	}
+	if qb.orderBy != nil {
+		clone.orderBy = append([]*types.OrderBy(nil), qb.orderBy...)
+	}
+	if qb.groupBy != nil {
+		clone.groupBy = append([]string(nil), qb.groupBy...)
+	}
+	if qb.having != nil {
+		clone.having = append([]*types.Having(nil), qb.having...)
+	}
+	if qb.joins != nil {
+		clone.joins = append([]*types.Join(nil), qb.joins...)
+	}
+	if qb.unions != nil {
+		clone.unions = append([]*types.Union(nil), qb.unions...)
+	}
+	if qb.bindings != nil {
+		clone.bindings = append([]*types.Binding(nil), qb.bindings...)
+	}
+	if qb.withCTEs != nil {
+		clone.withCTEs = append([]*types.CTE(nil), qb.withCTEs...)
+	}
+	if qb.errors != nil {
+		clone.errors = append([]error(nil), qb.errors...)
+	}
+	if qb.deleteFrom != nil {
+		clone.deleteFrom = append([]string(nil), qb.deleteFrom...)
+	}
+	if qb.insertedValues != nil {
+		clone.insertedValues = append([]map[string]any(nil), qb.insertedValues...)
+	}
+	if qb.updatedBindings != nil {
+		clone.updatedBindings = append([]*types.Binding(nil), qb.updatedBindings...)
+	}
+
+	if qb.options != nil {
+		clone.options = make(map[types.Option]any, len(qb.options))
+		for k, v := range qb.options {
+			clone.options[k] = v
+		}
+	}
+
+	return &clone
 }
 
 // GetData returns the QueryBuilderData for use by grammars
