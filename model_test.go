@@ -343,18 +343,24 @@ func TestBind_SpecialCase(t *testing.T) {
 		Posts      []Post `xqb:"posts" table:"posts"`
 	}
 
+	// Fixed: Same user with multiple posts
 	data := []map[string]any{
 		{
 			"id":           1,
 			"name":         "Ali",
+			"post_serial":  "main_serial",
+			"posts_id":     10,
 			"posts_title":  "First Post",
+			"posts_name":   "Post One",
 			"posts_serial": "55555",
 		},
 		{
-			"id":           2,
-			"name":         "Ahmed",
+			"id":           1, // Same user
+			"name":         "Ali",
+			"post_serial":  "main_serial",
+			"posts_id":     20,
 			"posts_title":  "Second Post",
-			"posts_name":   "Third Post",
+			"posts_name":   "Post Two",
 			"posts_serial": "66666",
 		},
 	}
@@ -362,7 +368,107 @@ func TestBind_SpecialCase(t *testing.T) {
 	var user User
 	err := xqb.Bind(data, &user)
 	assert.NoError(t, err)
+	assert.Equal(t, 1, user.ID)
+	assert.Equal(t, "Ali", user.Name)
+	assert.Equal(t, "main_serial", user.PostSerial)
 	assert.Len(t, user.Posts, 2)
+	assert.Equal(t, 10, user.Posts[0].ID)
 	assert.Equal(t, "First Post", user.Posts[0].Title)
+	assert.Equal(t, "Post One", user.Posts[0].Name)
+	assert.Equal(t, "55555", user.Posts[0].Serial)
+	assert.Equal(t, 20, user.Posts[1].ID)
 	assert.Equal(t, "Second Post", user.Posts[1].Title)
+	assert.Equal(t, "Post Two", user.Posts[1].Name)
+	assert.Equal(t, "66666", user.Posts[1].Serial)
+}
+
+func TestBind_JsonColumns(t *testing.T) {
+	type UserSettings struct {
+		Logo  string `json:"logo"`
+		Color string `json:"color"`
+		Size  int    `json:"size"`
+	}
+
+	type User struct {
+		ID       int          `xqb:"id"`
+		Name     string       `xqb:"name"`
+		Settings UserSettings `xqb:"settings"`
+	}
+
+	// Test Case 1: JSON as string
+	t.Run("JSON as string", func(t *testing.T) {
+		data := map[string]any{
+			"id":       1,
+			"name":     "John",
+			"settings": `{"logo": "logo.png", "color": "blue", "size": 42}`,
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, user.ID)
+		assert.Equal(t, "John", user.Name)
+		assert.Equal(t, "logo.png", user.Settings.Logo)
+		assert.Equal(t, "blue", user.Settings.Color)
+		assert.Equal(t, 42, user.Settings.Size)
+	})
+
+	// Test Case 2: JSON as map (already parsed)
+	t.Run("JSON as map", func(t *testing.T) {
+		data := map[string]any{
+			"id":   2,
+			"name": "Jane",
+			"settings": map[string]any{
+				"logo":  "jane.png",
+				"color": "red",
+				"size":  24,
+			},
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, user.ID)
+		assert.Equal(t, "Jane", user.Name)
+		assert.Equal(t, "jane.png", user.Settings.Logo)
+		assert.Equal(t, "red", user.Settings.Color)
+		assert.Equal(t, 24, user.Settings.Size)
+	})
+
+	// Test Case 3: Prefixed columns (like "users.settings")
+	t.Run("Prefixed JSON columns", func(t *testing.T) {
+		data := map[string]any{
+			"users.id":       3,
+			"users.name":     "Bob",
+			"users.settings": `{"logo": "bob.png", "color": "green", "size": 18}`,
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, user.ID)
+		assert.Equal(t, "Bob", user.Name)
+		assert.Equal(t, "bob.png", user.Settings.Logo)
+		assert.Equal(t, "green", user.Settings.Color)
+		assert.Equal(t, 18, user.Settings.Size)
+	})
+
+	// Test Case 4: Empty/null settings
+	t.Run("Empty settings", func(t *testing.T) {
+		data := map[string]any{
+			"id":       4,
+			"name":     "Alice",
+			"settings": "",
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, user.ID)
+		assert.Equal(t, "Alice", user.Name)
+		// Settings should be zero values
+		assert.Equal(t, "", user.Settings.Logo)
+		assert.Equal(t, "", user.Settings.Color)
+		assert.Equal(t, 0, user.Settings.Size)
+	})
 }

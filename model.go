@@ -2,6 +2,7 @@ package xqb
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -218,17 +219,55 @@ func bindStruct(data map[string]any, v reflect.Value) error {
 			valueToSet = fieldValue.Elem()
 		}
 
-		// Handle nested struct binding (e.g., profile.name)
-		if valueToSet.Kind() == reflect.Struct && columnName != "" && !isSQLNull(valueToSet.Type()) {
-			if err := bindNestedStruct(data, valueToSet, columnName); err != nil {
-				return err
+		// Look for data value (try direct column name and prefixed versions)
+		var dataValue any
+		var exists bool
+
+		// Try direct column name first
+		if dataValue, exists = data[columnName]; !exists {
+			// Try with potential table prefixes
+			for key, value := range data {
+				// Match "table.column" pattern where column matches our field
+				if strings.Contains(key, ".") {
+					parts := strings.Split(key, ".")
+					if len(parts) == 2 && parts[1] == columnName {
+						dataValue = value
+						exists = true
+						break
+					}
+				}
 			}
+		}
+
+		if !exists || dataValue == nil {
 			continue
 		}
 
-		// Get value from data
-		dataValue, exists := data[columnName]
-		if !exists || dataValue == nil {
+		// Handle nested struct binding
+		if valueToSet.Kind() == reflect.Struct && !isSQLNull(valueToSet.Type()) {
+			// Case 1: Data value is already a map
+			if mapData, ok := dataValue.(map[string]any); ok {
+				if err := bindStruct(mapData, valueToSet); err != nil {
+					return err
+				}
+				continue
+			}
+
+			// Case 2: Data value is a JSON string
+			if jsonStr, ok := dataValue.(string); ok && jsonStr != "" {
+				var mapData map[string]any
+				if err := json.Unmarshal([]byte(jsonStr), &mapData); err == nil {
+					if err := bindStruct(mapData, valueToSet); err != nil {
+						return err
+					}
+					continue
+				}
+			}
+
+			// Case 3: Fall back to dot notation binding
+			if err := bindNestedStruct(data, valueToSet, columnName); err != nil {
+				return err
+			}
 			continue
 		}
 
