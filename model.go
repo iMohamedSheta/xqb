@@ -191,6 +191,7 @@ func bindSlice(dataSlice []map[string]any, destSlice reflect.Value) error {
 }
 
 // bindStruct binds map data to struct using field tags and reflection
+// bindStruct binds map data to struct using field tags and reflection
 func bindStruct(data map[string]any, v reflect.Value) error {
 	t := v.Type()
 
@@ -239,35 +240,38 @@ func bindStruct(data map[string]any, v reflect.Value) error {
 			}
 		}
 
-		if !exists || dataValue == nil {
-			continue
-		}
-
-		// Handle nested struct binding
+		// Handle nested struct binding ONLY if it's a struct and we don't have direct data
 		if valueToSet.Kind() == reflect.Struct && !isSQLNull(valueToSet.Type()) {
 			// Case 1: Data value is already a map
-			if mapData, ok := dataValue.(map[string]any); ok {
-				if err := bindStruct(mapData, valueToSet); err != nil {
-					return err
-				}
-				continue
-			}
-
-			// Case 2: Data value is a JSON string
-			if jsonStr, ok := dataValue.(string); ok && jsonStr != "" {
-				var mapData map[string]any
-				if err := json.Unmarshal([]byte(jsonStr), &mapData); err == nil {
+			if exists && dataValue != nil {
+				if mapData, ok := dataValue.(map[string]any); ok {
 					if err := bindStruct(mapData, valueToSet); err != nil {
 						return err
 					}
 					continue
 				}
+
+				// Case 2: Data value is a JSON string
+				if jsonStr, ok := dataValue.(string); ok && jsonStr != "" {
+					var mapData map[string]any
+					if err := json.Unmarshal([]byte(jsonStr), &mapData); err == nil {
+						if err := bindStruct(mapData, valueToSet); err != nil {
+							return err
+						}
+						continue
+					}
+				}
 			}
 
-			// Case 3: Fall back to dot notation binding
+			// Case 3: Fall back to dot notation binding (whether we have direct data or not)
 			if err := bindNestedStruct(data, valueToSet, columnName); err != nil {
 				return err
 			}
+			continue
+		}
+
+		// For non-struct fields, we need the direct data value
+		if !exists || dataValue == nil {
 			continue
 		}
 
