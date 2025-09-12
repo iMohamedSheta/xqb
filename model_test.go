@@ -218,6 +218,29 @@ func TestBind_CastsAndTimestamps(t *testing.T) {
 	assert.True(t, user.UpdatedAt.Valid)
 }
 
+func TestBind_CastsAndTime(t *testing.T) {
+	type User struct {
+		ID        int       `xqb:"id"`
+		Name      string    `xqb:"name"`
+		CreatedAt time.Time `xqb:"created_at"`
+		UpdatedAt time.Time `xqb:"updated_at"`
+	}
+
+	now := time.Now()
+	data := map[string]any{
+		"id":         1,
+		"name":       "Ali",
+		"created_at": now,
+		"updated_at": now,
+	}
+
+	var user User
+	err := xqb.Bind(data, &user)
+	assert.NoError(t, err)
+	assert.Equal(t, now, user.CreatedAt)
+	assert.Equal(t, now, user.UpdatedAt)
+}
+
 func TestBind_SoftDeletes(t *testing.T) {
 	type User struct {
 		ID        int          `xqb:"id"`
