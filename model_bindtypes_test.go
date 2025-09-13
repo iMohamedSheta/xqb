@@ -153,4 +153,19 @@ func TestBind_AllTypes(t *testing.T) {
 		require.False(t, m2.NullBool.Valid)
 		require.False(t, m2.NullTime.Valid)
 	})
+
+	t.Run("String to Float conversion", func(t *testing.T) {
+		data3 := map[string]any{
+			"float32_val": "13.37",
+			"float64_val": []byte("42.42"),
+		}
+
+		var m3 AllTypes
+		err := xqb.Bind(data3, &m3)
+		require.NoError(t, err)
+
+		require.InEpsilon(t, float32(13.37), m3.Float32Val, 0.0001)
+		require.InEpsilon(t, float64(42.42), m3.Float64Val, 0.0001)
+	})
+
 }

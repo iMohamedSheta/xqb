@@ -742,6 +742,14 @@ func toFloat64(v any) (float64, bool) {
 		if f, err := n.Float64(); err == nil {
 			return f, true
 		}
+	case string:
+		if f, err := strconv.ParseFloat(n, 64); err == nil {
+			return f, true
+		}
+	case []byte:
+		if f, err := strconv.ParseFloat(string(n), 64); err == nil {
+			return f, true
+		}
 	}
 	return 0, false
 }
