@@ -311,35 +311,6 @@ func bindNestedStruct(data map[string]any, structValue reflect.Value, prefix str
 	return nil
 }
 
-// setFieldValue sets field value based on its type
-// func setFieldValue(fieldValue reflect.Value, dataValue any) error {
-// 	// Handle slice fields
-// 	if fieldValue.Kind() == reflect.Slice {
-// 		return setSliceFieldValue(fieldValue, dataValue)
-// 	}
-
-// 	// Handle SQL null types
-// 	if isSQLNull(fieldValue.Type()) {
-// 		setSQLNull(fieldValue, dataValue)
-// 		return nil
-// 	}
-
-// 	// Handle time.Time specifically
-// 	if fieldValue.Type() == reflect.TypeOf(time.Time{}) {
-// 		if timeVal, ok := dataValue.(time.Time); ok {
-// 			fieldValue.Set(reflect.ValueOf(timeVal))
-// 			return nil
-// 		}
-// 	}
-
-// 	// Handle regular types
-// 	if reflect.TypeOf(dataValue).ConvertibleTo(fieldValue.Type()) {
-// 		fieldValue.Set(reflect.ValueOf(dataValue).Convert(fieldValue.Type()))
-// 	}
-
-// 	return nil
-// }
-
 // ---------- setFieldValue (updated) ----------
 func setFieldValue(fieldValue reflect.Value, dataValue any) error {
 	// If field is a slice, delegate
@@ -433,6 +404,24 @@ func setSliceFieldValue(sliceValue reflect.Value, dataValue any) error {
 	// - []string, []int, etc
 	// - []map[string]any (for struct elements)
 	// - single value (wrap into one-element slice) - optional
+	// Special case: JSON string/bytes
+
+	switch v := dataValue.(type) {
+	case string:
+		if v != "" {
+			var decoded any
+			if err := json.Unmarshal([]byte(v), &decoded); err == nil {
+				return setSliceFieldValue(sliceValue, decoded)
+			}
+		}
+	case []byte:
+		if len(v) > 0 {
+			var decoded any
+			if err := json.Unmarshal(v, &decoded); err == nil {
+				return setSliceFieldValue(sliceValue, decoded)
+			}
+		}
+	}
 
 	v := reflect.ValueOf(dataValue)
 	if !v.IsValid() {
@@ -568,51 +557,6 @@ func setSQLNull(fv reflect.Value, val any) {
 		}
 	}
 }
-
-// isSQLNull checks if the type is sql.Null*
-// func isSQLNull(t reflect.Type) bool {
-// 	switch t {
-// 	case reflect.TypeOf(sql.NullString{}),
-// 		reflect.TypeOf(sql.NullBool{}),
-// 		reflect.TypeOf(sql.NullInt64{}),
-// 		reflect.TypeOf(sql.NullFloat64{}),
-// 		reflect.TypeOf(sql.NullTime{}):
-// 		return true
-// 	}
-// 	return false
-// }
-
-// // setSQLNull sets the appropriate value for sql.Null* types
-// func setSQLNull(fv reflect.Value, val any) {
-// 	switch fv.Type() {
-// 	case reflect.TypeOf(sql.NullString{}):
-// 		if s, ok := val.(string); ok {
-// 			fv.Set(reflect.ValueOf(sql.NullString{String: s, Valid: true}))
-// 		}
-// 	case reflect.TypeOf(sql.NullBool{}):
-// 		if b, ok := val.(bool); ok {
-// 			fv.Set(reflect.ValueOf(sql.NullBool{Bool: b, Valid: true}))
-// 		}
-// 	case reflect.TypeOf(sql.NullInt64{}):
-// 		if n, ok := val.(int64); ok {
-// 			fv.Set(reflect.ValueOf(sql.NullInt64{Int64: n, Valid: true}))
-// 		} else if n, ok := val.(int); ok {
-// 			fv.Set(reflect.ValueOf(sql.NullInt64{Int64: int64(n), Valid: true}))
-// 		}
-// 	case reflect.TypeOf(sql.NullFloat64{}):
-// 		if f, ok := val.(float64); ok {
-// 			fv.Set(reflect.ValueOf(sql.NullFloat64{Float64: f, Valid: true}))
-// 		}
-// 	case reflect.TypeOf(sql.NullTime{}):
-// 		if tm, ok := val.(time.Time); ok {
-// 			var valid bool
-// 			if !tm.IsZero() {
-// 				valid = true
-// 			}
-// 			fv.Set(reflect.ValueOf(sql.NullTime{Time: tm, Valid: valid}))
-// 		}
-// 	}
-// }
 
 // getFieldColumnName returns column name from xqb tag or converts field name to snake_case
 func getFieldColumnName(field reflect.StructField) string {

@@ -407,9 +407,9 @@ func TestBind_SpecialCase(t *testing.T) {
 
 func TestBind_JsonColumns(t *testing.T) {
 	type UserSettings struct {
-		Logo  string `json:"logo"`
-		Color string `json:"color"`
-		Size  int    `json:"size"`
+		Logo  string `xqb:"logo" json:"logo"`
+		Color string `xqb:"color" json:"color"`
+		Size  int    `xqb:"size" json:"size"`
 	}
 
 	type User struct {
@@ -493,5 +493,214 @@ func TestBind_JsonColumns(t *testing.T) {
 		assert.Equal(t, "", user.Settings.Logo)
 		assert.Equal(t, "", user.Settings.Color)
 		assert.Equal(t, 0, user.Settings.Size)
+	})
+}
+
+func TestBind_JsonArrayColumns(t *testing.T) {
+	type Plan struct {
+		ID       int      `xqb:"id"`
+		Name     string   `xqb:"name"`
+		Features []string `xqb:"features"`
+	}
+
+	// Case 1: JSON array as string (from DB jsonb)
+	t.Run("JSON array as string", func(t *testing.T) {
+		data := map[string]any{
+			"id":       1,
+			"name":     "Basic",
+			"features": `["دعم اساسي", "تحليلات معيارية"]`,
+		}
+
+		var plan Plan
+		err := xqb.Bind(data, &plan)
+		assert.NoError(t, err)
+		assert.Equal(t, 1, plan.ID)
+		assert.Equal(t, "Basic", plan.Name)
+		assert.NotNil(t, plan.Features)
+		assert.Len(t, plan.Features, 2)
+		assert.Equal(t, "دعم اساسي", plan.Features[0])
+		assert.Equal(t, "تحليلات معيارية", plan.Features[1])
+	})
+
+	// Case 2: JSON array already decoded (map -> slice)
+	t.Run("JSON array as slice", func(t *testing.T) {
+		data := map[string]any{
+			"id":       2,
+			"name":     "Pro",
+			"features": []any{"Support", "Analytics"},
+		}
+
+		var plan Plan
+		err := xqb.Bind(data, &plan)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, plan.ID)
+		assert.Equal(t, "Pro", plan.Name)
+		assert.Len(t, plan.Features, 2)
+		assert.Equal(t, "Support", plan.Features[0])
+		assert.Equal(t, "Analytics", plan.Features[1])
+	})
+
+	// Case 3: Empty/null features
+	t.Run("Empty features", func(t *testing.T) {
+		data := map[string]any{
+			"id":       3,
+			"name":     "Empty",
+			"features": "",
+		}
+
+		var plan Plan
+		err := xqb.Bind(data, &plan)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, plan.ID)
+		assert.Equal(t, "Empty", plan.Name)
+		assert.Empty(t, plan.Features)
+	})
+}
+
+func TestBind_JsonAdvanced(t *testing.T) {
+	type Address struct {
+		Street string `json:"street"`
+		City   string `json:"city"`
+		State  string `json:"state"`
+	}
+
+	type Profile struct {
+		Username string         `json:"username"`
+		Age      int            `json:"age"`
+		Active   bool           `json:"active"`
+		Address  Address        `json:"address"`
+		Hobbies  []string       `json:"hobbies"`
+		Tags     []string       `json:"tags"`
+		Metadata map[string]any `json:"metadata"`
+	}
+
+	type User struct {
+		ID      int     `xqb:"id"`
+		Name    string  `xqb:"name"`
+		Profile Profile `xqb:"profile"`
+	}
+
+	// Case 1: JSON as string with nested objects
+	t.Run("Nested JSON string", func(t *testing.T) {
+		data := map[string]any{
+			"id":   1,
+			"name": "Ali",
+			"profile": `{
+				"username": "ali123",
+				"age": 30,
+				"active": true,
+				"address": {"street": "123 Main St", "city": "Cairo", "state": "Cairo Governorate"},
+				"hobbies": ["reading","gaming"],
+				"tags": ["vip","premium"],
+				"metadata": {"key1": "value1","key2": 42}
+			}`,
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, "Ali", user.Name)
+		assert.Equal(t, "ali123", user.Profile.Username)
+		assert.Equal(t, 30, user.Profile.Age)
+		assert.True(t, user.Profile.Active)
+		assert.Equal(t, "123 Main St", user.Profile.Address.Street)
+		assert.Equal(t, "Cairo", user.Profile.Address.City)
+		assert.Equal(t, "Cairo Governorate", user.Profile.Address.State)
+		assert.Equal(t, []string{"reading", "gaming"}, user.Profile.Hobbies)
+		assert.Equal(t, []string{"vip", "premium"}, user.Profile.Tags)
+		assert.Equal(t, map[string]any{"key1": "value1", "key2": float64(42)}, user.Profile.Metadata)
+	})
+
+	// Case 2: JSON as map already parsed
+	t.Run("Nested JSON map", func(t *testing.T) {
+		data := map[string]any{
+			"id":   2,
+			"name": "Sara",
+			"profile": map[string]any{
+				"username": "sara321",
+				"age":      25,
+				"active":   false,
+				"address": map[string]any{
+					"street": "456 Elm St",
+					"city":   "Alexandria",
+					"state":  "Alexandria Governorate",
+				},
+				"hobbies": []any{"swimming", "painting"},
+				"tags":    []any{"standard"},
+				"metadata": map[string]any{
+					"keyA": "valueA",
+					"keyB": true,
+				},
+			},
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, "Sara", user.Name)
+		assert.Equal(t, "sara321", user.Profile.Username)
+		assert.Equal(t, 25, user.Profile.Age)
+		assert.False(t, user.Profile.Active)
+		assert.Equal(t, "456 Elm St", user.Profile.Address.Street)
+		assert.Equal(t, "Alexandria", user.Profile.Address.City)
+		assert.Equal(t, "Alexandria Governorate", user.Profile.Address.State)
+		assert.Equal(t, []string{"swimming", "painting"}, user.Profile.Hobbies)
+		assert.Equal(t, []string{"standard"}, user.Profile.Tags)
+		assert.Equal(t, map[string]any{"keyA": "valueA", "keyB": true}, user.Profile.Metadata)
+	})
+
+	// Case 3: Empty JSON / missing fields
+	t.Run("Empty JSON", func(t *testing.T) {
+		data := map[string]any{
+			"id":      3,
+			"name":    "Bob",
+			"profile": "",
+		}
+
+		var user User
+		err := xqb.Bind(data, &user)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, user.ID)
+		assert.Equal(t, "Bob", user.Name)
+		assert.Equal(t, "", user.Profile.Username)
+		assert.Equal(t, 0, user.Profile.Age)
+		assert.False(t, user.Profile.Active)
+		assert.Equal(t, Address{}, user.Profile.Address)
+		assert.Empty(t, user.Profile.Hobbies)
+		assert.Empty(t, user.Profile.Tags)
+		assert.Empty(t, user.Profile.Metadata)
+	})
+
+	// Case 4: JSON array of objects
+	t.Run("JSON array of objects", func(t *testing.T) {
+		type Post struct {
+			ID    int    `xqb:"id"`
+			Title string `xqb:"title"`
+		}
+
+		type Blog struct {
+			ID    int    `xqb:"id"`
+			Name  string `xqb:"name"`
+			Posts []Post `xqb:"posts"`
+		}
+
+		data := map[string]any{
+			"id":   1,
+			"name": "Tech Blog",
+			"posts": []map[string]any{
+				{"id": 101, "title": "First Post"},
+				{"id": 102, "title": "Second Post"},
+			},
+		}
+
+		var blog Blog
+		err := xqb.Bind(data, &blog)
+		assert.NoError(t, err)
+		assert.Len(t, blog.Posts, 2)
+		xqb.Dump(blog.Posts)
+		assert.Equal(t, 101, blog.Posts[0].ID)
+		assert.Equal(t, "First Post", blog.Posts[0].Title)
+		assert.Equal(t, 102, blog.Posts[1].ID)
+		assert.Equal(t, "Second Post", blog.Posts[1].Title)
 	})
 }
