@@ -2,6 +2,7 @@ package xqb
 
 import (
 	"fmt"
+	"reflect"
 
 	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
@@ -228,13 +229,28 @@ func (qb *QueryBuilder) OrWhereNotNull(column string) *QueryBuilder {
 	return qb
 }
 
-func (qb *QueryBuilder) whereInClause(column string, values []any, operator string, connector types.WhereConditionEnum) *QueryBuilder {
-	if len(values) == 0 {
+func (qb *QueryBuilder) whereInClause(column string, values any, operator string, connector types.WhereConditionEnum) *QueryBuilder {
+	if values == nil {
 		return qb
 	}
 
+	v := reflect.ValueOf(values)
+	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
+		qb.appendError(fmt.Errorf("%w: where in values must be a slice or array", xqbErr.ErrInvalidQuery))
+		return qb
+	}
+
+	if v.Len() == 0 {
+		return qb
+	}
+
+	sliceValues := make([]any, v.Len())
+	for i := 0; i < v.Len(); i++ {
+		sliceValues[i] = v.Index(i).Interface()
+	}
+
 	// If single value is a subquery or expression
-	for _, value := range values {
+	for _, value := range sliceValues {
 		switch v := value.(type) {
 		case *QueryBuilder:
 			subSql, subBindings, err := v.SetDialect(qb.GetDialect().Getdialect()).ToSql()
@@ -276,7 +292,7 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 		Connector: connector,
 	})
 
-	for _, val := range values {
+	for _, val := range sliceValues {
 		qb.bindings = append(qb.bindings, &types.Binding{Value: val})
 	}
 
@@ -284,22 +300,22 @@ func (qb *QueryBuilder) whereInClause(column string, values []any, operator stri
 }
 
 // WhereIn adds a WHERE IN condition
-func (qb *QueryBuilder) WhereIn(column string, values []any) *QueryBuilder {
+func (qb *QueryBuilder) WhereIn(column string, values any) *QueryBuilder {
 	return qb.whereInClause(column, values, "IN", types.AND)
 }
 
 // OrWhereIn adds an OR WHERE IN condition
-func (qb *QueryBuilder) OrWhereIn(column string, values []any) *QueryBuilder {
+func (qb *QueryBuilder) OrWhereIn(column string, values any) *QueryBuilder {
 	return qb.whereInClause(column, values, "IN", types.OR)
 }
 
 // WhereNotIn adds a WHERE NOT IN condition
-func (qb *QueryBuilder) WhereNotIn(column string, values []any) *QueryBuilder {
+func (qb *QueryBuilder) WhereNotIn(column string, values any) *QueryBuilder {
 	return qb.whereInClause(column, values, "NOT IN", types.AND)
 }
 
 // OrWhereNotIn adds an OR WHERE NOT IN condition
-func (qb *QueryBuilder) OrWhereNotIn(column string, values []any) *QueryBuilder {
+func (qb *QueryBuilder) OrWhereNotIn(column string, values any) *QueryBuilder {
 	return qb.whereInClause(column, values, "NOT IN", types.OR)
 }
 
