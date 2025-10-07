@@ -246,6 +246,10 @@ func (qb *QueryBuilder) Reset() {
 func (qb *QueryBuilder) resetForPaginationCount() {
 	qb.queryType = enums.SELECT
 	qb.columns = nil
+	qb.groupBy = nil
+	qb.having = nil
+	qb.withCTEs = nil
+	qb.options = nil
 	qb.orderBy = nil
 	qb.limit = 0
 	qb.offset = 0
