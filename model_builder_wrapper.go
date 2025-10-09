@@ -11,7 +11,6 @@ import (
 // ModelBuilder is a generic query builder that provides type-safe operations
 type ModelBuilder[T any] struct {
 	*QueryBuilder
-	model T
 }
 
 func NewModel[T ModelInterface]() *ModelBuilder[T] {
