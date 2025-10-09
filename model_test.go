@@ -23,9 +23,9 @@ func (User) Table() string {
 	return "users"
 }
 
-func Test_Query_WithModel(t *testing.T) {
+func Test_Query_WithModelQ(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
-		sql, bindings, err := xqb.Model(User{}).SetDialect(dialect).
+		sql, bindings, err := xqb.ModelQ(User{}).SetDialect(dialect).
 			Select("id", "name", "email", "active", "created_at").
 			Where("username", "=", "ali").
 			OrWhere("username", "=", "mohamed").
@@ -66,7 +66,7 @@ func Test_Query_WithModel(t *testing.T) {
 	})
 }
 
-func TestBind_SingleModel(t *testing.T) {
+func TestBind_SingleModelQ(t *testing.T) {
 	now := time.Now()
 	data := map[string]any{
 		"id":         1,
@@ -91,7 +91,7 @@ func TestBind_SingleModel(t *testing.T) {
 	assert.Empty(t, user.Password) // should be ignored
 }
 
-func TestBind_SliceModel(t *testing.T) {
+func TestBind_SliceModelQ(t *testing.T) {
 	data := []map[string]any{
 		{"id": 1, "name": "Ali"},
 		{"id": 2, "name": "Sara"},

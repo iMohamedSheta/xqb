@@ -23,23 +23,26 @@ type ModelInterface interface {
 }
 
 // Model returns the model of the query builder
-func Model(model ModelInterface) *QueryBuilder {
+func ModelQ(model ModelInterface) *QueryBuilder {
 	return Table(model.Table())
 }
 
-// Bind maps data to destination struct or slice
+// Bind maps data to destination struct of models or slice of models
 // Examples:
 //   - Bind(map[string]any{"name": "John"}, &user)
 //   - Bind([]map[string]any{{...}}, &users)
 //   - Bind([]map[string]any{{...}}, &user) // aggregates relational data into single struct
 func Bind(data any, dest any) error {
 	destVal := reflect.ValueOf(dest)
+
+	// dest must be a non-nil pointer reference to a model (&model || &[]model)
 	if destVal.Kind() != reflect.Ptr || destVal.IsNil() {
 		return fmt.Errorf("dest must be a non-nil pointer")
 	}
 
 	destElem := destVal.Elem()
 
+	// the destination model should be struct or slice of structs example: &User{} || &[]User{} anything other than that is not valid
 	switch destElem.Kind() {
 	case reflect.Struct:
 		if dataMap, ok := data.(map[string]any); ok {
@@ -47,6 +50,10 @@ func Bind(data any, dest any) error {
 			return bindStruct(dataMap, destElem)
 		} else if dataSlice, ok := data.([]map[string]any); ok {
 			// Slice of maps to single struct (aggregate relational data)
+			// some data can be []map[string]any not always map[string]any for one struct model
+			// cause it handle joins data into list of maps and repeat a lot of data
+			// so we handle it by binding first data map to struct and then search of values that
+			// expect many values and bind all the values to it
 			return bindRelationalDataToStruct(dataSlice, destElem)
 		}
 		return fmt.Errorf("data must be map[string]any or []map[string]any for struct binding")
@@ -178,8 +185,11 @@ func getStructFieldColumns(structType reflect.Type) map[string]string {
 
 	return columns
 }
+
+// bindSlice is a way to bind a slice of structs to a slice of structs
+// it uses the same logic as bindStruct but loops through the slice of structs
 func bindSlice(dataSlice []map[string]any, destSlice reflect.Value) error {
-	elemType := destSlice.Type().Elem()
+	elemType := destSlice.Type().Elem() // Example User as type for []User list of users models
 
 	for _, itemMap := range dataSlice {
 		newElem := reflect.New(elemType).Elem()
@@ -311,7 +321,7 @@ func bindNestedStruct(data map[string]any, structValue reflect.Value, prefix str
 	return nil
 }
 
-// ---------- setFieldValue (updated) ----------
+// setFieldValue handles field value based on type
 func setFieldValue(fieldValue reflect.Value, dataValue any) error {
 	// If field is a slice, delegate
 	if fieldValue.Kind() == reflect.Slice {
