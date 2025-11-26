@@ -697,7 +697,6 @@ func TestBind_JsonAdvanced(t *testing.T) {
 		err := xqb.Bind(data, &blog)
 		assert.NoError(t, err)
 		assert.Len(t, blog.Posts, 2)
-		xqb.Dump(blog.Posts)
 		assert.Equal(t, 101, blog.Posts[0].ID)
 		assert.Equal(t, "First Post", blog.Posts[0].Title)
 		assert.Equal(t, 102, blog.Posts[1].ID)

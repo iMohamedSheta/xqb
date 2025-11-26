@@ -392,9 +392,15 @@ func setFieldValue(fieldValue reflect.Value, dataValue any) error {
 			return nil
 		}
 	case reflect.Bool:
-		if b, ok := dataValue.(bool); ok {
-			fieldValue.SetBool(b)
-			return nil
+		switch v := dataValue.(type) {
+		case bool:
+			fieldValue.SetBool(v)
+		case int, int8, int16, int32, int64:
+			fieldValue.SetBool(reflect.ValueOf(v).Int() != 0)
+		case uint, uint8, uint16, uint32, uint64:
+			fieldValue.SetBool(reflect.ValueOf(v).Uint() != 0)
+		case float32, float64:
+			fieldValue.SetBool(reflect.ValueOf(v).Float() != 0)
 		}
 	case reflect.String:
 		if s, ok := dataValue.(string); ok {
