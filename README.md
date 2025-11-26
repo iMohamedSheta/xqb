@@ -114,22 +114,34 @@ func (User) Table() string {
 }
 ```
 ```go
-data, err := xqb.Model(User{}).SetDialect(dialect).
+user, err := xqb.Model(User{}).SetDialect(dialect).
     Select("id", "name", "email", "active", "created_at").
     Where("username", "=", "ali").
     OrWhere("username", "=", "mohamed").
     Latest("created_at").
     First()
 
-if err != nil {
-    // handle error
+// Now use the `user` struct model in your code
+
+// Sometimes we need the safe types of the model with extra fields that are not in the model.
+// So we can also do this:
+
+// UserExtra embeds User and adds a computed field
+type UserExtra struct {
+    User
+    IsOnline bool `xqb:"is_online" json:"is_online"` // computed field
 }
 
-var user User
-xqb.Bind(data, &user)
+// Now we can use the `UserExtra` struct model in your code
+userExtra, err := xqb.Model(UserExtra{}).SetDialect(dialect).
+    Select("id", "name", "email", "active", "created_at").
+    Where("username", "=", "ali").
+    OrWhere("username", "=", "mohamed").
+    Latest("created_at").
+    First()
 
-// Now use the `user` struct model in your code
 ```
+
 
 **How it works:**
 
@@ -373,12 +385,6 @@ qb := xqb.Table("users").
     Select("id", "name").
     OrderBy("name", "ASC")
 // Sql: SELECT id, name FROM users ORDER BY name ASC
-
-// Multiple order by
-qb := xqb.Table("users").
-    OrderBy("age", "DESC").
-    OrderBy("name", "ASC")
-// Sql: SELECT * FROM users ORDER BY age DESC, name ASC
 ```
 
 ### Limit and Offset
@@ -643,8 +649,11 @@ exists, _ := qb.Exists()
 // Get single value
 value, _ := qb.Value("name")
 
-// Pluck specific columns
-names, _ := qb.Pluck("name", "id") // Returns map[string]any
+// Pluck specific columns as key -> value
+names, _ := qb.PluckMap("name", "id") // Returns map[string]any 
+
+// Pluck specific column
+names, _:= qb.PluckSlice("name")  
 
 // Chunk large results
 err := qb.Chunk(100, func(rows []map[string]any) error {
