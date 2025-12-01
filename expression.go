@@ -10,6 +10,6 @@ func Raw(sql string, bindings ...any) *types.Expression {
 	}
 }
 
-func RawDialect(defaultDialect string, dialects map[string]*types.Expression) types.DialectExpression {
-	return types.DialectExpression{Default: defaultDialect, Dialects: dialects}
+func RawDialect(defaultDialect string, dialects map[string]*types.Expression) *types.DialectExpression {
+	return &types.DialectExpression{Default: defaultDialect, Dialects: dialects}
 }

@@ -177,8 +177,7 @@ func DateFormat(column, format, alias string) *types.DialectExpression {
 		"postgres": pgExpr,
 	}
 
-	dialectExpr := RawDialect("mysql", dialects)
-	return &dialectExpr
+	return RawDialect("mysql", dialects)
 }
 
 // Coalesce - returns the first non-null value from the list.
