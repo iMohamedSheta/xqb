@@ -596,6 +596,8 @@ func toSnakeCase(str string) string {
 
 func toInt64(v any) (int64, bool) {
 	switch n := v.(type) {
+	case nil:
+		return 0, true
 	case int:
 		return int64(n), true
 	case int8:
@@ -640,6 +642,8 @@ func toInt64(v any) (int64, bool) {
 
 func toUint64(v any) (uint64, bool) {
 	switch n := v.(type) {
+	case nil:
+		return 0, true
 	case int:
 		return uint64(n), true
 	case int8:
@@ -674,6 +678,8 @@ func toUint64(v any) (uint64, bool) {
 
 func toFloat64(v any) (float64, bool) {
 	switch n := v.(type) {
+	case nil:
+		return 0, true
 	case float32:
 		return float64(n), true
 	case float64:
