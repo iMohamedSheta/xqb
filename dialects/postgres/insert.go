@@ -10,6 +10,10 @@ import (
 )
 
 func (d *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []any, error) {
+	if qb == nil {
+		return "", nil, fmt.Errorf("%w: query builder data is nil", xqbErr.ErrInvalidQuery)
+	}
+
 	tableName, _, err := d.resolveTable(qb, "insert", false)
 	if err != nil {
 		return "", nil, err
@@ -30,7 +34,7 @@ func (d *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []a
 		strings.Join(valueStrings, ", "),
 	)
 
-	if isUpsert, ok := qb.GetOption(types.OptionIsUpsert); ok && isUpsert.(bool) {
+	if isUpsert, ok := qb.GetBoolOption(types.OptionIsUpsert); ok && isUpsert {
 		upsertClause, err := buildUpsertClause(qb, columns, d.Wrap)
 		if err != nil {
 			return "", nil, err
@@ -41,7 +45,7 @@ func (d *PostgresDialect) CompileInsert(qb *types.QueryBuilderData) (string, []a
 	}
 
 	// Add RETURNING clause if OptionReturningId is set to true
-	if returningId, ok := qb.GetOption(types.OptionReturningId); ok && returningId.(bool) {
+	if returningId, ok := qb.GetBoolOption(types.OptionReturningId); ok && returningId {
 		sql += " RETURNING id"
 	}
 
@@ -83,14 +87,9 @@ func buildValuePlaceholders(rows []map[string]any, columns []string) ([]string, 
 }
 
 func buildUpsertClause(qb *types.QueryBuilderData, allCols []string, wrapFn func(string) string) (string, error) {
-	uniqueVal, ok := qb.GetOption(types.OptionUpsertUniqueBy)
+	uniqueBy, ok := qb.GetStringSliceOption(types.OptionUpsertUniqueBy)
 	if !ok {
 		return "", fmt.Errorf("%w: you must set the unique by column for the upsert operation", xqbErr.ErrInvalidQuery)
-	}
-
-	uniqueBy, ok := uniqueVal.([]string)
-	if !ok || len(uniqueBy) == 0 {
-		return "", fmt.Errorf("%w: unique by value must be a non-empty []string", xqbErr.ErrInvalidQuery)
 	}
 
 	uniqueCols := make(map[string]struct{}, len(uniqueBy))
@@ -98,12 +97,8 @@ func buildUpsertClause(qb *types.QueryBuilderData, allCols []string, wrapFn func
 		uniqueCols[col] = struct{}{}
 	}
 
-	updatedVal, ok := qb.GetOption(types.OptionUpsertUpdatedCols)
+	updatedCols, ok := qb.GetStringSliceOption(types.OptionUpsertUpdatedCols)
 	if !ok {
-		return "", nil
-	}
-	updatedCols, ok := updatedVal.([]string)
-	if !ok || len(updatedCols) == 0 {
 		return "", nil
 	}
 
