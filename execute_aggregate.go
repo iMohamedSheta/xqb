@@ -19,7 +19,8 @@ func (qb *QueryBuilder) Count(column string) (int64, error) {
 		return 0, fmt.Errorf("%w: Count() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	count, ok := toInt64(data[0]["count"])
+	converter := &numericConverter{}
+	count, ok := converter.toInt64(data[0]["count"])
 	if !ok {
 		return 0, fmt.Errorf("%w: Count() failed to convert result value to int, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -40,7 +41,8 @@ func (qb *QueryBuilder) Avg(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Avg() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	avg, ok := toFloat64(data[0]["avg"])
+	converter := &numericConverter{}
+	avg, ok := converter.toFloat64(data[0]["avg"])
 	if !ok {
 		return 0, fmt.Errorf("%w: Avg() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -61,7 +63,8 @@ func (qb *QueryBuilder) Sum(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Sum() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	sum, ok := toFloat64(data[0]["sum"])
+	converter := &numericConverter{}
+	sum, ok := converter.toFloat64(data[0]["sum"])
 	if !ok {
 		return 0, fmt.Errorf("%w: Sum() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -82,7 +85,8 @@ func (qb *QueryBuilder) Min(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Min() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	min, ok := toFloat64(data[0]["min"])
+	converter := &numericConverter{}
+	min, ok := converter.toFloat64(data[0]["min"])
 	if !ok {
 		return 0, fmt.Errorf("%w: Min() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
@@ -103,7 +107,8 @@ func (qb *QueryBuilder) Max(column string) (float64, error) {
 		return 0, fmt.Errorf("%w: Max() expected one row as result, got %d rows", xqbErr.ErrInvalidResult, len(data))
 	}
 
-	max, ok := toFloat64(data[0]["max"])
+	converter := &numericConverter{}
+	max, ok := converter.toFloat64(data[0]["max"])
 	if !ok {
 		return 0, fmt.Errorf("%w: Max() failed to convert result value to float, %v", xqbErr.ErrInvalidResult, err)
 	}
