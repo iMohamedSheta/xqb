@@ -13,27 +13,43 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 	var raw *types.Expression
 	var bindings []any
 
+	dialect := qb.GetDialect().Getdialect().String()
+
+	// Check column value
+	// expression as column: Where(Raw("LOWER(email)"), "=", "test@example.com")
 	switch v := column.(type) {
 	case string:
 		col = v
-	case *types.Expression:
+	case types.ExpressionInterface:
+		colSql, colBindings, err := v.ToSql(dialect)
+		if err != nil {
+			qb.appendError(err)
+			return qb
+		}
 		switch val := value.(type) {
-		case *types.Expression:
+		case types.ExpressionInterface:
+			valSql, valBindings, err := val.ToSql(dialect)
+			if err != nil {
+				qb.appendError(err)
+				return qb
+			}
 			raw = &types.Expression{
-				Sql:      fmt.Sprintf("(%s) %s (%s)", v.Sql, operator, val.Sql),
-				Bindings: append(v.Bindings, val.Bindings...),
+				Sql:      fmt.Sprintf("(%s) %s (%s)", colSql, operator, valSql),
+				Bindings: append(colBindings, valBindings...),
 			}
 		default:
 			raw = &types.Expression{
-				Sql:      fmt.Sprintf("%s %s ?", v.Sql, operator),
-				Bindings: append(v.Bindings, val),
+				Sql:      fmt.Sprintf("%s %s ?", colSql, operator),
+				Bindings: append(colBindings, val),
 			}
 		}
 	default:
 		col = fmt.Sprintf("%v", v)
 	}
 
-	// Subquery or expression as value
+	// Check value type to append sql and binding
+	// Subquery as value: Where("id", "IN", subQuery), subQuery := xqb.Table(...)
+	// expression as value: [Where("created_at", ">", Raw("NOW() - INTERVAL 7 DAY"))]
 	if raw == nil {
 		switch v := value.(type) {
 		case *QueryBuilder:
@@ -45,10 +61,15 @@ func (qb *QueryBuilder) whereClause(column any, operator string, value any, conn
 				Sql:      fmt.Sprintf("%s %s (%s)", col, operator, subSql),
 				Bindings: subBindings,
 			}
-		case *types.Expression:
+		case types.ExpressionInterface:
+			exprSql, exprBindings, err := v.ToSql(dialect)
+			if err != nil {
+				qb.appendError(err)
+				return qb
+			}
 			raw = &types.Expression{
-				Sql:      fmt.Sprintf("%s %s (%s)", col, operator, v.Sql),
-				Bindings: v.Bindings,
+				Sql:      fmt.Sprintf("%s %s (%s)", col, operator, exprSql),
+				Bindings: exprBindings,
 			}
 		default:
 			bindings = append(bindings, v)
@@ -249,18 +270,27 @@ func (qb *QueryBuilder) whereInClause(column string, values any, operator string
 		sliceValues[i] = v.Index(i).Interface()
 	}
 
-	// If single value is a subquery or expression
+	dialect := qb.GetDialect().Getdialect().String()
+
+	// If any value is a subquery or expression, it must be the only value.
+	// Mixing subquery/expression with plain values is not valid.
+	// Valid:   WhereIn("id", []any{subQuery})
+	// Invalid: WhereIn("id", []any{15, 20, subQuery})
 	for _, value := range sliceValues {
 		switch v := value.(type) {
 		case *QueryBuilder:
+			if len(sliceValues) > 1 {
+				qb.appendError(fmt.Errorf("%w: WhereIn with a subquery must not be mixed with other values", xqbErr.ErrInvalidQuery))
+				return qb
+			}
 			subSql, subBindings, err := v.SetDialect(qb.GetDialect().Getdialect()).ToSql()
 			if err != nil {
 				qb.appendError(err)
+				return qb
 			}
 			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
-				Value:     nil,
 				Connector: connector,
 				Raw: &types.Expression{
 					Sql:      fmt.Sprintf("%s %s (%s)", column, operator, subSql),
@@ -269,15 +299,23 @@ func (qb *QueryBuilder) whereInClause(column string, values any, operator string
 			})
 			return qb
 
-		case *types.Expression:
+		case types.ExpressionInterface:
+			if len(sliceValues) > 1 {
+				qb.appendError(fmt.Errorf("%w: WhereIn with an expression must not be mixed with other values", xqbErr.ErrInvalidQuery))
+				return qb
+			}
+			exprSql, exprBindings, err := v.ToSql(dialect)
+			if err != nil {
+				qb.appendError(err)
+				return qb
+			}
 			qb.where = append(qb.where, &types.WhereCondition{
 				Column:    column,
 				Operator:  operator,
-				Value:     nil,
 				Connector: connector,
 				Raw: &types.Expression{
-					Sql:      fmt.Sprintf("%s %s (%s)", column, operator, v.Sql),
-					Bindings: v.Bindings,
+					Sql:      fmt.Sprintf("%s %s (%s)", column, operator, exprSql),
+					Bindings: exprBindings,
 				},
 			})
 			return qb
@@ -285,6 +323,7 @@ func (qb *QueryBuilder) whereInClause(column string, values any, operator string
 	}
 
 	// Regular IN clause with simple values
+	// WhereIn("status", []string{"active", "inactive"}) or WhereIn("id", []int{1, 2, 3})
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -371,24 +410,47 @@ func (qb *QueryBuilder) OrWhereFalse(column string) *QueryBuilder {
 }
 
 func (qb *QueryBuilder) whereBetweenClause(column string, min, max any, operator string, connector types.WhereConditionEnum) *QueryBuilder {
+	dialect := qb.GetDialect().Getdialect().String()
+
 	// Support expressions for min/max
-	if minExpr, ok := min.(*types.Expression); ok {
-		if maxExpr, ok := max.(*types.Expression); ok {
-			combined := fmt.Sprintf("%s %s %s %s %s", column, operator, minExpr.Sql, connector, maxExpr.Sql)
-			qb.where = append(qb.where, &types.WhereCondition{
-				Column:    column,
-				Operator:  operator,
-				Value:     nil,
-				Connector: connector,
-				Raw: &types.Expression{
-					Sql:      combined,
-					Bindings: append(minExpr.Bindings, maxExpr.Bindings...),
-				},
-			})
+	// WhereBetween("age", Raw("min_age_expr"), Raw("max_age_expr"))
+	minExpr, minIsExpr := min.(types.ExpressionInterface)
+	maxExpr, maxIsExpr := max.(types.ExpressionInterface)
+
+	if minIsExpr && maxIsExpr {
+		minSql, minBindings, err := minExpr.ToSql(dialect)
+		if err != nil {
+			qb.appendError(err)
 			return qb
 		}
+		maxSql, maxBindings, err := maxExpr.ToSql(dialect)
+		if err != nil {
+			qb.appendError(err)
+			return qb
+		}
+
+		// BETWEEN uses AND as separator, not the clause connector (AND/OR)
+		combined := fmt.Sprintf("%s %s %s AND %s", qb.Wrap(column), operator, minSql, maxSql)
+		qb.where = append(qb.where, &types.WhereCondition{
+			Column:    column,
+			Operator:  operator,
+			Connector: connector,
+			Raw: &types.Expression{
+				Sql:      combined,
+				Bindings: append(minBindings, maxBindings...),
+			},
+		})
+		return qb
 	}
 
+	// Only one of min/max is an expression — that's not valid
+	if minIsExpr || maxIsExpr {
+		qb.appendError(fmt.Errorf("%w: WhereBetween requires both min and max to be expressions or neither", xqbErr.ErrInvalidQuery))
+		return qb
+	}
+
+	// Regular BETWEEN with plain values
+	// WhereBetween("age", 18, 65)
 	qb.where = append(qb.where, &types.WhereCondition{
 		Column:    column,
 		Operator:  operator,
@@ -426,10 +488,11 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 	}
 
 	switch v := value.(type) {
-	case *types.Expression:
-		sqlStr, sqlBindings, err := v.ToSql()
+	case types.ExpressionInterface:
+		sqlStr, sqlBindings, err := v.ToSql(qb.GetDialect().Getdialect().String())
 		if err != nil {
 			qb.appendError(err)
+			return qb
 		}
 		qb.where = append(qb.where, &types.WhereCondition{
 			Column:    operator,
@@ -438,22 +501,6 @@ func (qb *QueryBuilder) whereExistsClause(value any, operator string, connector 
 			Connector: connector,
 			Raw: &types.Expression{
 				Sql:      operator + " (" + sqlStr + ")",
-				Bindings: sqlBindings,
-			},
-		})
-		return qb
-	case *types.DialectExpression:
-		sqlStr, sqlBindings, err := v.ToSql(qb.GetDialect().Getdialect().String())
-		if err != nil {
-			qb.appendError(err)
-		}
-		qb.where = append(qb.where, &types.WhereCondition{
-			Column:    operator,
-			Operator:  "",
-			Value:     nil,
-			Connector: connector,
-			Raw: &types.Expression{
-				Sql:      operator + "(" + sqlStr + ")",
 				Bindings: sqlBindings,
 			},
 		})
@@ -504,6 +551,7 @@ func (qb *QueryBuilder) OrWhereNotExists(subquery any) *QueryBuilder {
 func (qb *QueryBuilder) whereGroupClause(fn func(qb *QueryBuilder), connector types.WhereConditionEnum) *QueryBuilder {
 	// Create a temporary builder to capture the conditions in the group
 	groupBuilder := &QueryBuilder{}
+	groupBuilder.SetDialect(qb.GetDialect().Getdialect())
 
 	// Execute the function to populate the group builder's conditions
 	fn(groupBuilder)

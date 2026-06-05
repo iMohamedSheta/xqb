@@ -45,8 +45,9 @@ func Test_CTE_WithExpression(t *testing.T) {
 		assert.Equal(t, "cte_expr", cte.Name)
 		assert.Nil(t, cte.Query)
 		assert.NotNil(t, cte.Expression)
-		assert.Equal(t, "SELECT ?", cte.Expression.Sql)
-		assert.Equal(t, []any{42}, cte.Expression.Bindings)
+		sql1, bindings1, _ := cte.Expression.ToSql("")
+		assert.Equal(t, "SELECT ?", sql1)
+		assert.Equal(t, []any{42}, bindings1)
 
 		sql, bindings, err := mainQB.Select("*").ToSql()
 		expectedSql := map[types.Dialect]string{

@@ -10,7 +10,7 @@ const (
 
 // Union represents a UNION clause
 type Union struct {
-	Expression *Expression
+	Expression ExpressionInterface
 	Type       UnionType
 	All        bool
 }

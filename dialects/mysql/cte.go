@@ -1,6 +1,8 @@
 package mysql
 
 import (
+	"fmt"
+
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -24,10 +26,12 @@ func (d *MySqlDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, e
 		sql += cte.Name + " AS ("
 
 		if cte.Expression != nil {
-			// Use raw expression if provided
-			sql += cte.Expression.Sql
-			bindings = append(bindings, cte.Expression.Bindings...)
-		} else if cte.Query != nil {
+			exprSql, b, err := cte.Expression.ToSql(d.Getdialect().String())
+			if err != nil {
+				return "", nil, err
+			}
+			sql += exprSql
+			bindings = append(bindings, b...)
 			// Type assert the Query to QueryBuilderData
 			if queryData, ok := cte.Query.(*types.QueryBuilderData); ok {
 				cteSql, cteBindings, err := d.compileBaseQuery(queryData)
@@ -36,6 +40,21 @@ func (d *MySqlDialect) compileCTEs(qb *types.QueryBuilderData) (string, []any, e
 				}
 				sql += cteSql
 				bindings = append(bindings, cteBindings...)
+			}
+		} else if cte.Query != nil {
+			// Type assert the Query to QueryBuilderData
+			// fallback: QueryBuilder support
+			switch q := cte.Query.(type) {
+			case *types.QueryBuilderData:
+				cteSql, cteBindings, err := d.compileBaseQuery(q)
+				if err != nil {
+					return "", nil, err
+				}
+				sql += cteSql
+				bindings = append(bindings, cteBindings...)
+
+			default:
+				return "", nil, fmt.Errorf("unsupported CTE query type: %T", cte.Query)
 			}
 		}
 

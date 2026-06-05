@@ -14,7 +14,7 @@ func Test_CaseWhen(t *testing.T) {
 	caseBuilder.When("age < ?", "minor", 18)
 	caseBuilder.When("age > ?", "dead", 100)
 	caseBuilder.Else("dead")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("")
 	assert.Equal(t, "CASE WHEN age > ? THEN ? WHEN age < ? THEN ? WHEN age > ? THEN ? ELSE ? END", sql)
 	assert.Equal(t, []any{18, "adult", 18, "minor", 100, "dead", "dead"}, bindings)
 	assert.NoError(t, err)
@@ -48,13 +48,14 @@ func Test_EmptyAliasAndNoBindings(t *testing.T) {
 	expr := xqb.Sum("amount", "")
 	assert.Equal(t, "SUM(amount)", expr.Sql)
 	expr2 := xqb.Case().When("1=1", "yes").End()
-	assert.Equal(t, "CASE WHEN 1=1 THEN ? END", expr2.Sql)
+	sql, _, _ := expr2.ToSql("")
+	assert.Equal(t, "CASE WHEN 1=1 THEN ? END", sql)
 }
 
 func Test_CaseWhen_SingleWhen(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("score > ?", "pass", 50)
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("")
 	expectedSql := "CASE WHEN score > ? THEN ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{50, "pass"}, bindings)
@@ -65,7 +66,7 @@ func Test_CaseWhen_MultipleWhen_NoElse(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("score > ?", "A", 90)
 	caseBuilder.When("score > ?", "B", 80)
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("")
 	expectedSql := "CASE WHEN score > ? THEN ? WHEN score > ? THEN ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{90, "A", 80, "B"}, bindings)
@@ -75,7 +76,7 @@ func Test_CaseWhen_MultipleWhen_NoElse(t *testing.T) {
 func Test_CaseWhen_ElseOnly(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.Else("fail")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("_")
 	expectedSql := "CASE ELSE ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{"fail"}, bindings)
@@ -85,7 +86,7 @@ func Test_CaseWhen_ElseOnly(t *testing.T) {
 func Test_CaseWhen_WithAlias(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("x = ?", "yes", 1).Else("no").As("result")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("_")
 	expectedSql := "CASE WHEN x = ? THEN ? ELSE ? END AS result"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{1, "yes", "no"}, bindings)
@@ -95,7 +96,7 @@ func Test_CaseWhen_WithAlias(t *testing.T) {
 func Test_CaseWhen_NoAlias(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("x = ?", "yes", 1).Else("no")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("_")
 	expectedSql := "CASE WHEN x = ? THEN ? ELSE ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{1, "yes", "no"}, bindings)
@@ -105,7 +106,7 @@ func Test_CaseWhen_NoAlias(t *testing.T) {
 func Test_CaseWhen_NoBindings(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("1=1", "ok")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("_")
 	expectedSql := "CASE WHEN 1=1 THEN ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{"ok"}, bindings)
@@ -117,7 +118,7 @@ func Test_CaseWhen_ComplexConditions(t *testing.T) {
 	caseBuilder.When("score > ? AND passed = ?", "excellent", 95, true)
 	caseBuilder.When("score > ?", "good", 80)
 	caseBuilder.Else("average")
-	sql, bindings, err := caseBuilder.End().ToSql()
+	sql, bindings, err := caseBuilder.End().ToSql("_")
 	expectedSql := "CASE WHEN score > ? AND passed = ? THEN ? WHEN score > ? THEN ? ELSE ? END"
 	assert.Equal(t, expectedSql, sql)
 	assert.Equal(t, []any{95, true, "excellent", 80, "good", "average"}, bindings)

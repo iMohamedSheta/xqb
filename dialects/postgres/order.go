@@ -9,34 +9,41 @@ import (
 
 // compileOrderByClause compiles the ORDER BY clause
 func (d *PostgresDialect) compileOrderByClause(qb *types.QueryBuilderData) (string, []any, error) {
+	if len(qb.OrderBy) == 0 {
+		return "", nil, nil
+	}
+
 	var bindings []any
-	var sql string
+	dialect := d.Getdialect().String()
+	sql := " ORDER BY "
 
-	if len(qb.OrderBy) > 0 {
-		sql += " ORDER BY "
-		for i, order := range qb.OrderBy {
-			if i > 0 {
-				sql += ", "
+	for i, order := range qb.OrderBy {
+		if i > 0 {
+			sql += ", "
+		}
+
+		if order.Raw != nil {
+			// expression column: Raw or DialectExpression — dialect resolution is delegated
+			// to the expression itself via ExpressionInterface.ToSql
+			exprSql, exprBindings, err := order.Raw.ToSql(dialect)
+			if err != nil {
+				return "", nil, fmt.Errorf("%w: ORDER BY expression failed for dialect %s: %v", xqbErr.ErrInvalidQuery, dialect, err)
 			}
-			if order.Raw != nil {
-				expr := order.Raw.Dialects[d.Getdialect().String()]
-				if expr == nil {
-					expr = order.Raw.Dialects[order.Raw.Default]
-				}
-
-				if expr == nil {
-					return "", nil, fmt.Errorf("%w: ORDER BY raw Sql not supported for %s dialect you need to specify ORDER BY column the dialectExpression", xqbErr.ErrInvalidQuery, d.Getdialect().String())
-				}
-
-				sql += expr.Sql
-				bindings = append(bindings, expr.Bindings...)
-			} else {
-				sql += d.Wrap(order.Column)
+			if exprSql == "" {
+				return "", nil, fmt.Errorf("%w: ORDER BY raw SQL is empty for dialect %s", xqbErr.ErrInvalidQuery, dialect)
 			}
+			sql += exprSql
+			bindings = append(bindings, exprBindings...)
+		} else {
+			// plain column name: wrap it with dialect-specific quoting
+			// e.g. "created_at" → "created_at" (postgres) or `created_at` (mysql)
+			sql += d.Wrap(order.Column)
+		}
 
-			if order.Direction != "" {
-				sql += " " + order.Direction
-			}
+		// direction is empty for raw expressions like OrderByRaw(...)
+		// where direction is already embedded in the SQL itself
+		if order.Direction != "" {
+			sql += " " + order.Direction
 		}
 	}
 

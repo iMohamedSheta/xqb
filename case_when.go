@@ -40,7 +40,7 @@ func (c *CaseWhen) As(alias string) *CaseWhen {
 }
 
 // End builds the final CASE WHEN Sql expression.
-func (c *CaseWhen) End() *types.Expression {
+func (c *CaseWhen) End() types.ExpressionInterface {
 	var raw string
 	if len(c.cases) == 0 {
 		raw = "CASE "

@@ -17,16 +17,22 @@ func (d *PostgresDialect) compileHavingClause(qb *types.QueryBuilderData) (strin
 				sql += " " + string(having.Connector) + " "
 			}
 
-			// Use raw expression if available
 			if having.Raw != nil {
-				sql += having.Raw.Sql
-				bindings = append(bindings, having.Raw.Bindings...)
-			} else {
-				sql += d.Wrap(having.Column) + " " + having.Operator
-				if having.Value != nil {
-					sql += " ?"
-					bindings = append(bindings, having.Value)
+				expSQL, expBindings, err := having.Raw.ToSql(d.Getdialect().String())
+				if err != nil {
+					return "", nil, err
 				}
+
+				sql += expSQL
+				bindings = append(bindings, expBindings...)
+				continue
+			}
+
+			sql += d.Wrap(having.Column) + " " + having.Operator
+
+			if having.Value != nil {
+				sql += " ?"
+				bindings = append(bindings, having.Value)
 			}
 		}
 	}

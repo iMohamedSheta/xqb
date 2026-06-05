@@ -4,6 +4,6 @@ package types
 type CTE struct {
 	Name       string
 	Query      any // Will be *QueryBuilder
-	Expression *Expression
+	Expression ExpressionInterface
 	Recursive  bool
 }

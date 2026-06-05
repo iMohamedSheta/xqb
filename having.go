@@ -27,33 +27,42 @@ func (qb *QueryBuilder) OrHavingRaw(sql string, bindings ...any) *QueryBuilder {
 }
 func (qb *QueryBuilder) havingClause(column any, operator string, value any, connector types.WhereConditionEnum) *QueryBuilder {
 	var col string
-	var raw *types.Expression
-	var bindings []any
+	var raw types.ExpressionInterface
+	var extraBindings []any
 
 	switch v := column.(type) {
 	case string:
 		col = v
-	case *types.Expression:
-		switch val := value.(type) {
-		case *types.Expression:
-			raw = &types.Expression{
-				Sql:      fmt.Sprintf("%s %s %s", v.Sql, operator, val.Sql),
-				Bindings: append(v.Bindings, val.Bindings...),
-			}
-		default:
-			sql := v.Sql
-			if operator != "" {
-				sql = fmt.Sprintf("%s %s", v.Sql, operator)
+	case types.ExpressionInterface:
+		exprSQL, exprBindings, err := v.ToSql(qb.GetDialect().Getdialect().String())
+		if err != nil {
+			qb.appendError(err)
+			return qb
+		}
+
+		sql := exprSQL
+		if operator != "" {
+			sql = fmt.Sprintf("%s %s", exprSQL, operator)
+			switch val := value.(type) {
+			case types.ExpressionInterface:
+				valSQL, valBindings, err := val.ToSql(qb.GetDialect().Getdialect().String())
+				if err != nil {
+					qb.appendError(err)
+					return qb
+				}
+				sql = fmt.Sprintf("%s %s", sql, valSQL)
+				extraBindings = append(extraBindings, valBindings...)
+			default:
 				if val != nil {
 					sql = fmt.Sprintf("%s ?", sql)
-					bindings = append(bindings, val)
+					extraBindings = append(extraBindings, val)
 				}
 			}
+		}
 
-			raw = &types.Expression{
-				Sql:      sql,
-				Bindings: append(v.Bindings, bindings...),
-			}
+		raw = &types.Expression{
+			Sql:      sql,
+			Bindings: append(exprBindings, extraBindings...),
 		}
 	default:
 		col = fmt.Sprintf("%v", v)

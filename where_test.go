@@ -260,20 +260,13 @@ func Test_WhereIn_With_Query(t *testing.T) {
 	})
 }
 
-func Test_WhereIn_With_Query_Assert_If_There_Is_SubQuery_Use_It_Only(t *testing.T) { // TODO: need to be handled differently
+func Test_WhereIn_With_Query_Assert_If_There_Is_SubQuery_Return_Error(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("customers").SetDialect(dialect)
 		subQuery := xqb.Table("users").Select("id").Where("type", "=", "active")
-		sql, bindings, err := qb.WhereIn("user_id", []any{15, 20, subQuery}).ToSql()
+		_, _, err := qb.WhereIn("user_id", []any{15, 20, subQuery}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `customers` WHERE user_id IN (SELECT `id` FROM `users` WHERE `type` = ?)",
-			types.DialectPostgres: `SELECT * FROM "customers" WHERE user_id IN (SELECT "id" FROM "users" WHERE "type" = $1)`,
-		}
-		assert.Equal(t, expectedSql[dialect], sql)
-		assert.Equal(t, 1, len(bindings))
-		assert.Equal(t, []any{"active"}, bindings)
-		assert.NoError(t, err)
+		assert.Error(t, err)
 	})
 }
 
@@ -543,6 +536,35 @@ func Test_OrWhereNotBetween(t *testing.T) {
 	})
 }
 
+func Test_WhereBetween_With_Expressions(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
+		qb := xqb.Table("users").SetDialect(dialect).
+			WhereBetween("created_at", xqb.Raw("NOW() - INTERVAL 7 DAY"), xqb.Raw("NOW()"))
+
+		sql, bindings, err := qb.ToSql()
+
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT * FROM `users` WHERE `created_at` BETWEEN NOW() - INTERVAL 7 DAY AND NOW()",
+			types.DialectPostgres: `SELECT * FROM "users" WHERE "created_at" BETWEEN NOW() - INTERVAL 7 DAY AND NOW()`,
+		}
+
+		assert.Equal(t, expected[dialect], sql)
+		assert.Equal(t, []any(nil), bindings)
+		assert.NoError(t, err)
+	})
+}
+
+func Test_WhereBetween_Mixed_Expression_Error(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
+		qb := xqb.Table("users").SetDialect(dialect).
+			WhereBetween("age", xqb.Raw("some_expr"), 65)
+
+		_, _, err := qb.ToSql()
+
+		assert.Error(t, err)
+	})
+}
+
 func Test_WhereGroup_MultipleLevels(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereGroup(func(q1 *xqb.QueryBuilder) {
@@ -638,8 +660,8 @@ func Test_WhereBetween_WithExpr(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSql := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `logs` WHERE created_at BETWEEN NOW() - INTERVAL 1 DAY AND NOW()",
-			types.DialectPostgres: `SELECT * FROM "logs" WHERE created_at BETWEEN NOW() - INTERVAL 1 DAY AND NOW()`,
+			types.DialectMySql:    "SELECT * FROM `logs` WHERE `created_at` BETWEEN NOW() - INTERVAL 1 DAY AND NOW()",
+			types.DialectPostgres: `SELECT * FROM "logs" WHERE "created_at" BETWEEN NOW() - INTERVAL 1 DAY AND NOW()`,
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)

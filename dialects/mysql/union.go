@@ -24,13 +24,17 @@ func (d *MySqlDialect) compileUnionClause(qbd *types.QueryBuilderData) (string, 
 			sql += "ALL "
 		}
 
+		exprSql, exprBinding, err := union.Expression.ToSql(d.Getdialect().String())
+		if err != nil {
+			return "", nil, err
+		}
 		// Add the union query
 		sql += "("
-		sql += union.Expression.Sql
+		sql += exprSql
 		sql += ")"
 
-		if len(union.Expression.Bindings) > 0 {
-			bindings = append(bindings, union.Expression.Bindings...)
+		if len(exprBinding) > 0 {
+			bindings = append(bindings, exprBinding...)
 		}
 	}
 
