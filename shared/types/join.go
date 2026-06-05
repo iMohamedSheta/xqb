@@ -13,8 +13,9 @@ const (
 
 // Join represents a JOIN clause
 type Join struct {
-	Type      JoinType
-	Table     string
-	Condition string
-	Binding   []Binding
+	Type       JoinType
+	Table      string
+	Condition  string
+	Conditions []*JoinCondition // used for JoinClause builder
+	Binding    []Binding
 }

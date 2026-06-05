@@ -9,8 +9,9 @@ import (
 
 func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition any, alias string, values ...any) *QueryBuilder {
 	var tableSql string
-	var conditionSql string
 	var bindings []types.Binding
+
+	dialect := qb.GetDialect().Getdialect().String()
 
 	// Handle table
 	switch t := table.(type) {
@@ -28,54 +29,87 @@ func (qb *QueryBuilder) addJoin(joinType types.JoinType, table any, condition an
 		for _, b := range subBindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
-	case *types.Expression:
-		tableSql = t.Sql
-		for _, b := range t.Bindings {
+	case types.ExpressionInterface:
+		exprSql, exprBindings, err := t.ToSql(dialect)
+		if err != nil {
+			qb.appendError(err)
+			return qb
+		}
+		tableSql = exprSql
+		for _, b := range exprBindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
 	}
 
-	// Handle condition
+	// Handle condition — three variants:
+	// string:           "users.id = orders.user_id" with optional ? values
+	// func(*JoinClause): structured On/Where builder (preferred)
+	// ExpressionInterface: Raw/DialectExpression
 	switch c := condition.(type) {
+	case func(*JoinClause):
+		// closure-based: compiler extracts SQL + bindings from Conditions
+		clause := &JoinClause{}
+		c(clause)
+		qb.joins = append(qb.joins, &types.Join{
+			Type:       joinType,
+			Table:      tableSql,
+			Conditions: clause.conditions,
+			Binding:    bindings,
+		})
+		return qb
+
 	case string:
-		conditionSql = c
+		// plain string: Join("orders", "users.id = orders.user_id AND orders.type = ?", "invoice")
 		for _, val := range values {
 			bindings = append(bindings, types.Binding{Value: val})
 		}
-	case *types.Expression:
-		conditionSql = c.Sql
-		for _, b := range c.Bindings {
+		qb.joins = append(qb.joins, &types.Join{
+			Type:      joinType,
+			Table:     tableSql,
+			Condition: c,
+			Binding:   bindings,
+		})
+		return qb
+
+	case types.ExpressionInterface:
+		exprSql, exprBindings, err := c.ToSql(dialect)
+		if err != nil {
+			qb.appendError(err)
+			return qb
+		}
+		for _, b := range exprBindings {
 			bindings = append(bindings, types.Binding{Value: b})
 		}
+		qb.joins = append(qb.joins, &types.Join{
+			Type:      joinType,
+			Table:     tableSql,
+			Condition: exprSql,
+			Binding:   bindings,
+		})
+		return qb
 	}
 
-	qb.joins = append(qb.joins, &types.Join{
-		Type:      joinType,
-		Table:     tableSql,
-		Condition: conditionSql,
-		Binding:   bindings,
-	})
-
+	qb.appendError(fmt.Errorf("%w: unsupported condition type for JOIN", xqbErr.ErrInvalidQuery))
 	return qb
 }
 
 // Join adds a INNER JOIN clause to the query
-func (qb *QueryBuilder) Join(table string, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) Join(table string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.INNER_JOIN, table, condition, "", values...)
 }
 
 // LeftJoin adds a LEFT JOIN clause to the query
-func (qb *QueryBuilder) LeftJoin(table string, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) LeftJoin(table string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.LEFT_JOIN, table, condition, "", values...)
 }
 
 // RightJoin adds a RIGHT JOIN clause to the query
-func (qb *QueryBuilder) RightJoin(table string, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) RightJoin(table string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.RIGHT_JOIN, table, condition, "", values...)
 }
 
 // FullJoin adds a FULL JOIN clause to the query
-func (qb *QueryBuilder) FullJoin(table string, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) FullJoin(table string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.FULL_JOIN, table, condition, "", values...)
 }
 
@@ -85,22 +119,22 @@ func (qb *QueryBuilder) CrossJoin(table string) *QueryBuilder {
 }
 
 // JoinSub adds a JOIN clause with a subquery
-func (qb *QueryBuilder) JoinSub(sub *QueryBuilder, alias, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) JoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.INNER_JOIN, sub, condition, alias, values...)
 }
 
 // LeftJoinSub adds a LEFT JOIN clause with a subquery
-func (qb *QueryBuilder) LeftJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) LeftJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.LEFT_JOIN, sub, condition, alias, values...)
 }
 
 // RightJoinSub adds a RIGHT JOIN clause with a subquery
-func (qb *QueryBuilder) RightJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) RightJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.RIGHT_JOIN, sub, condition, alias, values...)
 }
 
 // FullJoinSub adds a FULL JOIN clause with a subquery
-func (qb *QueryBuilder) FullJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *QueryBuilder {
+func (qb *QueryBuilder) FullJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *QueryBuilder {
 	return qb.addJoin(types.FULL_JOIN, sub, condition, alias, values...)
 }
 
