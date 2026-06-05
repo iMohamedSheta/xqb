@@ -16,12 +16,12 @@ func Test_PluckSliceSql_WithValueField(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("name", "LIKE", "%mohamed%")
 		sql, bindings, err := qb.PluckSliceSql("name")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
 			types.DialectPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"%mohamed%"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -33,12 +33,12 @@ func Test_PluckSliceSql_WithComplexQuery(t *testing.T) {
 		qb.Where("age", ">", 18).OrderBy("created_at", "DESC").Limit(10)
 		sql, bindings, err := qb.PluckSliceSql("email")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `email` FROM `users` WHERE `age` > ? ORDER BY `created_at` DESC LIMIT 10",
 			types.DialectPostgres: `SELECT "email" FROM "users" WHERE "age" > $1 ORDER BY "created_at" DESC LIMIT 10`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18}, bindings)
 		assert.NoError(t, err)
 	})
@@ -62,12 +62,12 @@ func Test_PluckSliceSql_OverridesExistingSelect(t *testing.T) {
 		qb.Select("id", "name", "email").Where("active", "=", true)
 		sql, bindings, err := qb.PluckSliceSql("name")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `name` FROM `users` WHERE `active` = ?",
 			types.DialectPostgres: `SELECT "name" FROM "users" WHERE "active" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -80,12 +80,12 @@ func Test_PluckMapSql_WithValueAndKeyFields(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("status", "=", "active")
 		sql, bindings, err := qb.PluckMapSql("name", "id")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `name`, `id` FROM `users` WHERE `status` = ?",
 			types.DialectPostgres: `SELECT "name", "id" FROM "users" WHERE "status" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -97,12 +97,12 @@ func Test_PluckMapSql_WithComplexQuery(t *testing.T) {
 		qb.Where("category", "=", "electronics").Where("price", "<", 1000).OrderBy("price", "ASC")
 		sql, bindings, err := qb.PluckMapSql("title", "sku")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `title`, `sku` FROM `products` WHERE `category` = ? AND `price` < ? ORDER BY `price` ASC",
 			types.DialectPostgres: `SELECT "title", "sku" FROM "products" WHERE "category" = $1 AND "price" < $2 ORDER BY "price" ASC`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"electronics", 1000}, bindings)
 		assert.NoError(t, err)
 	})
@@ -150,12 +150,12 @@ func Test_PluckMapSql_OverridesExistingSelect(t *testing.T) {
 		qb.Select("id", "name", "email", "phone").Where("country", "=", "US")
 		sql, bindings, err := qb.PluckMapSql("email", "id")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `email`, `id` FROM `users` WHERE `country` = ?",
 			types.DialectPostgres: `SELECT "email", "id" FROM "users" WHERE "country" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"US"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -204,12 +204,12 @@ func Test_PluckSliceSql_WithJoins(t *testing.T) {
 		qb.Where("posts.published", "=", true)
 		sql, bindings, err := qb.PluckSliceSql("users.name")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `users`.`name` FROM `users` JOIN `posts` ON users.id = posts.user_id WHERE `posts`.`published` = ?",
 			types.DialectPostgres: `SELECT "users"."name" FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE "posts"."published" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -221,12 +221,12 @@ func Test_PluckMapSql_WithGroupBy(t *testing.T) {
 		qb.GroupBy("customer_id").Having("total", ">", 1000)
 		sql, bindings, err := qb.PluckMapSql("total", "customer_id")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `total`, `customer_id` FROM `orders` GROUP BY `customer_id` HAVING `total` > ?",
 			types.DialectPostgres: `SELECT "total", "customer_id" FROM "orders" GROUP BY "customer_id" HAVING "total" > $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
 		assert.NoError(t, err)
 	})

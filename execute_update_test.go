@@ -37,13 +37,13 @@ func Test_UpdateWhere(t *testing.T) {
 
 		sql, bindings, err := qb.Where("id", "=", 1).UpdateSql(data)
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
 			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3 WHERE "id" = $4`,
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"john@example", "John", "Doe", 1}, bindings)
 	})
 }
@@ -59,13 +59,13 @@ func Test_Update_AllowDangerous(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
 			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3`,
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"john@example", "John", "Doe"}, bindings)
 	})
 }
@@ -81,13 +81,13 @@ func Test_UpdateWithExpressionValue(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
 			types.DialectPostgres: `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = $1`,
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 	})
 }
@@ -109,13 +109,13 @@ func Test_Update_MixedFieldsAndComplexWhere(t *testing.T) {
 
 		sql, bindings, err := qb.UpdateSql(data)
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
 			types.DialectPostgres: `UPDATE "users" SET "active" = $1, "email" = $2, "last_login_at" = NOW() WHERE "status" != $3 AND ("age" > $4 OR "role" = $5) AND "id" = $6`,
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true, "new_email@example.com", "banned", 18, "admin", 5}, bindings)
 	})
 }

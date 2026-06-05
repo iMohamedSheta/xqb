@@ -20,12 +20,12 @@ func Test_Aggregate(t *testing.T) {
 		).Where("id", "=", 15).Limit(1).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT SUM(price) AS total_price, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
 			types.DialectPostgres: `SELECT SUM(price) AS total_price, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{15}, binding)
 		assert.NoError(t, err)
 
@@ -44,12 +44,12 @@ func Test_DialectExpr(t *testing.T) {
 			Limit(1).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
 			types.DialectPostgres: `SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{15}, binding)
 		assert.NoError(t, err)
 	})
@@ -63,11 +63,11 @@ func Test_CountExpression(t *testing.T) {
 func Test_JsonExtract(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		expr := xqb.JsonExtract("data", "user.name", "username")
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "JSON_EXTRACT(data, '$.user.name') AS username",
 			types.DialectPostgres: "data->'user'->>'name' AS username",
 		}
-		assert.Equal(t, expectedSql[dialect], expr.Dialects[string(dialect)].Sql)
+		assert.Equal(t, expectedSQL[dialect], expr.Dialects[string(dialect)].Sql)
 	})
 }
 
@@ -76,13 +76,13 @@ func Test_DateFunctions(t *testing.T) {
 		assert.Equal(t, "DATE(created_at) AS date_only", xqb.Date("created_at", "date_only").Sql)
 		dialectExpr := xqb.DateDiff("end_date", "start_date", "diff")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "DATEDIFF(end_date, start_date) AS diff",
 			types.DialectPostgres: "(end_date - start_date) AS diff",
 		}
 		expr := dialectExpr.Dialects[string(dialect)]
 
-		assert.Equal(t, expectedSql[dialect], expr.Sql)
+		assert.Equal(t, expectedSQL[dialect], expr.Sql)
 		assert.Empty(t, expr.Bindings)
 	})
 }
@@ -111,12 +111,12 @@ func Test_QueryBuilder_LockForUpdate(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		sql, b, err := xqb.Table("users").SetDialect(dialect).LockForUpdate().ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` FOR UPDATE",
 			types.DialectPostgres: `SELECT * FROM "users" FOR UPDATE`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
 		assert.NoError(t, err)
 	})
@@ -128,12 +128,12 @@ func Test_QueryBuilder_SharedLock(t *testing.T) {
 
 		sql, b, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LOCK IN SHARE MODE",
 			types.DialectPostgres: `SELECT * FROM "users" FOR SHARE`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
 		assert.NoError(t, err)
 	})
@@ -144,11 +144,11 @@ func Test_QueryBuilder_SharedLock_NoWait(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).SharedLock().NoWaitLocked()
 		sql, b, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LOCK IN SHARE MODE NOWAIT",
 			types.DialectPostgres: `SELECT * FROM "users" FOR SHARE NOWAIT`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
 		assert.NoError(t, err)
 	})
@@ -160,11 +160,11 @@ func Test_QueryBuilder_LockForUpdate_SkipLocked(t *testing.T) {
 
 		sql, b, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` FOR UPDATE SKIP LOCKED",
 			types.DialectPostgres: `SELECT * FROM "users" FOR UPDATE SKIP LOCKED`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
 		assert.NoError(t, err)
 	})
@@ -179,7 +179,7 @@ func Test_QueryBuilder_NoKeyUpdate_SkipLocked_Postgres(t *testing.T) {
 			SkipLocked()
 
 		sql, b, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 FOR NO KEY UPDATE SKIP LOCKED`,
 		}
@@ -188,7 +188,7 @@ func Test_QueryBuilder_NoKeyUpdate_SkipLocked_Postgres(t *testing.T) {
 			types.DialectPostgres: nil,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 
 		if expectedErr[dialect] != nil {
 			assert.ErrorIs(t, err, expectedErr[dialect])
@@ -218,14 +218,14 @@ func Test_Trim(t *testing.T) {
 func Test_DateAdd(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		dialectExpr := xqb.DateAdd("created_at", "7", "DAY", "next_week")
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week",
 			types.DialectPostgres: "created_at + INTERVAL '7 day' AS next_week",
 		}
 
 		expr := dialectExpr.Dialects[string(dialect)]
 
-		assert.Equal(t, expectedSql[dialect], expr.Sql)
+		assert.Equal(t, expectedSQL[dialect], expr.Sql)
 		assert.Empty(t, expr.Bindings)
 	})
 }
@@ -233,13 +233,13 @@ func Test_DateAdd(t *testing.T) {
 func Test_DateSub(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		dialectExpr := xqb.DateSub("created_at", "1", "MONTH", "last_month")
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month",
 			types.DialectPostgres: "created_at - INTERVAL '1 month' AS last_month",
 		}
 
 		expr := dialectExpr.Dialects[string(dialect)]
-		assert.Equal(t, expectedSql[dialect], expr.Sql)
+		assert.Equal(t, expectedSQL[dialect], expr.Sql)
 		assert.Empty(t, expr.Bindings)
 	})
 }
@@ -257,13 +257,13 @@ func Test_QueryBuilder_Upper_Length_Trim(t *testing.T) {
 			xqb.Length("bio", "bio_length"),
 			xqb.Trim("username", "trimmed_username"),
 		).Where("active", "=", true).ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM `users` WHERE `active` = ?",
 			types.DialectPostgres: `SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM "users" WHERE "active" = $1`,
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true}, bindings)
 	})
 }
@@ -276,12 +276,12 @@ func Test_QueryBuilder_DateAdd_DateSub(t *testing.T) {
 			xqb.DateSub("event_date", "7", "DAY", "last_week"),
 		).Where("status", "=", "open").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM `events` WHERE `status` = ?",
 			types.DialectPostgres: `SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM "events" WHERE "status" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"open"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -313,7 +313,7 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 			xqb.Substring("description", 1, 10, "short_desc"),
 		).Where("active", "=", true).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
 				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.email') AS user_email, " +
 				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
@@ -330,17 +330,17 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 				` REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM "test_table" WHERE "active" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true}, bindings)
 		assert.NoError(t, err)
 
 		dialectExprDateFormat := xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date")
-		expectedSql = map[types.Dialect]string{
+		expectedSQL = map[types.Dialect]string{
 			types.DialectMySql:    "DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
 			types.DialectPostgres: "TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date",
 		}
 
-		assert.Equal(t, expectedSql[dialect], dialectExprDateFormat.Dialects[string(dialect)].Sql)
+		assert.Equal(t, expectedSQL[dialect], dialectExprDateFormat.Dialects[string(dialect)].Sql)
 		assert.Empty(t, dialectExprDateFormat.Dialects[string(dialect)].Bindings)
 	})
 }
@@ -400,7 +400,7 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 			xqb.Length("bio", ""), "DESC",
 		).Limit(5).Offset(10).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), " +
 				"MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.name'), JSON_EXTRACT(data, '$.user.name') AS user_name, price * quantity, " +
 				"price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, DATEDIFF(end_date, start_date), DATEDIFF(end_date, start_date) AS days_between, " +
@@ -420,7 +420,7 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 		}
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active", 1000}, bindings)
 	})
 }

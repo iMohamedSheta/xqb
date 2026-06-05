@@ -14,11 +14,11 @@ func Test_Where_Subquery_1(t *testing.T) {
 		subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
 		sql, bindings, err := qb.Where("id", "IN", subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (SELECT `user_id` FROM `orders` WHERE `status` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN (SELECT "user_id" FROM "orders" WHERE "status" = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -30,12 +30,12 @@ func Test_Where_Subquery_2(t *testing.T) {
 		subQuery := xqb.Table("admins").Select("user_id").Where("role", "=", "superadmin").AddSelect("id").Latest("id")
 
 		sql, bindings, err := qb.Where("id", "IN", subQuery).ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (SELECT `user_id`, `id` FROM `admins` WHERE `role` = ? ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN (SELECT "user_id", "id" FROM "admins" WHERE "role" = $1 ORDER BY "id" DESC)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"superadmin"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -50,11 +50,11 @@ func Test_Where_Subquery_3(t *testing.T) {
 			Select("users.id", "users.name", "orders.id AS order_id")
 
 		sql, bindings, err := qb.Where("id", "IN", subQuery).ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `admins` WHERE id IN (SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id WHERE `orders`.`status` = ?)",
 			types.DialectPostgres: `SELECT * FROM "admins" WHERE id IN (SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id WHERE "orders"."status" = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"paid"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -65,11 +65,11 @@ func Test_Where_WithRaw_CaseExpression(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where(xqb.Raw("CASE WHEN status = 'active' THEN 1 ELSE 0 END"), "=", 1).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
@@ -80,11 +80,11 @@ func Test_Where_WithRaw_1(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Join("orders", "users.id = orders.user_id").Where(xqb.Raw("CASE WHEN status = 'active' THEN 1 ELSE 0 END"), "=", 1).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
@@ -96,12 +96,12 @@ func Test_OrWhere_SubQuery_1(t *testing.T) {
 		subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active").Latest("id")
 		sql, bindings, err := qb.OrWhere("id", "IN", subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (SELECT `user_id` FROM `orders` WHERE `status` = ? ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN (SELECT "user_id" FROM "orders" WHERE "status" = $1 ORDER BY "id" DESC)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -113,12 +113,12 @@ func Test_OrWhere_SubQuery_2(t *testing.T) {
 		subQuery := xqb.Table("orders").Join("admins", "users.id = admins.user_id").Select("user_id").Where("role", "=", "superadmin").Latest("id")
 		sql, bindings, err := qb.OrWhere("id", "IN", subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (SELECT `user_id` FROM `orders` JOIN `admins` ON users.id = admins.user_id WHERE `role` = ? ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN (SELECT "user_id" FROM "orders" JOIN "admins" ON users.id = admins.user_id WHERE "role" = $1 ORDER BY "id" DESC)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"superadmin"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -129,12 +129,12 @@ func Test_OrWhere_Raw_1(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.OrWhere(xqb.Raw("CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END"), "=", 1).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
@@ -146,12 +146,12 @@ func Test_OrWhere_Raw_2(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.OrWhere(xqb.Raw("CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END"), "=", 1).Join("orders", "users.id = orders.user_id").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id WHERE CASE WHEN status IN ('active', 'pending') THEN 1 ELSE 0 END = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
@@ -164,12 +164,12 @@ func Test_WhereNull_With_OrWhereNotNull(t *testing.T) {
 			qb.OrWhereNull("deleted_at").OrWhereNotNull("disabled_at")
 		}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND (`deleted_at` IS NULL OR `disabled_at` IS NOT NULL)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND ("deleted_at" IS NULL OR "disabled_at" IS NOT NULL)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
@@ -183,11 +183,11 @@ func Test_WhereNull_With_Grouping(t *testing.T) {
 			qb.WhereNull("deleted_at").OrWhereNull("disabled_at")
 		}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND (`deleted_at` IS NULL OR `disabled_at` IS NULL)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND ("deleted_at" IS NULL OR "disabled_at" IS NULL)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
@@ -199,12 +199,12 @@ func Test_WhereIn_normal(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereIn("id", []any{1, 2, 3}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` IN (?, ?, ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" IN ($1, $2, $3)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1, 2, 3}, bindings)
 		assert.NoError(t, err)
 	})
@@ -215,12 +215,12 @@ func Test_WhereIn_With_Raw(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereIn("id", []any{xqb.Raw("? UNION ?", 1, 2)}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (? UNION ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN ($1 UNION $2)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1, 2}, bindings)
 		assert.NoError(t, err)
 	})
@@ -232,12 +232,12 @@ func Test_WhereIn_With_Raw_2(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereIn("id", []any{xqb.Raw("? UNION ?", 1, 2)}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (? UNION ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN ($1 UNION $2)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1, 2}, bindings)
 		assert.NoError(t, err)
 	})
@@ -249,11 +249,11 @@ func Test_WhereIn_With_Query(t *testing.T) {
 		subQuery := xqb.Table("users").Select("id").Where("type", "=", "active")
 		sql, bindings, err := qb.WhereIn("user_id", []any{subQuery}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `customers` WHERE user_id IN (SELECT `id` FROM `users` WHERE `type` = ?)",
 			types.DialectPostgres: `SELECT * FROM "customers" WHERE user_id IN (SELECT "id" FROM "users" WHERE "type" = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
@@ -276,12 +276,12 @@ func Test_WhereInQuery(t *testing.T) {
 		subQuery := xqb.Table("users").Select("id").Where("type", "=", "active")
 		sql, bindings, err := qb.WhereInQuery("user_id", subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `customers` WHERE user_id IN (SELECT `id` FROM `users` WHERE `type` = ?)",
 			types.DialectPostgres: `SELECT * FROM "customers" WHERE user_id IN (SELECT "id" FROM "users" WHERE "type" = $1)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
@@ -294,12 +294,12 @@ func Test_WhereExists_With_SubQuery_1(t *testing.T) {
 		subQuery := xqb.Table("admins").Select("user_id").Where("role", "IN", []any{"superadmin", "admin"}).Latest("id")
 		sql, bindings, err := qb.Select("1").WhereExists(subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT 1 FROM `users` WHERE EXISTS (SELECT `user_id` FROM `admins` WHERE `role` IN (?, ?) ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT 1 FROM "users" WHERE EXISTS (SELECT "user_id" FROM "admins" WHERE "role" IN ($1, $2) ORDER BY "id" DESC)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"superadmin", "admin"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -311,11 +311,11 @@ func Test_WhereExists_With_SubQuery_2(t *testing.T) {
 		subQuery := xqb.Table("users").Select("id").Where("type", "=", "active")
 		sql, bindings, err := qb.Select("1").WhereExists(subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT 1 FROM `customers` WHERE EXISTS (SELECT `id` FROM `users` WHERE `type` = ?)",
 			types.DialectPostgres: `SELECT 1 FROM "customers" WHERE EXISTS (SELECT "id" FROM "users" WHERE "type" = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
@@ -328,11 +328,11 @@ func Test_WhereExists_With_Raw(t *testing.T) {
 		raw := xqb.Raw("SELECT user_id FROM users WHERE type = ?", "active")
 		sql, bindings, err := qb.Select("1").WhereExists(raw).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT 1 FROM `orders` WHERE EXISTS (SELECT user_id FROM users WHERE type = ?)",
 			types.DialectPostgres: `SELECT 1 FROM "orders" WHERE EXISTS (SELECT user_id FROM users WHERE type = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
@@ -345,11 +345,11 @@ func Test_WhereNotExists_With_SubQuery_1(t *testing.T) {
 		subQuery := xqb.Table("admins").Select("user_id").Where("role", "IN", []any{"superadmin", "admin"}).Latest("id")
 		sql, bindings, err := qb.Select("1").WhereNotExists(subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT 1 FROM `users` WHERE NOT EXISTS (SELECT `user_id` FROM `admins` WHERE `role` IN (?, ?) ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT 1 FROM "users" WHERE NOT EXISTS (SELECT "user_id" FROM "admins" WHERE "role" IN ($1, $2) ORDER BY "id" DESC)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"superadmin", "admin"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -361,12 +361,12 @@ func Test_OrWhereExists_WithSubQuery(t *testing.T) {
 		subQuery := xqb.Table("admins").Select("user_id").Where("role", "IN", []any{"superadmin", "admin"}).Latest("id")
 		sql, bindings, err := qb.Select("1").Where("id", "=", 15).OrWhereExists(subQuery).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT 1 FROM `users` WHERE `id` = ? OR EXISTS (SELECT `user_id` FROM `admins` WHERE `role` IN (?, ?) ORDER BY `id` DESC)",
 			types.DialectPostgres: `SELECT 1 FROM "users" WHERE "id" = $1 OR EXISTS (SELECT "user_id" FROM "admins" WHERE "role" IN ($2, $3) ORDER BY "id" DESC)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{15, "superadmin", "admin"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -377,12 +377,12 @@ func Test_WhereValue(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereValue("age", ">", 18).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `age` > ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "age" > $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18}, bindings)
 		assert.NoError(t, err)
 	})
@@ -393,12 +393,12 @@ func Test_OrWhereValue(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where("name", "=", "admin").OrWhereValue("role", "=", "guest").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `name` = ? OR `role` = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "name" = $1 OR "role" = $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"admin", "guest"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -410,11 +410,11 @@ func Test_WhereExpr(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereExpr("LOWER(name)", "=", expr).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE LOWER(name) = (LOWER(name))",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE LOWER(name) = (LOWER(name))`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -426,11 +426,11 @@ func Test_OrWhereExpr(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where("name", "=", "mohamed").OrWhereExpr("LOWER(role)", "=", expr).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `name` = ? OR LOWER(role) = (LOWER(role))",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "name" = $1 OR LOWER(role) = (LOWER(role))`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"mohamed"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -442,12 +442,12 @@ func Test_WhereSub(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereSub("admin_id", "IN", sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE admin_id IN (SELECT `id` FROM `admins` WHERE `active` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE admin_id IN (SELECT "id" FROM "admins" WHERE "active" = $1)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -459,12 +459,12 @@ func Test_OrWhereSub(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("role", "=", "staff").OrWhereSub("admin_id", "IN", sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `role` = ? OR admin_id IN (SELECT `id` FROM `admins` WHERE `active` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "role" = $1 OR admin_id IN (SELECT "id" FROM "admins" WHERE "active" = $2)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"staff", true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -476,12 +476,12 @@ func Test_WhereNotInQuery(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereNotInQuery("id", sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id NOT IN (SELECT `id` FROM `banned_users`)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id NOT IN (SELECT "id" FROM "banned_users")`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -493,12 +493,12 @@ func Test_OrWhereNotInQuery(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("role", "=", "staff").OrWhereNotInQuery("id", sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `role` = ? OR id NOT IN (SELECT `id` FROM `banned_users`)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "role" = $1 OR id NOT IN (SELECT "id" FROM "banned_users")`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"staff"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -509,12 +509,12 @@ func Test_WhereNotBetween(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereNotBetween("age", 18, 60)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `age` NOT BETWEEN ? AND ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "age" NOT BETWEEN $1 AND $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18, 60}, bindings)
 		assert.NoError(t, err)
 	})
@@ -525,12 +525,12 @@ func Test_OrWhereNotBetween(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("role", "=", "guest").OrWhereNotBetween("age", 10, 20)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `role` = ? OR `age` NOT BETWEEN ? AND ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "role" = $1 OR "age" NOT BETWEEN $2 AND $3`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"guest", 10, 20}, bindings)
 		assert.NoError(t, err)
 	})
@@ -575,12 +575,12 @@ func Test_WhereGroup_MultipleLevels(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE (`status` = ? OR (`email_verified` = ? AND `banned` = ?))",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE ("status" = $1 OR ("email_verified" = $2 AND "banned" = $3))`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active", false, false}, bindings)
 		assert.NoError(t, err)
 
@@ -592,11 +592,11 @@ func Test_WhereRaw_WithBindings(t *testing.T) {
 		qb := xqb.Table("logs").SetDialect(dialect).WhereRaw("created_at > ?", "2024-01-01")
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `logs` WHERE created_at > ?",
 			types.DialectPostgres: `SELECT * FROM "logs" WHERE created_at > $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"2024-01-01"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -609,12 +609,12 @@ func Test_OrWhereRaw_WithBindings(t *testing.T) {
 			OrWhereRaw("created_at > ?", "2024-01-01")
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `logs` WHERE `type` = ? OR created_at > ?",
 			types.DialectPostgres: `SELECT * FROM "logs" WHERE "type" = $1 OR created_at > $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"info", "2024-01-01"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -625,12 +625,12 @@ func Test_WhereIn_Empty(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereIn("id", []any{})
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users`",
 			types.DialectPostgres: `SELECT * FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -641,12 +641,12 @@ func Test_WhereNotIn_Empty(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).WhereNotIn("id", []any{})
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users`",
 			types.DialectPostgres: `SELECT * FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -659,12 +659,12 @@ func Test_WhereBetween_WithExpr(t *testing.T) {
 		qb := xqb.Table("logs").SetDialect(dialect).WhereBetween("created_at", min, max)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `logs` WHERE `created_at` BETWEEN NOW() - INTERVAL 1 DAY AND NOW()",
 			types.DialectPostgres: `SELECT * FROM "logs" WHERE "created_at" BETWEEN NOW() - INTERVAL 1 DAY AND NOW()`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -676,12 +676,12 @@ func Test_WhereExists_Chained(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("status", "=", "staff").WhereExists(sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `status` = ? AND EXISTS (SELECT `id` FROM `admins` WHERE `active` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "status" = $1 AND EXISTS (SELECT "id" FROM "admins" WHERE "active" = $2)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"staff", true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -693,12 +693,12 @@ func Test_WhereNotExists_Chained(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where("status", "=", "guest").WhereNotExists(sub)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `status` = ? AND NOT EXISTS (SELECT `id` FROM `admins` WHERE `active` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "status" = $1 AND NOT EXISTS (SELECT "id" FROM "admins" WHERE "active" = $2)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"guest", false}, bindings)
 		assert.NoError(t, err)
 	})
@@ -714,12 +714,12 @@ func Test_Mixed_WhereRaw_And_Normal(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE JSON_EXTRACT(meta, '$.age') > ? AND `active` = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE meta->>'age' > $1 AND "active" = $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18, true}, bindings)
 		assert.NoError(t, err)
 	})
@@ -735,12 +735,12 @@ func Test_OrWhereGroup_Complex(t *testing.T) {
 			})
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `products` WHERE `stock` > ? OR (`archived` = ? AND `discontinued` = ?)",
 			types.DialectPostgres: `SELECT * FROM "products" WHERE "stock" > $1 OR ("archived" = $2 AND "discontinued" = $3)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{0, false, false}, bindings)
 		assert.NoError(t, err)
 	})
@@ -753,12 +753,12 @@ func Test_WhereExpr_ComplexBothSides(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Where(left, "=", right)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE (LOWER(username)) = (LOWER(?))",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE (LOWER(username)) = (LOWER($1))`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"Mohamed"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -769,11 +769,11 @@ func TestWhereWithRawExpressions(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where(xqb.Raw("LOWER(name)"), "=", "john").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE LOWER(name) = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE LOWER(name) = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"john"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -784,11 +784,11 @@ func TestWhereRaw(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereRaw("LOWER(name) = ? OR LOWER(email) = ?", "john", "john@example.com").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE LOWER(name) = ? OR LOWER(email) = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE LOWER(name) = $1 OR LOWER(email) = $2`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"john", "john@example.com"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -799,11 +799,11 @@ func TestWhereNull(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereNull("deleted_at").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `deleted_at` IS NULL",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "deleted_at" IS NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -815,11 +815,11 @@ func TestWhereNotNull(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereNotNull("email").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `email` IS NOT NULL",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "email" IS NOT NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -830,12 +830,12 @@ func TestWhereNullWithSelect(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNull("deleted_at").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `deleted_at` IS NULL",
 			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "deleted_at" IS NULL`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -846,11 +846,11 @@ func TestWhereNotNullWithSelect(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Select("id", "name").Where("name", "LIKE", "%mohamedsheta%").WhereNotNull("email").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `name` LIKE ? AND `email` IS NOT NULL",
 			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "name" LIKE $1 AND "email" IS NOT NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"%mohamedsheta%"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -861,12 +861,12 @@ func TestWhereIn(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereIn("id", []any{1, 2, 3}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` IN (?, ?, ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" IN ($1, $2, $3)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1, 2, 3}, bindings)
 		assert.NoError(t, err)
 	})
@@ -877,12 +877,12 @@ func TestWhereNotIn(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereNotIn("id", []any{1, 2, 3}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` NOT IN (?, ?, ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" NOT IN ($1, $2, $3)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1, 2, 3}, bindings)
 		assert.NoError(t, err)
 	})
@@ -894,12 +894,12 @@ func TestWhereInWithSubquery(t *testing.T) {
 		subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
 		sql, bindings, err := qb.WhereIn("id", []any{subQuery}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE id IN (SELECT `user_id` FROM `orders` WHERE `status` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE id IN (SELECT "user_id" FROM "orders" WHERE "status" = $1)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"active"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -910,12 +910,12 @@ func TestWhereBetween(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereBetween("age", 18, 30).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `age` BETWEEN ? AND ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "age" BETWEEN $1 AND $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18, 30}, bindings)
 		assert.NoError(t, err)
 	})
@@ -926,12 +926,12 @@ func TestWhereRawWithSubqueryRaw(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.WhereRaw("EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)", 1000).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE EXISTS (SELECT 1 FROM orders WHERE orders.user_id = users.id AND amount > $1)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
 		assert.NoError(t, err)
 	})
@@ -949,11 +949,11 @@ func Test_WhereGroup(t *testing.T) {
 			qb.Where("username", "=", "ahmed").Where("user_id", "=", 6)
 		}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `orders` WHERE (`email` = ? OR `username` = ?) AND (`uuid` = ? OR `user_id` = ?) OR (`username` = ? AND `user_id` = ?)",
 			types.DialectPostgres: `SELECT * FROM "orders" WHERE ("email" = $1 OR "username" = $2) AND ("uuid" = $3 OR "user_id" = $4) OR ("username" = $5 AND "user_id" = $6)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"mohamed@mail.com", "mohamed", "bbee7431-454d-4a8a-9435-961d191de2a7", 4, "ahmed", 6}, bindings)
 		assert.NoError(t, err)
 	})
@@ -965,12 +965,12 @@ func Test_Where_Is_Null(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where("id", "=", 1).Where("deleted_at", "IS NULL", nil).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND `deleted_at` IS NULL",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND "deleted_at" IS NULL`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 1, len(bindings))
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
@@ -982,12 +982,12 @@ func Test_WhereTrue(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where("id", "=", 1).WhereTrue("is_active").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND `is_active` = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND "is_active" = $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 2, len(bindings))
 		assert.Equal(t, []any{1, true}, bindings)
 		assert.NoError(t, err)
@@ -999,12 +999,12 @@ func Test_WhereFalse(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.Where("id", "=", 1).WhereFalse("is_active").ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND `is_active` = ?",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND "is_active" = $2`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 2, len(bindings))
 		assert.Equal(t, []any{1, false}, bindings)
 		assert.NoError(t, err)
@@ -1018,12 +1018,12 @@ func Test_OrWhereFalse_OrWhereTrue(t *testing.T) {
 			qb.OrWhereFalse("is_active").OrWhereTrue("is_admin")
 		}).ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? AND (`is_active` = ? OR `is_admin` = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 AND ("is_active" = $2 OR "is_admin" = $3)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, 3, len(bindings))
 		assert.Equal(t, []any{1, false, true}, bindings)
 		assert.NoError(t, err)

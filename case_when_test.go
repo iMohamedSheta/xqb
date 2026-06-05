@@ -34,11 +34,11 @@ func Test_CaseWhen_UsageInQuery(t *testing.T) {
 			Having(xqb.Count("id", ""), ">", 10).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group FROM `users` WHERE CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group = ? HAVING COUNT(id) > ?",
 			types.DialectPostgres: `SELECT "id", CASE WHEN age >= $1 THEN $2 WHEN age < $3 THEN $4 ELSE $5 END AS age_group FROM "users" WHERE CASE WHEN age >= $6 THEN $7 WHEN age < $8 THEN $9 ELSE $10 END AS age_group = $11 HAVING COUNT(id) > $12`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{18, "adult", 18, "minor", "unknown", 18, "adult", 18, "minor", "unknown", "adult", 10}, bindings)
 		assert.NoError(t, err)
 	})
@@ -56,8 +56,8 @@ func Test_CaseWhen_SingleWhen(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("score > ?", "pass", 50)
 	sql, bindings, err := caseBuilder.End().ToSql("")
-	expectedSql := "CASE WHEN score > ? THEN ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN score > ? THEN ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{50, "pass"}, bindings)
 	assert.NoError(t, err)
 }
@@ -67,8 +67,8 @@ func Test_CaseWhen_MultipleWhen_NoElse(t *testing.T) {
 	caseBuilder.When("score > ?", "A", 90)
 	caseBuilder.When("score > ?", "B", 80)
 	sql, bindings, err := caseBuilder.End().ToSql("")
-	expectedSql := "CASE WHEN score > ? THEN ? WHEN score > ? THEN ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN score > ? THEN ? WHEN score > ? THEN ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{90, "A", 80, "B"}, bindings)
 	assert.NoError(t, err)
 }
@@ -77,8 +77,8 @@ func Test_CaseWhen_ElseOnly(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.Else("fail")
 	sql, bindings, err := caseBuilder.End().ToSql("_")
-	expectedSql := "CASE ELSE ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE ELSE ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{"fail"}, bindings)
 	assert.NoError(t, err)
 }
@@ -87,8 +87,8 @@ func Test_CaseWhen_WithAlias(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("x = ?", "yes", 1).Else("no").As("result")
 	sql, bindings, err := caseBuilder.End().ToSql("_")
-	expectedSql := "CASE WHEN x = ? THEN ? ELSE ? END AS result"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN x = ? THEN ? ELSE ? END AS result"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{1, "yes", "no"}, bindings)
 	assert.NoError(t, err)
 }
@@ -97,8 +97,8 @@ func Test_CaseWhen_NoAlias(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("x = ?", "yes", 1).Else("no")
 	sql, bindings, err := caseBuilder.End().ToSql("_")
-	expectedSql := "CASE WHEN x = ? THEN ? ELSE ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN x = ? THEN ? ELSE ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{1, "yes", "no"}, bindings)
 	assert.NoError(t, err)
 }
@@ -107,8 +107,8 @@ func Test_CaseWhen_NoBindings(t *testing.T) {
 	caseBuilder := xqb.Case()
 	caseBuilder.When("1=1", "ok")
 	sql, bindings, err := caseBuilder.End().ToSql("_")
-	expectedSql := "CASE WHEN 1=1 THEN ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN 1=1 THEN ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{"ok"}, bindings)
 	assert.NoError(t, err)
 }
@@ -119,8 +119,8 @@ func Test_CaseWhen_ComplexConditions(t *testing.T) {
 	caseBuilder.When("score > ?", "good", 80)
 	caseBuilder.Else("average")
 	sql, bindings, err := caseBuilder.End().ToSql("_")
-	expectedSql := "CASE WHEN score > ? AND passed = ? THEN ? WHEN score > ? THEN ? ELSE ? END"
-	assert.Equal(t, expectedSql, sql)
+	expectedSQL := "CASE WHEN score > ? AND passed = ? THEN ? WHEN score > ? THEN ? ELSE ? END"
+	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, []any{95, true, "excellent", 80, "good", "average"}, bindings)
 	assert.NoError(t, err)
 }
@@ -139,12 +139,12 @@ func Test_CaseWhen_SelectWithConditionalExpressions(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, CASE WHEN status = ? THEN ? ELSE ? END AS status_text FROM `orders`",
 			types.DialectPostgres: `SELECT "id", CASE WHEN status = $1 THEN $2 ELSE $3 END AS status_text FROM "orders"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"'completed'", "'done'", "'pending'"}, bindings)
 		assert.NoError(t, err)
 	})

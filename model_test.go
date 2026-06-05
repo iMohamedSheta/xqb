@@ -34,12 +34,12 @@ func Test_Query_WithModelQ(t *testing.T) {
 			AddSelect("password").
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
 			types.DialectPostgres: `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = $1 OR "username" = $2 ORDER BY "created_at" DESC LIMIT 1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"ali", "mohamed"}, bindings)
 		assert.NoError(t, err)
 

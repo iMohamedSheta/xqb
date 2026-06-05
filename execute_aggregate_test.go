@@ -13,12 +13,12 @@ func Test_CountSql(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.CountSql("id")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT COUNT(`id`) AS `count` FROM `users`",
 			types.DialectPostgres: `SELECT COUNT("id") AS "count" FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -29,12 +29,12 @@ func Test_AvgSql(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.AvgSql("age")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT AVG(`age`) AS `avg` FROM `users`",
 			types.DialectPostgres: `SELECT AVG("age") AS "avg" FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -45,12 +45,12 @@ func Test_SumSql(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.SumSql("points")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT SUM(`points`) AS `sum` FROM `users`",
 			types.DialectPostgres: `SELECT SUM("points") AS "sum" FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -61,12 +61,12 @@ func Test_MinSql(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.MinSql("salary")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT MIN(`salary`) AS `min` FROM `users`",
 			types.DialectPostgres: `SELECT MIN("salary") AS "min" FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -77,12 +77,12 @@ func Test_MaxSql(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.MaxSql("score")
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT MAX(`score`) AS `max` FROM `users`",
 			types.DialectPostgres: `SELECT MAX("score") AS "max" FROM "users"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})

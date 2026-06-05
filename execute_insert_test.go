@@ -35,7 +35,7 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 
 		sql, bindings, err := qb.InsertSql(values)
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
 		}
@@ -44,7 +44,7 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 			21, "ali@gmail.com", "ali", "hashed_password",
 			22, "ahmed@gmail.com", "ahmed", "hashed_password",
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})
@@ -63,7 +63,7 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 			},
 		})
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
 			types.DialectPostgres: `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
 		}
@@ -71,7 +71,7 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 			"mohamed",
 			"ali",
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.Empty(t, err)
 	})
@@ -94,7 +94,7 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 			},
 		})
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
 		}
@@ -104,7 +104,7 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 			nil, nil, "ali",
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})
@@ -137,7 +137,7 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 
 		sql, bindings, err := qb.UpsertSql(insertedValues, []string{"email", "name"}, []string{"age", "email", "name", "password"})
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
 				"ON DUPLICATE KEY UPDATE `age` = VALUES(`age`), `password` = VALUES(`password`)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12) ` +
@@ -148,7 +148,7 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 			21, "ali@gmail.com", "ali", "hashed_password",
 			22, "ahmed@gmail.com", "ahmed", "hashed_password",
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})
@@ -222,14 +222,14 @@ func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
 		}
 		sql, bindings, err := qb.UpsertSql(values, []string{"email"}, []string{"email", "age"})
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
 		}
 		expectedBindings := []any{
 			30, "mohamed@gmail.com", "mohamed",
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})
@@ -246,14 +246,14 @@ func Test_Insert_GetId(t *testing.T) {
 			},
 		})
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) RETURNING id`,
 		}
 		expectedBindings := []any{
 			20, "mohamed@gmail.com", "mohamed",
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, expectedBindings, bindings)
 		assert.NoError(t, err)
 	})

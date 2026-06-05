@@ -27,12 +27,12 @@ func Test_DeleteWhere(t *testing.T) {
 
 		sql, bindings, err := qb.Where("id", "=", 1).DeleteSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "DELETE FROM `users` WHERE `id` = ?",
 			types.DialectPostgres: `DELETE FROM "users" WHERE "id" = $1`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
@@ -46,7 +46,7 @@ func Test_DeleteWithLimit(t *testing.T) {
 
 		sql, bindings, err := qb.DeleteSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
 			types.DialectPostgres: ``, // PostgreSQL doesn't support LIMIT on DELETE
 		}
@@ -56,7 +56,7 @@ func Test_DeleteWithLimit(t *testing.T) {
 			types.DialectPostgres: xqbErr.ErrInvalidQuery,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 
 		if expectedErr[dialect] != nil {
 			assert.Empty(t, bindings)

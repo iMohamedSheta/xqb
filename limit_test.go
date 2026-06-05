@@ -12,11 +12,11 @@ func TestLimit(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Limit(10)
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LIMIT 10",
 			types.DialectPostgres: `SELECT * FROM "users" LIMIT 10`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -27,12 +27,12 @@ func TestOffset(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Offset(5)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` OFFSET 5",
 			types.DialectPostgres: `SELECT * FROM "users" OFFSET 5`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -43,12 +43,12 @@ func TestSkipAlias(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Skip(7)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` OFFSET 7",
 			types.DialectPostgres: `SELECT * FROM "users" OFFSET 7`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -60,12 +60,12 @@ func TestTakeAlias(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").Take(25)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LIMIT 25",
 			types.DialectPostgres: `SELECT * FROM "users" LIMIT 25`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -76,12 +76,12 @@ func TestForPage(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("*").ForPage(3, 15)
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LIMIT 15 OFFSET 30",
 			types.DialectPostgres: `SELECT * FROM "users" LIMIT 15 OFFSET 30`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -98,12 +98,12 @@ func TestLimitOffsetWithWhere(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, `name` FROM `products` WHERE `price` > ? ORDER BY `created_at` desc LIMIT 20 OFFSET 40",
 			types.DialectPostgres: `SELECT "id", "name" FROM "products" WHERE "price" > $1 ORDER BY "created_at" desc LIMIT 20 OFFSET 40`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{100}, bindings)
 		assert.NoError(t, err)
 	})
@@ -119,12 +119,12 @@ func TestForPageWithWhereAndOrder(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id`, `user_id` FROM `orders` WHERE `status` = ? ORDER BY `id` ASC LIMIT 10 OFFSET 40",
 			types.DialectPostgres: `SELECT "id", "user_id" FROM "orders" WHERE "status" = $1 ORDER BY "id" ASC LIMIT 10 OFFSET 40`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{"pending"}, bindings)
 		assert.NoError(t, err)
 	})
@@ -141,12 +141,12 @@ func TestPaginationWithJoins(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `users`.`id`, `profiles`.`bio` FROM `users` JOIN `profiles` ON profiles.user_id = users.id ORDER BY `users`.`created_at` desc LIMIT 50 OFFSET 100",
 			types.DialectPostgres: `SELECT "users"."id", "profiles"."bio" FROM "users" JOIN "profiles" ON profiles.user_id = users.id ORDER BY "users"."created_at" desc LIMIT 50 OFFSET 100`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -160,12 +160,12 @@ func TestForPageLargePageNumber(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `logs` LIMIT 1000 OFFSET 998000",
 			types.DialectPostgres: `SELECT * FROM "logs" LIMIT 1000 OFFSET 998000`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -181,12 +181,12 @@ func TestForPageWithGroupByHaving(t *testing.T) {
 
 		sql, bindings, err := qb.ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `user_id`, SUM(amount) as total FROM `transactions` GROUP BY `user_id` HAVING SUM(amount) > ? LIMIT 25 OFFSET 25",
 			types.DialectPostgres: `SELECT "user_id", SUM(amount) as total FROM "transactions" GROUP BY "user_id" HAVING SUM(amount) > $1 LIMIT 25 OFFSET 25`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
 		assert.NoError(t, err)
 	})

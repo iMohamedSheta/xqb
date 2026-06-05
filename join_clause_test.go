@@ -14,11 +14,11 @@ func Test_Join_Closure_On(t *testing.T) {
 			j.On("users.id", "=", "orders.user_id")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -31,11 +31,11 @@ func Test_Join_Closure_On_OrOn(t *testing.T) {
 				OrOn("users.alt_id", "=", "orders.user_id")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR users.alt_id = orders.user_id",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR users.alt_id = orders.user_id`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -48,11 +48,11 @@ func Test_Join_Closure_Where(t *testing.T) {
 				Where("orders.type", "=", "invoice")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND orders.type = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND orders.type = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{"invoice"}, bindings)
 	})
@@ -65,11 +65,11 @@ func Test_Join_Closure_OrWhere(t *testing.T) {
 				OrWhere("orders.type", "=", "receipt")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR orders.type = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR orders.type = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{"receipt"}, bindings)
 	})
@@ -82,11 +82,11 @@ func Test_Join_Closure_WhereNull(t *testing.T) {
 				WhereNull("orders.deleted_at")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND orders.deleted_at IS NULL",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND orders.deleted_at IS NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -99,11 +99,11 @@ func Test_Join_Closure_OrWhereNull(t *testing.T) {
 				OrWhereNull("orders.cancelled_at")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR orders.cancelled_at IS NULL",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR orders.cancelled_at IS NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -116,11 +116,11 @@ func Test_Join_Closure_WhereNotNull(t *testing.T) {
 				WhereNotNull("orders.confirmed_at")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND orders.confirmed_at IS NOT NULL",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND orders.confirmed_at IS NOT NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -133,11 +133,11 @@ func Test_Join_Closure_OrWhereNotNull(t *testing.T) {
 				OrWhereNotNull("orders.confirmed_at")
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR orders.confirmed_at IS NOT NULL",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR orders.confirmed_at IS NOT NULL`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -149,11 +149,11 @@ func Test_Join_Closure_OnRaw(t *testing.T) {
 			j.OnRaw("users.id = orders.user_id AND orders.active = ?", 1)
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND orders.active = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND orders.active = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{1}, bindings)
 	})
@@ -166,11 +166,11 @@ func Test_Join_Closure_OrOnRaw(t *testing.T) {
 				OrOnRaw("orders.guest_id = ? AND orders.active = ?", 99, 1)
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR orders.guest_id = ? AND orders.active = ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR orders.guest_id = $1 AND orders.active = $2`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{99, 1}, bindings)
 	})
@@ -186,11 +186,11 @@ func Test_Join_Closure_OnGroup(t *testing.T) {
 				})
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND (orders.type = orders.default_type OR orders.type = orders.fallback_type)",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND (orders.type = orders.default_type OR orders.type = orders.fallback_type)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -206,11 +206,11 @@ func Test_Join_Closure_OrOnGroup(t *testing.T) {
 				})
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id OR (orders.type = orders.default_type AND orders.status = ?)",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id OR (orders.type = orders.default_type AND orders.status = $1)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{"active"}, bindings)
 	})
@@ -225,11 +225,11 @@ func Test_Join_Closure_EmptyGroup_IsIgnored(t *testing.T) {
 				})
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Empty(t, bindings)
 	})
@@ -242,11 +242,11 @@ func Test_LeftJoin_Closure(t *testing.T) {
 				Where("comments.approved", "=", true)
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` LEFT JOIN `comments` ON users.id = comments.user_id AND comments.approved = ?",
 			types.DialectPostgres: `SELECT * FROM "users" LEFT JOIN "comments" ON users.id = comments.user_id AND comments.approved = $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{true}, bindings)
 	})
@@ -265,7 +265,7 @@ func Test_Join_Closure_Complex_Mixed_Conditions(t *testing.T) {
 					})
 			})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id" +
 				" AND orders.status = ?" +
 				" AND orders.confirmed_at IS NOT NULL" +
@@ -275,7 +275,7 @@ func Test_Join_Closure_Complex_Mixed_Conditions(t *testing.T) {
 				` AND orders.confirmed_at IS NOT NULL` +
 				` AND (orders.type = orders.primary_type OR orders.priority = $2)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{"active", 1}, bindings)
 	})
@@ -288,11 +288,11 @@ func Test_Join_Closure_OnRaw_Multiple_Bindings(t *testing.T) {
 				OnRaw("orders.region = ? AND orders.priority > ?", "EU", 2)
 		})
 		sql, bindings, err := qb.ToSql()
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT * FROM `users` JOIN `orders` ON users.id = orders.user_id AND orders.region = ? AND orders.priority > ?",
 			types.DialectPostgres: `SELECT * FROM "users" JOIN "orders" ON users.id = orders.user_id AND orders.region = $1 AND orders.priority > $2`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.NoError(t, err)
 		assert.Equal(t, []any{"EU", 2}, bindings)
 	})

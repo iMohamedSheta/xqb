@@ -16,11 +16,11 @@ func TestGroupByWithRawExpressions(t *testing.T) {
 			GroupBy(xqb.Raw("YEAR(created_at)")).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT YEAR(created_at) as year, SUM(amount) as total FROM `orders` GROUP BY YEAR(created_at)",
 			types.DialectPostgres: `SELECT YEAR(created_at) as year, SUM(amount) as total FROM "orders" GROUP BY YEAR(created_at)`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -33,12 +33,12 @@ func TestGroupByMultipleColumns(t *testing.T) {
 			GroupBy("user_id", "product_id").
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `user_id`, `product_id` FROM `orders` GROUP BY `user_id`, `product_id`",
 			types.DialectPostgres: `SELECT "user_id", "product_id" FROM "orders" GROUP BY "user_id", "product_id"`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -51,12 +51,12 @@ func TestGroupByRawShortcut(t *testing.T) {
 			GroupByRaw("DATE(created_at)").
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `id` FROM `orders` GROUP BY DATE(created_at)",
 			types.DialectPostgres: `SELECT "id" FROM "orders" GROUP BY DATE(created_at)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -71,11 +71,11 @@ func TestGroupByWithHaving(t *testing.T) {
 			Having("SUM(amount)", ">", 1000).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `region`, SUM(amount) as total FROM `sales` GROUP BY `region` HAVING SUM(amount) > ?",
 			types.DialectPostgres: `SELECT "region", SUM(amount) as total FROM "sales" GROUP BY "region" HAVING SUM(amount) > $1`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
 		assert.NoError(t, err)
 	})
@@ -89,12 +89,12 @@ func TestGroupByWithMultipleRawAndColumns(t *testing.T) {
 			GroupBy("type", xqb.Raw("DATE(created_at)")).
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `type`, DATE(created_at) as day FROM `events` GROUP BY `type`, DATE(created_at)",
 			types.DialectPostgres: `SELECT "type", DATE(created_at) as day FROM "events" GROUP BY "type", DATE(created_at)`,
 		}
 
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
@@ -123,11 +123,11 @@ func TestGroupByWithOrderBy(t *testing.T) {
 			OrderBy("count", "DESC").
 			ToSql()
 
-		expectedSql := map[types.Dialect]string{
+		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql:    "SELECT `user_id`, COUNT(*) as count FROM `sessions` GROUP BY `user_id` ORDER BY `count` DESC",
 			types.DialectPostgres: `SELECT "user_id", COUNT(*) as count FROM "sessions" GROUP BY "user_id" ORDER BY "count" DESC`,
 		}
-		assert.Equal(t, expectedSql[dialect], sql)
+		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
 		assert.NoError(t, err)
 	})
