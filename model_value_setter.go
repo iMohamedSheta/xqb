@@ -60,7 +60,7 @@ func (s *fieldValueSetter) trySetSliceField(fieldValue reflect.Value, dataValue 
 
 // trySetScannerField handles sql.Scanner implementations
 func (s *fieldValueSetter) trySetScannerField(fieldValue reflect.Value, dataValue any) (bool, error) {
-	scannerType := reflect.TypeOf((*sql.Scanner)(nil)).Elem()
+	scannerType := reflect.TypeFor[sql.Scanner]()
 	if !fieldValue.Type().Implements(scannerType) {
 		return false, nil
 	}
@@ -87,7 +87,7 @@ func (s *fieldValueSetter) trySetSQLNullField(fieldValue reflect.Value, dataValu
 
 // trySetTimeField handles time.Time fields
 func (s *fieldValueSetter) trySetTimeField(fieldValue reflect.Value, dataValue any) (bool, error) {
-	if fieldValue.Type() != reflect.TypeOf(time.Time{}) {
+	if fieldValue.Type() != reflect.TypeFor[time.Time]() {
 		return false, nil
 	}
 

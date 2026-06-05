@@ -33,7 +33,7 @@ func Test_DeleteWhere(t *testing.T) {
 		}
 
 		assert.Equal(t, expectedSql[dialect], sql)
-		assert.Equal(t, []interface{}{1}, bindings)
+		assert.Equal(t, []any{1}, bindings)
 		assert.NoError(t, err)
 	})
 }
@@ -63,7 +63,7 @@ func Test_DeleteWithLimit(t *testing.T) {
 			assert.ErrorIs(t, err, expectedErr[dialect])
 		} else {
 			assert.NoError(t, err)
-			assert.Equal(t, []interface{}{"inactive"}, bindings)
+			assert.Equal(t, []any{"inactive"}, bindings)
 		}
 	})
 }

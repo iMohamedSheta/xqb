@@ -210,7 +210,7 @@ func TestBind_AllTypes(t *testing.T) {
 		require.Equal(t, []string{"a", "b"}, m.SliceStr)
 		require.Equal(t, []int{1, 2}, m.SliceInt)
 		require.Equal(t, [3]int{1, 2, 3}, m.ArrayInt)
-		require.Equal(t, map[string]interface{}{"x": 1.0, "y": "yes"}, m.MapAny)
+		require.Equal(t, map[string]any{"x": 1.0, "y": "yes"}, m.MapAny)
 	})
 
 	// Check Custom types

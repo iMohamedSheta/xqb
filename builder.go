@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -303,9 +304,7 @@ func (qb *QueryBuilder) Clone() *QueryBuilder {
 
 	if qb.options != nil {
 		clone.options = make(map[types.Option]any, len(qb.options))
-		for k, v := range qb.options {
-			clone.options[k] = v
-		}
+		maps.Copy(clone.options, qb.options)
 	}
 
 	return &clone

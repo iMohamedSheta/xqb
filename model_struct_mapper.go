@@ -74,14 +74,14 @@ func (m *structMapper) isEmbeddedStruct(field reflect.StructField, fieldValue re
 
 // initializePointerIfNeeded initializes a nil pointer field
 func (m *structMapper) initializePointerIfNeeded(fieldValue reflect.Value) {
-	if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
+	if fieldValue.Kind() == reflect.Pointer && fieldValue.IsNil() {
 		fieldValue.Set(reflect.New(fieldValue.Type().Elem()))
 	}
 }
 
 // getTargetValue dereferences pointer to get the actual value to work with
 func (m *structMapper) getTargetValue(fieldValue reflect.Value) reflect.Value {
-	if fieldValue.Kind() == reflect.Ptr {
+	if fieldValue.Kind() == reflect.Pointer {
 		return fieldValue.Elem()
 	}
 	return fieldValue
@@ -117,7 +117,7 @@ func (m *structMapper) isNestedStruct(targetValue reflect.Value) bool {
 	if isSQLNullType(targetValue.Type()) {
 		return false
 	}
-	if targetValue.Type() == reflect.TypeOf(time.Time{}) {
+	if targetValue.Type() == reflect.TypeFor[time.Time]() {
 		return false
 	}
 	return true
@@ -167,8 +167,8 @@ func (m *dotNotationMapper) extractNestedData(dataMap map[string]any, prefix str
 	dotPrefix := prefix + "."
 
 	for key, value := range dataMap {
-		if strings.HasPrefix(key, dotPrefix) {
-			nestedKey := strings.TrimPrefix(key, dotPrefix)
+		if after, ok := strings.CutPrefix(key, dotPrefix); ok {
+			nestedKey := after
 			nestedData[nestedKey] = value
 		}
 	}

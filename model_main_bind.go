@@ -50,7 +50,7 @@ func (b *dataBinder) bind(sourceData any, destination any) error {
 
 // validateDestination ensures the destination is a non-nil pointer
 func (b *dataBinder) validateDestination(destValue reflect.Value) error {
-	if destValue.Kind() != reflect.Ptr {
+	if destValue.Kind() != reflect.Pointer {
 		return fmt.Errorf("destination must be a pointer, got %s", destValue.Kind())
 	}
 	if destValue.IsNil() {

@@ -169,12 +169,12 @@ func (c *numericConverter) convertAndSet(element reflect.Value, item any) error 
 
 func isJSONFieldType(fieldType reflect.Type) bool {
 	// []byte for JSON/JSONB
-	if fieldType == reflect.TypeOf([]byte{}) {
+	if fieldType == reflect.TypeFor[[]byte]() {
 		return true
 	}
 
 	// json.RawMessage
-	if fieldType == reflect.TypeOf(json.RawMessage{}) {
+	if fieldType == reflect.TypeFor[json.RawMessage]() {
 		return true
 	}
 
@@ -188,14 +188,14 @@ func isJSONFieldType(fieldType reflect.Type) bool {
 
 func isSQLNullType(fieldType reflect.Type) bool {
 	switch fieldType {
-	case reflect.TypeOf(sql.NullString{}),
-		reflect.TypeOf(sql.NullBool{}),
-		reflect.TypeOf(sql.NullInt64{}),
-		reflect.TypeOf(sql.NullInt32{}),
-		reflect.TypeOf(sql.NullInt16{}),
-		reflect.TypeOf(sql.NullByte{}),
-		reflect.TypeOf(sql.NullFloat64{}),
-		reflect.TypeOf(sql.NullTime{}):
+	case reflect.TypeFor[sql.NullString](),
+		reflect.TypeFor[sql.NullBool](),
+		reflect.TypeFor[sql.NullInt64](),
+		reflect.TypeFor[sql.NullInt32](),
+		reflect.TypeFor[sql.NullInt16](),
+		reflect.TypeFor[sql.NullByte](),
+		reflect.TypeFor[sql.NullFloat64](),
+		reflect.TypeFor[sql.NullTime]():
 		return true
 	}
 	return false

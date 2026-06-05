@@ -52,10 +52,10 @@ func (s *jsonFieldSetter) convertToJSONBytes(dataValue any) ([]byte, error) {
 
 func (s *jsonFieldSetter) assignJSONToField(fieldValue reflect.Value, jsonBytes []byte) error {
 	switch fieldValue.Type() {
-	case reflect.TypeOf([]byte{}):
+	case reflect.TypeFor[[]byte]():
 		fieldValue.SetBytes(jsonBytes)
 
-	case reflect.TypeOf(json.RawMessage{}):
+	case reflect.TypeFor[json.RawMessage]():
 		fieldValue.Set(reflect.ValueOf(json.RawMessage(jsonBytes)))
 
 	default:
@@ -223,42 +223,42 @@ func (s *sqlNullSetter) setSQLNullValue(fieldValue reflect.Value, dataValue any)
 	converter := &numericConverter{}
 
 	switch fieldValue.Type() {
-	case reflect.TypeOf(sql.NullString{}):
+	case reflect.TypeFor[sql.NullString]():
 		if str, ok := dataValue.(string); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullString{String: str, Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullBool{}):
+	case reflect.TypeFor[sql.NullBool]():
 		if b, ok := dataValue.(bool); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullBool{Bool: b, Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullInt64{}):
+	case reflect.TypeFor[sql.NullInt64]():
 		if n, ok := converter.toInt64(dataValue); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullInt64{Int64: n, Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullInt32{}):
+	case reflect.TypeFor[sql.NullInt32]():
 		if n, ok := converter.toInt64(dataValue); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullInt32{Int32: int32(n), Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullInt16{}):
+	case reflect.TypeFor[sql.NullInt16]():
 		if n, ok := converter.toInt64(dataValue); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullInt16{Int16: int16(n), Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullByte{}):
+	case reflect.TypeFor[sql.NullByte]():
 		if n, ok := converter.toInt64(dataValue); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullByte{Byte: byte(n), Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullFloat64{}):
+	case reflect.TypeFor[sql.NullFloat64]():
 		if f, ok := converter.toFloat64(dataValue); ok {
 			fieldValue.Set(reflect.ValueOf(sql.NullFloat64{Float64: f, Valid: true}))
 		}
 
-	case reflect.TypeOf(sql.NullTime{}):
+	case reflect.TypeFor[sql.NullTime]():
 		if tm, ok := dataValue.(time.Time); ok {
 			valid := !tm.IsZero()
 			fieldValue.Set(reflect.ValueOf(sql.NullTime{Time: tm, Valid: valid}))
