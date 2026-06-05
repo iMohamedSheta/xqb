@@ -50,9 +50,9 @@ jobs:
           fi
 
       - name: Run staticcheck
-        uses: dominikh/staticcheck-action@v1.3.1
-        with:
-          version: "latest"
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          staticcheck ./...
 
   # --------------------------------------------------------------------------------------
   # Run tests with MySql (no Redis/Postgres/migrations needed)
