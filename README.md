@@ -1,6 +1,6 @@
-# XQB Query Builder
+# XQB — SQL Query Builder for Go
 
-A powerful and flexible Sql query builder for Go with fluent interface for building complex Sql queries.
+A fluent, dialect-aware SQL query builder for Go. Build complex queries without writing raw SQL, and generate correct output for **MySQL** and **PostgreSQL** automatically.
 
 ## Installation
 
@@ -15,89 +15,616 @@ package main
 
 import (
     "database/sql"
-    _ "github.com/go-sql-dialect/mysql"
+    _ "github.com/go-sql-driver/mysql"
     "github.com/iMohamedSheta/xqb"
 )
 
 func main() {
-    // Setup database connection
-    db, _ := sql.Open("mysql", "user:password@tcp(localhost:3306)/database")
+    db, _ := sql.Open("mysql", "user:password@tcp(localhost:3306)/dbname")
 
     xqb.AddConnection(&xqb.Connection{
-      Name:    "default", // Default connection name
-      Dialect: xqb.DialectMySql,
-      DB:      db,
+        Name:    "default",
+        Dialect: xqb.DialectMySql,
+        DB:      db,
     })
 
-    // Or if you want different connection name and set it as default connection
-    myDefaultConnection := "my_connection"
-    xqb.AddConnection(&xqb.Connection{
-      Name:     myDefaultConnection,
-      Dialect: xqb.DialectMySql,
-      DB:      db,
-    })
-    // Set default connection as my_connection
-    xqb.SetDefaultConnection(myDefaultConnection)
-
-    // Build and execute query
-    qb := xqb.Table("users").
+    results, err := xqb.Table("users").
         Select("id", "name", "email").
         Where("active", "=", true).
         OrderBy("name", "ASC").
-        Limit(10)
-
-    results, _ := qb.Get()
-    // Process results...
+        Limit(10).
+        Get()
+    _ = err
+    _ = results
 }
 ```
 
-## Query Hooks
+## Dialects
 
-XQB supports query hooks for logging, profiling, or custom behavior.
-
-### OnBeforeQuery
-
-Executes right before a query is built.
+XQB supports **MySQL** and **PostgreSQL**. Column and table quoting, parameter placeholders (`?` vs `$1, $2…`), and dialect-specific features are handled automatically.
 
 ```go
-xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
-    fmt.Println("Before Query:", qb.GetTable().Name)
-})
+// Set dialect per query (useful when building SQL without a connection)
+sql, bindings, err := xqb.Table("users").
+    SetDialect(xqb.DialectMySql).
+    Where("id", "=", 1).
+    ToSql()
+// MySQL:    SELECT * FROM `users` WHERE `id` = ?
+// Postgres: SELECT * FROM "users" WHERE "id" = $1
 ```
 
-### OnAfterQuery
-
-Executes right after a query is built.
-
-```go
-xqb.DefaultSettings().OnAfterQuery(func(query *xqb.QueryExecuted) {
-    sql, _ := xqb.InjectBindings(query.Dialect, query.Sql, query.Bindings)
-    fmt.Printf("[%s] %s\n", query.Time, sql)
-})
-```
-
-### OnAfterQueryExecution
-
-Execute right after a query is executed.
-
-```go
-xqb.DefaultSettings().OnAfterQueryExecution(func(ctx context.Context) {
-    reqId, _ := q.Context.Value(enums.ContextKeyRequestId.String()).(string)
-    fmt.Printf("request_id: %s", reqId)
-})
-```
-
-### Instance-based Hooks
-
-Hooks can be set globally or per query using `WithSettings()`.
-
-Sure! Here's a simpler, more straightforward version for your docs:
+> **Note:** `FullJoin`, `EXCEPT`, and `INTERSECT` are PostgreSQL-only. Calling them on MySQL returns `ErrUnsupportedFeature`.
 
 ---
 
-### Query Models
+## Connection Management
 
-To create a model, just make a struct with fields tagged by `xqb` to match your database columns.
+```go
+// Add a named connection
+xqb.AddConnection(&xqb.Connection{
+    Name:    "replica",
+    Dialect: xqb.DialectPostgres,
+    DB:      db,
+})
+
+// Switch the global default
+xqb.SetDefaultConnection("replica")
+
+// Use a specific connection on a single query
+rows, err := xqb.Table("users").Connection("replica").Get()
+
+// Close connections
+xqb.Close("replica")
+xqb.CloseAll()
+```
+
+---
+
+## Building SQL Without Executing
+
+Use `ToSql()` to inspect the generated query and bindings without hitting the database:
+
+```go
+sql, bindings, err := xqb.Table("orders").
+    SetDialect(xqb.DialectPostgres).
+    Select("id", "total").
+    Where("status", "=", "paid").
+    ToSql()
+// sql      → SELECT "id", "total" FROM "orders" WHERE "status" = $1
+// bindings → ["paid"]
+```
+
+---
+
+## SELECT
+
+```go
+// Basic
+xqb.Table("users").Select("id", "name", "email")
+// SELECT `id`, `name`, `email` FROM `users`
+
+// Distinct
+xqb.Table("users").Select("name").Distinct()
+// SELECT DISTINCT `name` FROM `users`
+
+// Add columns to an existing select
+xqb.Table("users").Select("id").AddSelect("name", "email")
+
+// Subquery as a column
+sub := xqb.Table("payments").Select("id", "amount").Where("payments.user_id", "=", 15)
+xqb.Table("users").Select("id", "name").SelectSub(sub, "payments")
+// SELECT `id`, `name`, (SELECT `id`, `amount` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments FROM `users`
+
+// Use another query as the FROM table
+sub := xqb.Table("orders").Select("user_id", xqb.Raw("COUNT(*) AS order_count")).GroupBy("user_id")
+xqb.New().SetDialect(dialect).Select("u.id", "o.order_count").
+    FromSubquery(sub, "o").
+    Join("users u", "u.id = o.user_id")
+// SELECT `u`.`id`, `o`.`order_count` FROM (SELECT `user_id`, COUNT(*) AS order_count FROM `orders` GROUP BY `user_id`) AS o JOIN `users` `u` ON u.id = o.user_id
+```
+
+---
+
+## WHERE
+
+```go
+// Basic
+xqb.Table("users").Where("age", ">", 18)
+// WHERE `age` > ?
+
+// AND / OR
+xqb.Table("users").Where("age", ">", 18).Where("active", "=", true)
+xqb.Table("users").Where("id", "=", 1).OrWhere("email", "=", "admin@example.com")
+
+// IN / NOT IN
+xqb.Table("users").WhereIn("id", []any{1, 2, 3})
+xqb.Table("users").WhereNotIn("id", []any{4, 5})
+
+// Subquery IN
+sub := xqb.Table("admins").Select("id").Where("active", "=", true)
+xqb.Table("users").WhereInQuery("user_id", sub)
+// WHERE user_id IN (SELECT `id` FROM `admins` WHERE `active` = ?)
+
+xqb.Table("users").WhereNotInQuery("id", xqb.Table("banned_users").Select("id"))
+
+// BETWEEN
+xqb.Table("users").WhereBetween("age", 18, 65)
+xqb.Table("users").WhereNotBetween("age", 18, 60)
+// BETWEEN also accepts Raw() expressions:
+xqb.Table("logs").WhereBetween("created_at", xqb.Raw("NOW() - INTERVAL 1 DAY"), xqb.Raw("NOW()"))
+
+// NULL
+xqb.Table("users").WhereNull("deleted_at")
+xqb.Table("users").WhereNotNull("confirmed_at")
+xqb.Table("users").OrWhereNull("disabled_at")
+
+// EXISTS
+sub := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
+xqb.Table("users").WhereExists(sub)
+xqb.Table("users").WhereNotExists(sub)
+xqb.Table("users").Where("id", "=", 15).OrWhereExists(sub)
+
+// Raw WHERE
+xqb.Table("users").WhereRaw("LOWER(name) = ? OR LOWER(email) = ?", "john", "john@example.com")
+xqb.Table("logs").Where("type", "=", "info").OrWhereRaw("created_at > ?", "2024-01-01")
+
+// Grouped conditions
+xqb.Table("users").Where("id", "=", 1).WhereGroup(func(qb *xqb.QueryBuilder) {
+    qb.WhereNull("deleted_at").OrWhereNull("disabled_at")
+})
+// WHERE `id` = ? AND (`deleted_at` IS NULL OR `disabled_at` IS NULL)
+
+xqb.Table("products").Where("stock", ">", 0).OrWhereGroup(func(q *xqb.QueryBuilder) {
+    q.Where("archived", "=", false).Where("discontinued", "=", false)
+})
+// WHERE `stock` > ? OR (`archived` = ? AND `discontinued` = ?)
+
+// Nested groups (multiple levels)
+xqb.Table("users").WhereGroup(func(q1 *xqb.QueryBuilder) {
+    q1.Where("status", "=", "active").OrWhereGroup(func(q2 *xqb.QueryBuilder) {
+        q2.Where("email_verified", "=", false).Where("banned", "=", false)
+    })
+})
+// WHERE (`status` = ? OR (`email_verified` = ? AND `banned` = ?))
+
+// Raw expression on the left-hand side
+xqb.Table("users").Where(xqb.Raw("LOWER(name)"), "=", "john")
+// WHERE LOWER(name) = ?
+
+// Both sides as Raw
+xqb.Table("users").Where(xqb.Raw("LOWER(username)"), "=", xqb.Raw("LOWER(?)", "Mohamed"))
+// WHERE (LOWER(username)) = (LOWER(?))
+
+// Subquery in Where
+sub := xqb.Table("admins").Select("id").Where("active", "=", true)
+xqb.Table("users").WhereSub("admin_id", "IN", sub)
+// WHERE admin_id IN (SELECT `id` FROM `admins` WHERE `active` = ?)
+```
+
+---
+
+## JOINS
+
+### Simple Joins
+
+```go
+xqb.Table("users").Join("posts", "users.id = posts.user_id")
+// JOIN `posts` ON users.id = posts.user_id
+
+xqb.Table("users").Join("posts", "users.id = posts.user_id AND posts.status = ?", "active")
+// JOIN `posts` ON users.id = posts.user_id AND posts.status = ?
+
+xqb.Table("users").LeftJoin("comments", "users.id = comments.user_id")
+xqb.Table("users").RightJoin("logins", "users.id = logins.user_id")
+xqb.Table("users").CrossJoin("roles")
+
+// PostgreSQL only:
+xqb.Table("users").FullJoin("sessions", "users.id = sessions.user_id")
+```
+
+### Subquery Joins
+
+```go
+sub := xqb.Table("posts").Where("published", "=", true)
+xqb.Table("users").JoinSub(sub, "p", "users.id = p.user_id")
+// JOIN (SELECT * FROM `posts` WHERE `published` = ?) AS `p` ON users.id = p.user_id
+
+xqb.Table("users").LeftJoinSub(sub, "c", "users.id = c.user_id")
+xqb.Table("users").RightJoinSub(sub, "o", "users.id = o.user_id")
+xqb.Table("users").CrossJoinSub(sub, "p")
+```
+
+### Expression Joins (Raw table)
+
+```go
+expr := xqb.Raw("(SELECT * FROM posts WHERE published = ?) AS p", true)
+xqb.Table("users").JoinExpr(expr, "users.id = p.user_id")
+// JOIN (SELECT * FROM posts WHERE published = ?) AS `p` ON users.id = p.user_id
+
+// Condition can also be a Raw expression
+cond := xqb.Raw("users.id = p.user_id AND p.status = ?", "success")
+xqb.Table("users").JoinExpr(expr, cond)
+
+xqb.Table("users").RightJoinExpr(expr, "users.id = p.user_id")
+xqb.Table("users").CrossJoinExpr(expr)
+```
+
+### Join Closure (advanced ON conditions)
+
+Pass a `func(*xqb.JoinClause)` instead of a string condition for full control:
+
+```go
+xqb.Table("users").Join("orders", func(j *xqb.JoinClause) {
+    j.On("users.id", "=", "orders.user_id").
+        OrOn("users.alt_id", "=", "orders.user_id")
+})
+// JOIN `orders` ON users.id = orders.user_id OR users.alt_id = orders.user_id
+
+// Mix On + Where inside the closure
+xqb.Table("users").Join("orders", func(j *xqb.JoinClause) {
+    j.On("users.id", "=", "orders.user_id").
+        Where("orders.type", "=", "invoice")
+})
+// JOIN `orders` ON users.id = orders.user_id AND orders.type = ?
+
+// Grouped ON conditions
+xqb.Table("users").Join("orders", func(j *xqb.JoinClause) {
+    j.On("users.id", "=", "orders.user_id").
+        OnGroup(func(g *xqb.JoinClause) {
+            g.On("orders.type", "=", "orders.default_type").
+                OrOn("orders.type", "=", "orders.fallback_type")
+        })
+})
+// JOIN `orders` ON users.id = orders.user_id AND (orders.type = orders.default_type OR orders.type = orders.fallback_type)
+
+// Raw ON condition
+xqb.Table("users").Join("orders", func(j *xqb.JoinClause) {
+    j.On("users.id", "=", "orders.user_id").
+        OnRaw("orders.region = ? AND orders.priority > ?", "EU", 2)
+})
+
+// Available closure methods: On, OrOn, Where, OrWhere,
+// WhereNull, OrWhereNull, WhereNotNull, OrWhereNotNull,
+// OnRaw, OrOnRaw, OnGroup, OrOnGroup
+```
+
+---
+
+## GROUP BY, HAVING
+
+```go
+xqb.Table("orders").
+    Select("user_id", "COUNT(*) as order_count").
+    GroupBy("user_id").
+    Having("order_count", ">", 5)
+// GROUP BY `user_id` HAVING `order_count` > ?
+
+// Raw expression in GROUP BY / HAVING
+xqb.Table("orders").
+    GroupBy(xqb.DateFormat("created_at", "%Y-%m", "")).
+    Having(xqb.Raw("SUM(amount)"), ">", 1000)
+```
+
+---
+
+## ORDER BY, LIMIT, OFFSET
+
+```go
+xqb.Table("users").OrderBy("name", "ASC")
+xqb.Table("users").OrderBy(xqb.Raw("LENGTH(name)"), "DESC")
+
+// Latest / Oldest shortcuts
+xqb.Table("users").Latest("created_at")  // ORDER BY `created_at` DESC
+xqb.Table("users").Oldest("created_at")  // ORDER BY `created_at` ASC
+
+xqb.Table("users").Limit(10).Offset(20)
+// LIMIT 10 OFFSET 20
+```
+
+---
+
+## UNION / EXCEPT / INTERSECT
+
+```go
+// UNION (deduplicated)
+xqb.Table("users").Select("id", "name").
+    Union(xqb.Table("admins").Select("id", "username").Where("active", "=", true))
+// (SELECT `id`, `name` FROM `users`) UNION (SELECT `id`, `username` FROM `admins` WHERE `active` = ?)
+
+// Multiple at once
+xqb.Table("users").Select("id").
+    Union(
+        xqb.Table("admins").Select("id"),
+        xqb.Table("guests").Select("id"),
+    )
+
+// UNION ALL
+xqb.Table("users").Select("id").UnionAll(xqb.Table("guests").Select("id"))
+
+// Raw UNION
+xqb.Table("users").Select("id").UnionRaw("SELECT id FROM admins WHERE active = ?", true)
+xqb.Table("users").Select("id").UnionAllRaw("SELECT id FROM guests WHERE banned = ?", false)
+
+// PostgreSQL only: EXCEPT, INTERSECT
+xqb.Table("users").Select("id").ExceptUnion(xqb.Table("banned_users").Select("id"))
+xqb.Table("users").Select("id").ExceptUnionAll(xqb.Table("banned_users").Select("id"))
+xqb.Table("users").Select("id").IntersectUnion(xqb.Table("employees").Select("id"))
+xqb.Table("users").Select("id").IntersectUnionAll(xqb.Table("employees").Select("id"))
+```
+
+---
+
+## Common Table Expressions (CTE)
+
+```go
+// With a QueryBuilder
+cteQB := xqb.Table("users").Select("id", "name")
+xqb.New().With("cte_users", cteQB).From("cte_users").Where("id", ">", 5)
+// WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?
+
+// With raw SQL
+xqb.New().WithRaw("user_totals", "SELECT user_id, SUM(amount) as total FROM orders GROUP BY user_id").
+    Select("users.id", "user_totals.total").
+    Join("user_totals", "users.id = user_totals.user_id")
+
+// With RECURSIVE
+recQB := xqb.Table("tree").Select("id", "parent_id")
+xqb.Table("tree_cte").WithRecursive("tree_cte", recQB).WhereNull("parent_id")
+// WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL
+
+// Multiple CTEs
+xqb.New().
+    With("high_value_orders", xqb.Table("orders").Select("user_id", "total").Where("total", ">", 100)).
+    With("user_order_details", xqb.Table("high_value_orders").Select("user_id").Join("users", "users.id = high_value_orders.user_id")).
+    From("user_order_details").
+    Where("order_count", ">", 5)
+```
+
+---
+
+## Raw SQL Expressions
+
+```go
+// Raw in SELECT
+xqb.Table("users").Select(
+    xqb.Raw("COUNT(*) as total"),
+    "name",
+    xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name"),
+)
+
+// Raw with bindings
+xqb.Table("users").Where(xqb.Raw("LOWER(name)"), "=", "john")
+xqb.Table("users").WhereRaw("CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?", 1)
+
+// Raw in ORDER BY and GROUP BY
+xqb.Table("orders").OrderBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"), "ASC")
+xqb.Table("orders").GroupBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"))
+```
+
+### Dialect-Aware Expressions
+
+Use `RawDialect` to define expressions that resolve differently per dialect:
+
+```go
+expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
+    "mysql":    xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
+    "postgres": xqb.Raw("TO_CHAR(created_at, 'YYYY-MM-DD')"),
+})
+xqb.Table("users").Select(expr)
+// MySQL:    SELECT DATE_FORMAT(created_at, '%Y-%m-%d') FROM `users`
+// Postgres: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') FROM "users"
+```
+
+---
+
+## CASE WHEN
+
+```go
+caseExpr := xqb.Case().
+    When("age >= ?", "adult", 18).
+    When("age < ?", "minor", 18).
+    Else("unknown").
+    As("age_group").
+    End()
+
+xqb.Table("users").Select("id", caseExpr)
+// SELECT `id`, CASE WHEN age >= ? THEN ? WHEN age < ? THEN ? ELSE ? END AS age_group FROM `users`
+
+// Use the same expression in WHERE
+xqb.Table("users").Select("id", caseExpr).Where(caseExpr, "=", "adult")
+```
+
+---
+
+## Aggregate Functions
+
+### In SELECT
+
+```go
+xqb.Table("orders").Select(
+    xqb.Count("id", "order_count"),
+    xqb.Sum("amount", "total_amount"),
+    xqb.Avg("amount", "average_amount"),
+    xqb.Min("amount", "min_amount"),
+    xqb.Raw("MAX(amount) AS max_amount"),
+)
+// SELECT COUNT(id) AS order_count, SUM(amount) AS total_amount, ...
+```
+
+### Execute and return a scalar
+
+```go
+count, err := xqb.Table("users").Where("active", "=", true).Count("id")
+max, err   := xqb.Table("orders").Max("amount")
+min, err   := xqb.Table("orders").Min("amount")
+avg, err   := xqb.Table("orders").Avg("amount")
+sum, err   := xqb.Table("orders").Sum("amount")
+exists, err := xqb.Table("users").Where("email", "=", "a@b.com").Exists()
+```
+
+---
+
+## String, Date, Math & JSON Functions
+
+These return dialect-aware expressions usable in `Select`, `GroupBy`, `OrderBy`, `Having`, and `Where`.
+
+```go
+// String
+xqb.Concat([]string{"first_name", "' '", "last_name"}, "full_name")
+xqb.Lower("email", "lower_email")
+xqb.Upper("username", "upper_username")
+xqb.Length("bio", "bio_length")
+xqb.Trim("nickname", "trimmed_nickname")
+xqb.Replace("title", "'foo'", "'bar'", "replaced_title")
+xqb.Substring("description", 1, 10, "short_desc")
+
+// Date
+xqb.Date("created_at", "created_date")
+xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date")  // → TO_CHAR on Postgres
+xqb.DateDiff("end_date", "start_date", "days_between")
+xqb.DateAdd("created_at", "1", "DAY", "next_day")
+xqb.DateSub("created_at", "1", "MONTH", "prev_month")
+
+// Math
+xqb.Math("amount * 1.1", "total_with_tax")
+xqb.Coalesce([]string{"middle_name", "'N/A'"}, "display_name")
+
+// JSON (dialect-aware: JSON_EXTRACT on MySQL, -> / ->> on Postgres)
+xqb.JsonExtract("metadata", "preferences.theme", "theme")
+// MySQL:    JSON_EXTRACT(metadata, '$.preferences.theme') AS theme
+// Postgres: metadata->'preferences'->>'theme' AS theme
+
+xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone")
+```
+
+---
+
+## Locking
+
+```go
+xqb.Table("users").Select("id", "balance").LockForUpdate()
+// SELECT `id`, `balance` FROM `users` FOR UPDATE
+
+xqb.Table("users").Select("id").SharedLock()
+// SELECT `id` FROM `users` LOCK IN SHARE MODE
+```
+
+---
+
+## Query Execution
+
+```go
+// Get all rows as []map[string]any
+results, err := qb.Get()
+
+// Get the first row
+row, err := qb.First()
+
+// Get a single column value from the first row
+value, err := qb.Value("name")
+
+// Pluck a column as a slice
+names, err := qb.PluckSlice("name")
+
+// Pluck two columns as a map[value → key]
+index, err := qb.PluckMap("name", "id")
+
+// Process large result sets in chunks
+err = qb.Chunk(100, func(rows []map[string]any) error {
+    // called with up to 100 rows at a time
+    return nil
+})
+
+// Paginate
+results, meta, err := qb.Paginate(10, 1, true)
+// meta: total_count, current_page, last_page, next_page, prev_page
+```
+
+---
+
+## INSERT, UPDATE, DELETE
+
+```go
+// Insert one or many rows
+affected, err := xqb.Table("users").Insert([]map[string]any{
+    {"name": "John", "email": "john@example.com"},
+    {"name": "Jane", "email": "jane@example.com"},
+})
+
+// Insert and return the new row's ID
+lastId, err := xqb.Table("users").InsertGetId([]map[string]any{
+    {"name": "John", "email": "john@example.com"},
+})
+
+// Update
+affected, err := xqb.Table("users").
+    Where("id", "=", 1).
+    Update(map[string]any{"name": "Jane", "email": "jane@example.com"})
+
+// Delete
+affected, err := xqb.Table("users").Where("id", "=", 1).Delete()
+```
+
+---
+
+## Raw SQL Execution
+
+```go
+// Execute (INSERT / UPDATE / DELETE)
+result, err := xqb.Sql("INSERT INTO users (name, email) VALUES (?, ?)", "John", "john@example.com").
+    Connection("secondary").
+    Execute()
+
+// Query multiple rows
+rows, err := xqb.Sql("SELECT * FROM users WHERE age > ?", 18).Query()
+
+// Query a single row
+row, err := xqb.Sql("SELECT COUNT(*) FROM users").QueryRow()
+```
+
+---
+
+## Transactions
+
+```go
+// Managed transaction (auto rollback on error)
+err := xqb.Transaction(func(tx *sql.Tx) error {
+    lastId, err := xqb.Table("users").WithTx(tx).
+        InsertGetId([]map[string]any{{"name": "John", "email": "john@example.com"}})
+    if err != nil {
+        return err
+    }
+
+    _, err = xqb.Table("profiles").WithTx(tx).
+        Where("user_id", "=", lastId).
+        Update(map[string]any{"bio": "New user"})
+    return err
+})
+
+// On a specific connection
+err = xqb.TransactionOn("connection_name", func(tx *sql.Tx) error {
+    // ...
+    return nil
+})
+
+// Manual transaction
+tx, err := xqb.BeginTx()
+// or: tx, err := xqb.BeginTxOn("connection_name")
+
+lastId, err := xqb.Table("users").WithTx(tx).
+    InsertGetId([]map[string]any{{"name": "John"}})
+if err != nil {
+    tx.Rollback()
+    return
+}
+tx.Commit()
+```
+
+---
+
+## Model Binding
+
+Define structs with `xqb` tags and use `xqb.Bind()` to map query results to them.
 
 ```go
 type User struct {
@@ -106,566 +633,258 @@ type User struct {
     Email     sql.NullString `xqb:"email"`
     Active    sql.NullBool   `xqb:"active"`
     CreatedAt sql.NullTime   `xqb:"created_at"`
-    Password  string         `xqb:"-"` // ignore this field in model binding
+    Password  string         `xqb:"-"` // ignored — never populated
 }
 
-func (User) Table() string {
-    return "users"
-}
+func (User) Table() string { return "users" }
 ```
+
 ```go
-user, err := xqb.Model(User{}).SetDialect(dialect).
+// Build the query (no connection needed for ToSql)
+sql, bindings, err := xqb.ModelQ(User{}).SetDialect(dialect).
     Select("id", "name", "email", "active", "created_at").
     Where("username", "=", "ali").
     OrWhere("username", "=", "mohamed").
     Latest("created_at").
-    First()
+    Limit(1).
+    ToSql()
 
-// Now use the `user` struct model in your code
+// Bind a single row (map[string]any → struct)
+var user User
+err = xqb.Bind(rowData, &user)
 
-// Sometimes we need the safe types of the model with extra fields that are not in the model.
-// So we can also do this:
+// Bind a slice of rows ([]map[string]any → []User)
+var users []User
+err = xqb.Bind(rowsData, &users)
+```
 
-// UserExtra embeds User and adds a computed field
-type UserExtra struct {
-    User
-    IsOnline bool `xqb:"is_online" json:"is_online"` // computed field
+**What `Bind` handles automatically:**
+- `sql.NullString`, `sql.NullBool`, `sql.NullTime`, `time.Time`
+- Nested structs (via dot-prefixed column keys like `"address.city"`)
+- Pointer-to-struct fields (auto-allocated)
+- JSON columns (string or pre-parsed `map[string]any`) into nested structs or slices
+- Slice relations (`[]Post` populated from flat join rows using `"posts_title"` key pattern)
+- Fields tagged `xqb:"-"` are always skipped
+
+---
+
+## Query Hooks
+
+Hooks run globally (or per-query via `WithSettings()`) for logging, tracing, or profiling.
+
+```go
+// Called just before the SQL string is built
+xqb.DefaultSettings().OnBeforeQuery(func(qb *xqb.QueryBuilder) {
+    fmt.Println("table:", qb.GetTable().Name)
+})
+
+// Called after the SQL is built, before execution
+xqb.DefaultSettings().OnAfterQuery(func(q *xqb.QueryExecuted) {
+    bound, _ := xqb.InjectBindings(q.Dialect, q.Sql, q.Bindings)
+    fmt.Printf("[%s] %s\n", q.Time, bound)
+})
+
+// Called after the query has been executed
+xqb.DefaultSettings().OnAfterQueryExecution(func(ctx context.Context) {
+    // access context values, e.g. request ID
+})
+```
+
+---
+
+## Per-Request Query Tracking (Dev Tooling)
+
+All three hooks share a `context.Context` that travels with the query. This makes it straightforward to build a **per-request SQL log** — recording build time, execution time, the bound SQL, and even the source file/line — and surface it in a frontend dev panel.
+
+### How the hooks cooperate
+
+| Hook | When it fires | What to record |
+|---|---|---|
+| `OnBeforeQuery` | SQL string is about to be built | start timestamp + caller source location |
+| `OnAfterQuery` | SQL string is ready, bindings collected | build duration + final bound SQL |
+| `OnAfterQueryExecution` | DB call returned | execution duration |
+
+### Full example
+
+```go
+//go:build dev
+
+package hooks
+
+import (
+    "context"
+    "runtime"
+    "strings"
+    "sync"
+    "time"
+
+    "github.com/iMohamedSheta/xqb"
+)
+
+// QueryLog holds timing and SQL details for one query.
+type QueryLog struct {
+    BuildDuration string `json:"buildDuration"`
+    ExecDuration  string `json:"execDuration"`
+    Sql           string `json:"sql"`      // bound SQL (human-readable)
+    RawSql        string `json:"rawSql"`   // SQL with placeholders
+    Bindings      []any  `json:"bindings"`
+    SourceFile    string `json:"sourceFile"`
+    SourceLine    int    `json:"sourceLine"`
+    startTime     int64  // unix nano — not exported
 }
 
-// Now we can use the `UserExtra` struct model in your code
-userExtra, err := xqb.Model(UserExtra{}).SetDialect(dialect).
-    Select("id", "name", "email", "active", "created_at").
-    Where("username", "=", "ali").
-    OrWhere("username", "=", "mohamed").
-    Latest("created_at").
-    First()
+var (
+    mu           sync.Mutex
+    queriesStore = make(map[string][]QueryLog) // requestID → logs
+)
 
+// captureCaller walks up the call stack to find the first frame outside xqb.
+func captureCaller(skip int) (file string, line int) {
+    pc := make([]uintptr, 20)
+    n := runtime.Callers(skip, pc)
+    frames := runtime.CallersFrames(pc[:n])
+    for {
+        frame, more := frames.Next()
+        if !strings.Contains(frame.File, "xqb") &&
+            !strings.Contains(frame.File, "/runtime/") &&
+            !strings.Contains(frame.File, "hooks.go") {
+            return frame.File, frame.Line
+        }
+        if !more {
+            break
+        }
+    }
+    return "", 0
+}
+
+func InitQueryHooks() {
+    // 1. Before the SQL is built — capture start time and call site.
+    xqb.DefaultSettings().OnBeforeQuery(func(q *xqb.QueryBuilder) {
+        reqID, _ := q.GetContext().Value("request_id").(string)
+        if reqID == "" {
+            return
+        }
+        file, line := captureCaller(4)
+        mu.Lock()
+        queriesStore[reqID] = append(queriesStore[reqID], QueryLog{
+            startTime:  time.Now().UnixNano(),
+            SourceFile: file,
+            SourceLine: line,
+        })
+        mu.Unlock()
+    })
+
+    // 2. After the SQL is built — record build duration and the final SQL.
+    xqb.DefaultSettings().OnAfterQuery(func(q *xqb.QueryExecuted) {
+        reqID, _ := q.Context.Value("request_id").(string)
+        if reqID == "" {
+            return
+        }
+        boundSql, err := xqb.InjectBindings(q.Dialect, q.Sql, q.Bindings)
+        if err != nil {
+            return
+        }
+        mu.Lock()
+        defer mu.Unlock()
+        logs := queriesStore[reqID]
+        if len(logs) > 0 {
+            last := &logs[len(logs)-1]
+            last.BuildDuration = q.Time.String()
+            last.Sql          = boundSql
+            last.RawSql       = q.Sql
+            last.Bindings     = q.Bindings
+            queriesStore[reqID] = logs
+        }
+    })
+
+    // 3. After execution — record how long the DB call took.
+    xqb.DefaultSettings().OnAfterQueryExecution(func(ctx context.Context) {
+        reqID, _ := ctx.Value("request_id").(string)
+        if reqID == "" {
+            return
+        }
+        mu.Lock()
+        defer mu.Unlock()
+        logs := queriesStore[reqID]
+        if len(logs) > 0 {
+            last := &logs[len(logs)-1]
+            last.ExecDuration = time.Since(time.Unix(0, last.startTime)).String()
+            queriesStore[reqID] = logs
+        }
+    })
+}
+
+// GetQueries returns all logged queries for a given request ID.
+func GetQueries(reqID string) []QueryLog {
+    mu.Lock()
+    defer mu.Unlock()
+    return queriesStore[reqID]
+}
+
+// ClearQueries removes all logged queries for a given request ID.
+func ClearQueries(reqID string) {
+    mu.Lock()
+    defer mu.Unlock()
+    delete(queriesStore, reqID)
+}
 ```
 
+### Attaching a context to every query
 
-**How it works:**
-
-1. You fetch data with the query.
-2. You fill your struct with `xqb.Bind()`.
-
-## Raw Sql Expressions
-
-### Raw Function
+Pass the request context to the query builder so the hooks can read the request ID:
 
 ```go
-// Raw Sql in SELECT
+// In your HTTP handler or middleware:
 qb := xqb.Table("users").
-    Select(
-        xqb.Raw("COUNT(*) as total"),
-        "name",
-        xqb.Raw("CONCAT(first_name, ' ', last_name) as full_name"),
-    )
-// Sql: SELECT COUNT(*) as total, name, CONCAT(first_name, ' ', last_name) as full_name FROM users
-
-// Raw Sql in WHERE
-qb := xqb.Table("users").
-    Where(xqb.Raw("LOWER(email)"), "LIKE", "%@example.com")
-// Sql: SELECT * FROM users WHERE LOWER(email) LIKE ?
-
-// Raw Sql in ORDER BY
-qb := xqb.Table("orders").
-    OrderBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"), "ASC")
-// Sql: SELECT * FROM orders ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC
-
-// Raw Sql in GROUP BY
-qb := xqb.Table("orders").
-    GroupBy(xqb.Raw("DATE_FORMAT(created_at, '%Y-%m')"))
-// Sql: SELECT * FROM orders GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-
-// Raw Sql in HAVING
-qb := xqb.Table("orders").
-    GroupBy("user_id").
-    Having(xqb.Raw("SUM(amount)"), ">", 1000)
-// Sql: SELECT * FROM orders GROUP BY user_id HAVING SUM(amount) > ?
-```
-
-### RawDialect Function
-
-```go
-// Database-specific expressions
-expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
-    "mysql":    xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
-    "postgres": xqb.Raw("TO_CHAR(created_at, 'YYYY-MM-DD')"),
-})
-
-qb := xqb.Table("users").
-    Select(expr, "formatted_date")
-// MySql: SELECT DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM users
-// PostgreSql: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS formatted_date FROM users
-
-// Complex dialect-specific expressions
-jsonExpr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
-    "mysql":    xqb.Raw("JSON_EXTRACT(data, '$.user.email')"),
-    "postgres": xqb.Raw("data->'user'->>'email'"),
-})
-
-qb := xqb.Table("profiles").
-    Select(jsonExpr, "user_email")
-// MySql: SELECT JSON_EXTRACT(data, '$.user.email') AS user_email FROM profiles
-// PostgreSql: SELECT data->'user'->>'email' AS user_email FROM profiles
-```
-
-## Database Connection
-
-```go
-// Add connection
-db, _ := sql.Open("mysql", "dsn")
-xqb.AddConnection("default", db)
-
-// Use specific connection
-qb := xqb.Table("users").Connection("default").Where("active", "=", true)
-
-// Close connection
-xqb.Close("default")
-xqb.CloseAll()
-```
-
-## SELECT Queries
-
-### Basic Select
-
-```go
-// Simple select
-qb := xqb.Table("users").
-    Select("id", "name", "email")
-// Sql: SELECT id, name, email FROM users
-
-// Select with conditions
-qb := xqb.Table("users").
-    Select("id", "name").
-    Where("age", ">", 18)
-// Sql: SELECT id, name FROM users WHERE age > ?
-
-// Select distinct
-qb := xqb.Table("users").
-    Select("id", "name").
-    Distinct()
-// Sql: SELECT DISTINCT id, name FROM users
-```
-
-### Joins
-
-```go
-// Inner join
-qb := xqb.Table("users").
-    Select("users.id", "users.name", "orders.id as order_id").
-    Join("orders", "users.id = orders.user_id")
-// Sql: SELECT users.id, users.name, orders.id as order_id FROM users JOIN orders ON users.id = orders.user_id
-
-// Left join
-qb := xqb.Table("users").
-    LeftJoin("comments", "users.id = comments.user_id")
-// Sql: SELECT * FROM users LEFT JOIN comments ON users.id = comments.user_id
-
-// Right join
-qb := xqb.Table("users").
-    RightJoin("logins", "users.id = logins.user_id")
-// Sql: SELECT * FROM users RIGHT JOIN logins ON users.id = logins.user_id
-
-// Full join
-qb := xqb.Table("users").
-    FullJoin("sessions", "users.id = sessions.user_id")
-// Sql: SELECT * FROM users FULL JOIN sessions ON users.id = sessions.user_id
-
-// Cross join
-qb := xqb.Table("users").
-    CrossJoin("roles")
-// Sql: SELECT * FROM users CROSS JOIN roles
-
-// Join with conditions
-qb := xqb.Table("users").
-    Join("posts", "users.id = posts.user_id AND posts.status = ?", "active")
-// Sql: SELECT * FROM users JOIN posts ON users.id = posts.user_id AND posts.status = ?
-```
-
-### Subquery Joins
-
-```go
-// Join subquery
-sub := xqb.Table("posts").Where("published", "=", true)
-qb := xqb.Table("users").
-    JoinSub(sub, "p", "users.id = p.user_id")
-// Sql: JOIN (SELECT * FROM posts WHERE published = ?) AS p ON users.id = p.user_id
-
-// Left join subquery
-sub := xqb.Table("comments").Where("active", "=", true)
-qb := xqb.Table("users").
-    LeftJoinSub(sub, "c", "users.id = c.user_id")
-// Sql: LEFT JOIN (SELECT * FROM comments WHERE active = ?) AS c ON users.id = c.user_id
-
-// Cross join subquery
-sub := xqb.Table("plans").Where("expired", "=", false)
-qb := xqb.Table("users").
-    CrossJoinSub(sub, "p")
-// Sql: CROSS JOIN (SELECT * FROM plans WHERE expired = ?) AS p
-```
-
-### Where Conditions
-
-```go
-// Basic where
-qb := xqb.Table("users").
-    Where("age", ">", 18)
-// Sql: SELECT * FROM users WHERE age > ?
-
-// Multiple conditions
-qb := xqb.Table("users").
-    Where("age", ">", 18).
+    WithContext(r.Context()).   // attach the request context
     Where("active", "=", true)
-// Sql: SELECT * FROM users WHERE age > ? AND active = ?
 
-// OR conditions
-qb := xqb.Table("users").
-    Where("id", "=", 1).
-    OrWhere("email", "=", "admin@example.com")
-// Sql: SELECT * FROM users WHERE id = ? OR email = ?
+results, err := qb.Get()
+```
 
-// IN conditions
-qb := xqb.Table("users").
-    WhereIn("id", []any{1, 2, 3})
-// Sql: SELECT * FROM users WHERE id IN (?, ?, ?)
+### Returning the log to your frontend
 
-// BETWEEN conditions
-qb := xqb.Table("users").
-    WhereBetween("age", 18, 65)
-// Sql: SELECT * FROM users WHERE age BETWEEN ? AND ?
+At the end of the HTTP request (e.g. in a middleware `defer`) collect the logs and send them to your dev panel:
 
-// NULL conditions
-qb := xqb.Table("users").
-    WhereNull("deleted_at")
-// Sql: SELECT * FROM users WHERE deleted_at IS NULL
+```go
+func DevQueryMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        reqID := r.Header.Get("X-Request-Id")
+        ctx   := context.WithValue(r.Context(), "request_id", reqID)
 
-// EXISTS conditions
-subQuery := xqb.Table("orders").Select("user_id").Where("status", "=", "active")
-qb := xqb.Table("users").
-    WhereExists(subQuery)
-// Sql: SELECT * FROM users WHERE EXISTS (SELECT user_id FROM orders WHERE status = ?)
+        next.ServeHTTP(w, r.WithContext(ctx))
 
-// Raw where
-qb := xqb.Table("users").
-    WhereRaw("CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?", 1)
-// Sql: SELECT * FROM users WHERE CASE WHEN status = 'active' THEN 1 ELSE 0 END = ?
+        // After the handler finishes, grab the collected logs
+        queries := hooks.GetQueries(reqID)
+        hooks.ClearQueries(reqID)
 
-// Where groups
-qb := xqb.Table("users").
-    Where("id", "=", 1).
-    WhereGroup(func(qb *xqb.QueryBuilder) {
-        qb.WhereNull("deleted_at").OrWhereNull("disabled_at")
+        // Encode and send to the frontend (e.g. as a response header or SSE)
+        data, _ := json.Marshal(queries)
+        w.Header().Set("X-Query-Log", string(data))
     })
-// Sql: SELECT * FROM users WHERE id = ? AND (deleted_at IS NULL OR disabled_at IS NULL)
-```
-
-### Group By and Having
-
-```go
-// Group by
-qb := xqb.Table("orders").
-    Select("user_id", "COUNT(*) as order_count").
-    GroupBy("user_id")
-// Sql: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id
-
-// Having
-qb := xqb.Table("orders").
-    Select("user_id", "COUNT(*) as order_count").
-    GroupBy("user_id").
-    Having("order_count", ">", 5)
-// Sql: SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id HAVING order_count > ?
-```
-
-### Order By
-
-```go
-// Order by
-qb := xqb.Table("users").
-    Select("id", "name").
-    OrderBy("name", "ASC")
-// Sql: SELECT id, name FROM users ORDER BY name ASC
-```
-
-### Limit and Offset
-
-```go
-// Limit
-qb := xqb.Table("users").
-    Select("id", "name").
-    Limit(10)
-// Sql: SELECT id, name FROM users LIMIT 10
-
-// Limit with offset
-qb := xqb.Table("users").
-    Select("id", "name").
-    Limit(10).
-    Offset(20)
-// Sql: SELECT id, name FROM users LIMIT 10 OFFSET 20
-```
-
-### Common Table Expressions (CTE)
-
-```go
-// Simple CTE
-qb := xqb.Table("users").
-    WithRaw("user_totals", "SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id").
-    Select("users.id", "users.name", "user_totals.total_spent").
-    Join("user_totals", "users.id = user_totals.user_id")
-// Sql: WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) SELECT users.id, users.name, user_totals.total_spent FROM users JOIN user_totals ON users.id = user_totals.user_id
-
-// Complex CTE
-qb := xqb.Table("products").
-    WithRaw("active_users",
-        "WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) "+
-            "SELECT users.id, users.name, user_orders.order_count FROM users "+
-            "JOIN user_orders ON users.id = user_orders.user_id").
-    Select("products.id", "products.name", "active_users.name as buyer").
-    Join("active_users", "products.id = active_users.id")
-```
-
-### Locking
-
-```go
-// Lock for update
-qb := xqb.Table("users").
-    Select("id", "name").
-    LockForUpdate()
-// Sql: SELECT id, name FROM users FOR UPDATE
-
-// Shared lock
-qb := xqb.Table("users").
-    Select("id", "name").
-    SharedLock()
-// Sql: SELECT id, name FROM users LOCK IN SHARE MODE
-```
-
-## Aggregate Functions
-
-```go
-// Basic aggregates
-qb := xqb.Table("orders").
-    Select(
-        xqb.Count("id", "order_count"),
-        xqb.Sum("amount", "total_amount"),
-        xqb.Avg("amount", "average_amount"),
-        xqb.Min("amount", "min_amount"),
-        xqb.Raw("MAX(amount) AS max_amount")
-    )
-// Sql: SELECT COUNT(id) AS order_count, SUM(amount) AS total_amount, AVG(amount) AS average_amount, MIN(amount) AS min_amount, MAX(amount) AS max_amount FROM orders
-```
-
-## String Functions
-
-```go
-// String operations
-qb := xqb.Table("users").
-    Select(
-        xqb.Concat([]string{"first_name", "' '", "last_name"}, "full_name"),
-        xqb.Lower("email", "lower_email"),
-        xqb.Upper("username", "upper_username"),
-        xqb.Length("bio", "bio_length"),
-        xqb.Trim("nickname", "trimmed_nickname"),
-        xqb.Replace("title", "'foo'", "'bar'", "replaced_title"),
-        xqb.Substring("description", 1, 10, "short_desc"),
-    )
-// Sql: SELECT CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM users
-```
-
-## Date Functions
-
-```go
-// Date operations
-qb := xqb.Table("events").
-    Select(
-        xqb.Date("created_at", "created_date"),
-        xqb.DateDiff("end_date", "start_date", "days_between"),
-        xqb.DateAdd("created_at", "1", "DAY", "next_day"),
-        xqb.DateSub("created_at", "1", "MONTH", "prev_month"),
-        xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date"),
-    )
-// Sql: SELECT DATE(created_at) AS created_date, DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date FROM events
-```
-
-## JSON Functions
-
-```go
-// JSON operations
-qb := xqb.Table("users").
-    Select(
-        xqb.JsonExtract("metadata", "preferences.theme", "theme"),
-        xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone"),
-    )
-// Sql: SELECT JSON_EXTRACT(metadata, '$.preferences.theme') AS theme, JSON_UNQUOTE(data, '$.phone') AS phone FROM users
-```
-
-## Math Expressions
-
-```go
-// Math operations
-qb := xqb.Table("orders").
-    Select(
-        xqb.Math("amount * 1.1", "total_with_tax"),
-        xqb.Coalesce([]string{"middle_name", "'N/A'"}, "coalesced_name"),
-    )
-// Sql: SELECT amount * 1.1 AS total_with_tax, COALESCE(middle_name, 'N/A') AS coalesced_name FROM orders
-```
-
-## INSERT Queries
-
-```go
-// Insert single record
-affected, _ := xqb.Table("users").
-    Insert([]map[string]any{
-        {"name": "John Doe", "email": "john@example.com"},
-    })
-
-// Insert multiple records
-affected, _ := xqb.Table("users").
-    Insert([]map[string]any{
-        {"name": "John Doe", "email": "john@example.com"},
-        {"name": "Jane Doe", "email": "jane@example.com"},
-    })
-
-// Insert and get ID
-lastId, _ := xqb.Table("users").
-    InsertGetId([]map[string]any{
-        {"name": "John Doe", "email": "john@example.com"},
-    })
-```
-
-## UPDATE Queries
-
-```go
-// Update records
-affected, _ := xqb.Table("users").
-    Where("id", "=", 1).
-    Update(map[string]any{
-        "name": "Jane Doe",
-        "email": "jane@example.com",
-    })
-// Sql: UPDATE users SET name = ?, email = ? WHERE id = ?
-
-// Update with multiple conditions
-affected, _ := xqb.Table("users").
-    Where("active", "=", true).
-    Where("age", ">", 18).
-    Update(map[string]any{
-        "status": "verified",
-    })
-```
-
-## DELETE Queries
-
-```go
-// Delete records
-affected, _ := xqb.Table("users").
-    Where("id", "=", 1).
-    Delete()
-// Sql: DELETE FROM users WHERE id = ?
-
-// Delete with multiple conditions
-affected, _ := xqb.Table("users").
-    Where("active", "=", false).
-    Where("last_login", "<", "2023-01-01").
-    Delete()
-```
-
-## Raw Sql
-
-```go
-// Execute raw Sql
-result, _ := xqb.Sql("INSERT INTO users (name, email) VALUES (?, ?)", "John", "john@example.com").
-    Connection("secondary_connection").
-    Execute()
-
-// Query raw Sql
-rows, _ := xqb.Sql("SELECT * FROM users WHERE age > ?", 18).
-    Query()
-
-// Query single row
-row, _ := xqb.Sql("SELECT COUNT(*) FROM users").
-    QueryRow()
-```
-
-## Transactions
-
-```go
-// Simple transaction
-err := xqb.Transaction(func(tx *sql.Tx) error {
-    lastId, _ := xqb.Table("users").WithTx(tx).
-        InsertGetId([]map[string]any{
-            {"name": "John", "email": "john@example.com"},
-        })
-
-    affected, _ := xqb.Table("profiles").WithTx(tx).
-        Where("user_id", "=", lastId).
-        Update(map[string]any{
-            "bio": "New user",
-        })
-
-    return nil
-})
-
-// Transaction on specific connection
-// Note: You can use any connection in the DBManager
-err := xqb.TransactionOn("connection_name", func(tx *sql.Tx) error {
-  //...
-})
-
-// Manual transaction
-tx, _ := xqb.BeginTx() || xqb.BeginTxOn("connection_name")
-
-lastId, err := xqb.Table("users").WithTx(tx).
-    InsertGetId([]map[string]any{
-        {"name": "John", "email": "john@example.com"},
-    })
-if err != nil {
-    tx.Rollback()
 }
-
-tx.Commit()
 ```
 
-## Query Execution
+### What the dev panel shows
 
-```go
-// Get all results
-results, _ := qb.Get() // Returns []map[string]any
+Each entry in the log contains:
 
-// Get first result
-user, _ := qb.First() // Returns map[string]any
+| Field | Example |
+|---|---|
+| `sql` | `SELECT "users".* FROM "users" WHERE "id" = 1 LIMIT 1` |
+| `rawSql` | `SELECT "users".* FROM "users" WHERE "id" = $1 LIMIT 1` |
+| `bindings` | `[1]` |
+| `buildDuration` | `200ns` |
+| `execDuration` | `511µs` |
+| `sourceFile` | `.../app/api/repository/user_repository.go` |
+| `sourceLine` | `320` |
 
-// aggregate execution
-count, _ := qb.Count("id")
-max, _ := qb.Max("id")
-min, _ := qb.Min("id")
-avg, _ := qb.Avg("id")
-sum, _ := qb.Sum("id")
+![Per-request query panel showing SQL, build/exec times, source location, and bindings](examples/request_queries.png)
 
-// Check if exists
-exists, _ := qb.Exists()
+> **Tip:** Gate the entire hook registration behind a build tag (`//go:build dev`) so none of this overhead ships to production.
 
-// Get single value
-value, _ := qb.Value("name")
-
-// Pluck specific columns as key -> value
-names, _ := qb.PluckMap("name", "id") // Returns map[string]any 
-
-// Pluck specific column
-names, _:= qb.PluckSlice("name")  
-
-// Chunk large results
-err := qb.Chunk(100, func(rows []map[string]any) error {
-    // Process 100 records at a time
-    return nil
-})
-
-// Pagination
-results, meta, _ := qb.Paginate(10, 1, true)
-// meta contains: total_count, current_page, last_page, next_page, prev_page
-```
+---
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT — see [LICENSE](LICENSE).
