@@ -641,6 +641,21 @@ func (mq *ModelBuilder[T]) Chunks(chunkSize int, closure func(results []T) error
 	})
 }
 
+// Exists returns true if any row matches the current query conditions
+func (mq *ModelBuilder[T]) Exists() (bool, error) {
+	return mq.QueryBuilder.Exists()
+}
+
+// DoesntExist returns true if no rows match the current query conditions
+func (mq *ModelBuilder[T]) DoesntExist() (bool, error) {
+	return mq.QueryBuilder.DoesntExist()
+}
+
+// ExistsSql returns the sql query for Exists()
+func (mq *ModelBuilder[T]) ExistsSql() (string, []any, error) {
+	return mq.QueryBuilder.ExistsSql()
+}
+
 // QB provides access to raw QueryBuilder methods while maintaining type safety
 func (mq *ModelBuilder[T]) Q(fn func(*QueryBuilder) *QueryBuilder) *ModelBuilder[T] {
 	fn(mq.QueryBuilder)

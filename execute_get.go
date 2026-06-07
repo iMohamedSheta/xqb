@@ -230,3 +230,32 @@ func (qb *QueryBuilder) FindOrFail(id any) (map[string]any, error) {
 	}
 	return result, nil
 }
+
+// Exists returns true if any row matches the current query conditions
+func (qb *QueryBuilder) Exists() (bool, error) {
+	qb.columns = []any{"1"}
+	qb.limit = 1
+
+	results, err := qb.Get()
+	if err != nil {
+		return false, fmt.Errorf("%w: Exists() failed to execute query, %v", xqbErr.ErrQueryFailed, err)
+	}
+
+	return len(results) > 0, nil
+}
+
+// DoesntExist returns true if no rows match the current query conditions
+func (qb *QueryBuilder) DoesntExist() (bool, error) {
+	exists, err := qb.Exists()
+	if err != nil {
+		return false, err
+	}
+	return !exists, nil
+}
+
+// ExistsSql returns the sql query for Exists()
+func (qb *QueryBuilder) ExistsSql() (string, []any, error) {
+	qb.columns = []any{"1"}
+	qb.limit = 1
+	return qb.ToSql()
+}

@@ -96,3 +96,20 @@ func Test_PaginateSql(t *testing.T) {
 		assert.Equal(t, []any{true}, bindings)
 	})
 }
+
+func Test_ExistsSql(t *testing.T) {
+	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
+		qb := xqb.Table("users").SetDialect(dialect)
+
+		sql, bindings, err := qb.Where("id", "=", 42).ExistsSql()
+
+		expected := map[types.Dialect]string{
+			types.DialectMySql:    "SELECT 1 FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres: `SELECT 1 FROM "users" WHERE "id" = $1 LIMIT 1`,
+		}
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected[dialect], sql)
+		assert.Equal(t, []any{42}, bindings)
+	})
+}
