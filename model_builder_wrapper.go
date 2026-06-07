@@ -115,22 +115,22 @@ func (mq *ModelBuilder[T]) Distinct() *ModelBuilder[T] {
 // Join Methods
 // =============================================================================
 
-func (mq *ModelBuilder[T]) Join(table string, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) Join(table string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.Join(table, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) LeftJoin(table string, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) LeftJoin(table string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.LeftJoin(table, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) RightJoin(table string, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) RightJoin(table string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.RightJoin(table, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) FullJoin(table string, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) FullJoin(table string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.FullJoin(table, condition, values...)
 	return mq
 }
@@ -140,22 +140,22 @@ func (mq *ModelBuilder[T]) CrossJoin(table string) *ModelBuilder[T] {
 	return mq
 }
 
-func (mq *ModelBuilder[T]) JoinSub(sub *QueryBuilder, alias, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) JoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.JoinSub(sub, alias, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) LeftJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) LeftJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.LeftJoinSub(sub, alias, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) RightJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) RightJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.RightJoinSub(sub, alias, condition, values...)
 	return mq
 }
 
-func (mq *ModelBuilder[T]) FullJoinSub(sub *QueryBuilder, alias, condition string, values ...any) *ModelBuilder[T] {
+func (mq *ModelBuilder[T]) FullJoinSub(sub *QueryBuilder, alias string, condition any, values ...any) *ModelBuilder[T] {
 	mq.QueryBuilder.FullJoinSub(sub, alias, condition, values...)
 	return mq
 }
