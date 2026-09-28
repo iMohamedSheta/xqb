@@ -86,7 +86,10 @@ jobs:
 
       - name: Style lint
         if: runner.os == 'Windows'
-        run: staticcheck -checks "all" ./...
+        # Default checks only (same as bug detection above). The style
+        # checks ("all") flag the stable public API names (ToSql, GetSql,
+        # DialectMySql, ...), which must not be renamed.
+        run: staticcheck ./...
 
   # --------------------------------------------------------------------------------------
   # Integration tests: same suite against EVERY database.
