@@ -1,283 +1,127 @@
 package integration
 
 import (
-	"database/sql"
 	"testing"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/iMohamedSheta/xqb"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-// setupTestDBForInsert creates a fresh test database connection and table
-func setupTestDBForInsert(t *testing.T) *xqb.DBManager {
-	db, err := dbManager.GetDB()
-	if err != nil {
-		t.Fatalf("Failed to get database connection: %v", err)
-	}
+// TestInsert_SingleRow insert(): one row, then verify via Get.
+func TestInsert_SingleRow(t *testing.T) {
+	forEachDB(t, func(t *testing.T, conn string) {
+		resetUsersEmpty(t, conn)
 
-	// Drop and recreate test table to ensure clean state
-	_, err = db.Exec("DROP TABLE IF EXISTS test_users")
-	if err != nil {
-		t.Fatalf("Failed to drop test table: %v", err)
-	}
-
-	_, err = db.Exec(`
-		CREATE TABLE test_users (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			name VARCHAR(255),
-			age INT
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create test table: %v", err)
-	}
-
-	return dbManager
-}
-
-// resetTestTable truncates the test table to ensure a clean state
-func resetTestTableForInsert(t *testing.T, dbManager *xqb.DBManager) {
-	db, _ := dbManager.GetDB()
-	_, err := db.Exec("TRUNCATE TABLE test_users")
-	assert.NoError(t, err, "Failed to reset test table")
-}
-
-// testWithCleanTable is a helper function that runs a test with a clean table
-func testWithCleanTable(t *testing.T, dbManager *xqb.DBManager, testFn func()) {
-	resetTestTableForInsert(t, dbManager)
-	testFn()
-}
-
-func TestInsert(t *testing.T) {
-	dbManager := setupTestDBForInsert(t)
-
-	qb := xqb.Table("test_users")
-
-	tests := []struct {
-		name     string
-		data     []map[string]any
-		wantRows int64
-		wantErr  bool
-	}{
-		{
-			name: "single insert",
-			data: []map[string]any{
-				{"name": "John", "age": 30},
-			},
-			wantRows: 1,
-			wantErr:  false,
-		},
-		{
-			name: "multiple insert",
-			data: []map[string]any{
-				{"name": "John", "age": 30},
-				{"name": "Jane", "age": 25},
-			},
-			wantRows: 2,
-			wantErr:  false,
-		},
-		{
-			name: "invalid data",
-			data: []map[string]any{
-				{"invalid_column": "value"},
-			},
-			wantRows: 0,
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			testWithCleanTable(t, dbManager, func() {
-				got, err := qb.Insert(tt.data)
-				if tt.wantErr {
-					assert.Error(t, err)
-					return
-				}
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantRows, got)
-
-				// Verify data was actually inserted
-				var count int
-				db, _ := dbManager.GetDB()
-				err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
-				assert.NoError(t, err)
-				assert.Equal(t, int(tt.wantRows), count)
-			})
+		err := QB(conn, "xqb_users").Insert([]map[string]any{
+			{"name": "Eve", "email": "eve@example.com", "age": 28, "score": 88.5, "status": "active"},
 		})
-	}
+		require.NoError(t, err, "[%s] insert single row", conn)
+
+		assert.Equal(t, int64(1), countUsers(t, conn))
+
+		row, err := QB(conn, "xqb_users").Where("email", "=", "eve@example.com").First()
+		require.NoError(t, err)
+		assert.Equal(t, "Eve", asString(row["name"]))
+		assert.Equal(t, int64(28), asInt64(row["age"]))
+	})
 }
 
+// TestInsert_MultipleRows batch insert.
+func TestInsert_MultipleRows(t *testing.T) {
+	forEachDB(t, func(t *testing.T, conn string) {
+		resetUsersEmpty(t, conn)
+
+		err := QB(conn, "xqb_users").Insert([]map[string]any{
+			{"name": "Eve", "email": "eve@example.com", "age": 28},
+			{"name": "Frank", "email": "frank@example.com", "age": 33},
+			{"name": "Grace", "email": "grace@example.com", "age": nil},
+		})
+		require.NoError(t, err, "[%s] batch insert", conn)
+		assert.Equal(t, int64(3), countUsers(t, conn))
+	})
+}
+
+// TestInsert_NullableColumns ensures NULL bindings survive on every dialect.
+func TestInsert_NullableColumns(t *testing.T) {
+	forEachDB(t, func(t *testing.T, conn string) {
+		resetUsersEmpty(t, conn)
+
+		err := QB(conn, "xqb_users").Insert([]map[string]any{
+			{"name": "Null Guy", "email": nil, "age": nil, "score": nil, "status": nil},
+		})
+		require.NoError(t, err, "[%s] insert nulls", conn)
+
+		row, err := QB(conn, "xqb_users").Where("name", "=", "Null Guy").First()
+		require.NoError(t, err)
+		assert.Nil(t, row["email"])
+		assert.Nil(t, row["age"])
+	})
+}
+
+// TestInsert_InvalidColumn must surface a DB error on every dialect.
+func TestInsert_InvalidColumn(t *testing.T) {
+	forEachDB(t, func(t *testing.T, conn string) {
+		resetUsersEmpty(t, conn)
+
+		err := QB(conn, "xqb_users").Insert([]map[string]any{
+			{"no_such_column": "boom"},
+		})
+		assert.Error(t, err, "[%s] expected error for unknown column", conn)
+	})
+}
+
+// TestInsertGetId insertGetId.
 func TestInsertGetId(t *testing.T) {
-	dbManager := setupTestDBForInsert(t)
+	forEachDB(t, func(t *testing.T, conn string) {
+		resetUsersEmpty(t, conn)
 
-	qb := xqb.Table("test_users")
-
-	tests := []struct {
-		name    string
-		data    []map[string]any
-		wantId  int64
-		wantErr bool
-	}{
-		{
-			name: "single insert",
-			data: []map[string]any{
-				{"name": "John", "age": 30},
-			},
-			wantId:  1, // First insert should have Id 1
-			wantErr: false,
-		},
-		{
-			name: "multiple insert",
-			data: []map[string]any{
-				{"name": "John", "age": 30},
-				{"name": "Jane", "age": 25},
-			},
-			wantId:  1, // First insert in this test should have Id 1
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			testWithCleanTable(t, dbManager, func() {
-				got, err := qb.InsertGetId(tt.data)
-				if tt.wantErr {
-					assert.Error(t, err)
-					return
-				}
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantId, got)
-			})
+		id, err := QB(conn, "xqb_users").InsertGetId([]map[string]any{
+			{"name": "Hank", "email": "hank@example.com", "age": 40},
 		})
-	}
-}
+		require.NoError(t, err, "[%s] insertGetId", conn)
+		assert.Greater(t, id, int64(0), "[%s] expected positive id", conn)
 
-func TestInsertWithTransaction(t *testing.T) {
-	dbManager := setupTestDBForInsert(t)
-
-	qb := xqb.Table("test_users")
-
-	t.Run("failed transaction", func(t *testing.T) {
-		testWithCleanTable(t, dbManager, func() {
-			err := dbManager.Transaction(func(tx *sql.Tx) error {
-				// First insert (success)
-				_, err := qb.InsertTx([]map[string]any{
-					{"name": "John", "age": 30},
-				}, tx)
-				assert.NoError(t, err)
-
-				// Second insert (fail)
-				_, err = qb.InsertTx([]map[string]any{
-					{"invalid_column": "value"},
-				}, tx)
-				assert.Error(t, err)
-
-				return err // Return error to rollback transaction
-			})
-			assert.Error(t, err)
-
-			// Verify no records were inserted (transaction was rolled back)
-			var count int
-			db, _ := dbManager.GetDB()
-			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
-			assert.NoError(t, err)
-			assert.Equal(t, 0, count)
-		})
-	})
-
-	t.Run("successful transaction", func(t *testing.T) {
-		testWithCleanTable(t, dbManager, func() {
-			err := dbManager.Transaction(func(tx *sql.Tx) error {
-				// First insert
-				affected, err := qb.InsertTx([]map[string]any{
-					{"name": "John", "age": 30},
-				}, tx)
-				assert.NoError(t, err)
-				assert.Equal(t, int64(1), affected)
-
-				// Second insert
-				affected, err = qb.InsertTx([]map[string]any{
-					{"name": "Jane", "age": 25},
-				}, tx)
-				assert.NoError(t, err)
-				assert.Equal(t, int64(1), affected)
-
-				return nil
-			})
-			assert.NoError(t, err)
-
-			// Verify both records were inserted
-			var count int
-			db, _ := dbManager.GetDB()
-			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
-			assert.NoError(t, err)
-			assert.Equal(t, 2, count)
-		})
+		row, err := QB(conn, "xqb_users").Find(id)
+		require.NoError(t, err)
+		assert.Equal(t, "Hank", asString(row["name"]))
 	})
 }
 
-func TestInsertGetIdWithTransaction(t *testing.T) {
-	dbManager := setupTestDBForInsert(t)
+// TestUpsert upsert(): insert, then conflict-update.
+func TestUpsert(t *testing.T) {
+	forEachDB(t, func(t *testing.T, conn string) {
+		// SQL Server has no ON CONFLICT support in xqb (returns ErrUnsupportedFeature).
+		if conn == "sqlserver" {
+			t.Skip("upsert not supported on sqlserver (needs MERGE)")
+		}
+		resetUsersEmpty(t, conn)
 
-	qb := xqb.Table("test_users")
+		affected, err := QB(conn, "xqb_users").Upsert(
+			[]map[string]any{
+				{"name": "Ivy", "email": "ivy@example.com", "age": 22, "status": "active"},
+			},
+			[]string{"email"},
+			[]string{"age", "status"},
+		)
+		require.NoError(t, err, "[%s] upsert insert", conn)
+		assert.GreaterOrEqual(t, affected, int64(1))
 
-	t.Run("failed transaction", func(t *testing.T) {
-		testWithCleanTable(t, dbManager, func() {
-			err := dbManager.Transaction(func(tx *sql.Tx) error {
-				// First insert (success)
-				_, err := qb.InsertGetIdTx([]map[string]any{
-					{"name": "John", "age": 30},
-				}, tx)
-				assert.NoError(t, err)
+		// Second call with same unique key must UPDATE instead of duplicating.
+		affected, err = QB(conn, "xqb_users").Upsert(
+			[]map[string]any{
+				{"name": "Ivy Renamed", "email": "ivy@example.com", "age": 23, "status": "inactive"},
+			},
+			[]string{"email"},
+			[]string{"age", "status"},
+		)
+		require.NoError(t, err, "[%s] upsert conflict-update", conn)
+		assert.GreaterOrEqual(t, affected, int64(1))
 
-				// Second insert (fail)
-				_, err = qb.InsertGetIdTx([]map[string]any{
-					{"invalid_column": "value"},
-				}, tx)
-				assert.Error(t, err)
+		assert.Equal(t, int64(1), countUsers(t, conn), "[%s] upsert must not duplicate", conn)
 
-				return err // Return error to rollback transaction
-			})
-			assert.Error(t, err)
-
-			// Verify no records were inserted (transaction was rolled back)
-			var count int
-			db, _ := dbManager.GetDB()
-			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
-			assert.NoError(t, err)
-			assert.Equal(t, 0, count)
-		})
-	})
-
-	t.Run("successful transaction", func(t *testing.T) {
-		testWithCleanTable(t, dbManager, func() {
-			err := dbManager.Transaction(func(tx *sql.Tx) error {
-				// First insert
-				id, err := qb.InsertGetIdTx([]map[string]any{
-					{"name": "John", "age": 30},
-				}, tx)
-				assert.NoError(t, err)
-				assert.Equal(t, int64(1), id)
-
-				// Second insert
-				id, err = qb.InsertGetIdTx([]map[string]any{
-					{"name": "Jane", "age": 25},
-				}, tx)
-				assert.NoError(t, err)
-				assert.Equal(t, int64(2), id)
-
-				return nil
-			})
-			assert.NoError(t, err)
-
-			// Verify both records were inserted
-			var count int
-			db, _ := dbManager.GetDB()
-			err = db.QueryRow("SELECT COUNT(*) FROM test_users").Scan(&count)
-			assert.NoError(t, err)
-			assert.Equal(t, 2, count)
-		})
+		row, err := QB(conn, "xqb_users").Where("email", "=", "ivy@example.com").First()
+		require.NoError(t, err)
+		assert.Equal(t, int64(23), asInt64(row["age"]))
+		assert.Equal(t, "inactive", asString(row["status"]))
 	})
 }

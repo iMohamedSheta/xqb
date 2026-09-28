@@ -13,12 +13,17 @@ import (
 type Dialect string
 
 const (
-	DialectMySql    Dialect = "mysql"
-	DialectPostgres Dialect = "postgres"
+	DialectMySql     Dialect = "mysql"
+	DialectMariaDB   Dialect = "mariadb"
+	DialectPostgres  Dialect = "postgres"
+	DialectPgsql     Dialect = "pgsql"
+	DialectSQLite    Dialect = "sqlite"
+	DialectSQLServer Dialect = "sqlserver"
+	DialectSqlSrv    Dialect = "sqlsrv"
 )
 
 func (d Dialect) MappedDialect() types.Dialect {
-	return types.Dialect(d)
+	return types.Dialect(d).Normalize()
 }
 
 type Connection struct {

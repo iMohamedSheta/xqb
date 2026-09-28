@@ -13,8 +13,11 @@ func TestOrderByWithRawExpressions(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect)
 		sql, bindings, err := qb.OrderBy(xqb.Raw("FIELD(status, 'active', 'pending', 'inactive')"), "ASC").ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
-			types.DialectPostgres: `SELECT * FROM "users" ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC`,
+			types.DialectMySql:     "SELECT * FROM `users` ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
+			types.DialectMariaDB:   "SELECT * FROM `users` ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
+			types.DialectPostgres:  `SELECT * FROM "users" ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC`,
+			types.DialectSQLite:    `SELECT * FROM "users" ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC`,
+			types.DialectSQLServer: "SELECT * FROM [users] ORDER BY FIELD(status, 'active', 'pending', 'inactive') ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -29,8 +32,11 @@ func TestOrderBySimpleColumn(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` ORDER BY `name` ASC",
-			types.DialectPostgres: `SELECT * FROM "users" ORDER BY "name" ASC`,
+			types.DialectMySql:     "SELECT * FROM `users` ORDER BY `name` ASC",
+			types.DialectMariaDB:   "SELECT * FROM `users` ORDER BY `name` ASC",
+			types.DialectPostgres:  `SELECT * FROM "users" ORDER BY "name" ASC`,
+			types.DialectSQLite:    `SELECT * FROM "users" ORDER BY "name" ASC`,
+			types.DialectSQLServer: "SELECT * FROM [users] ORDER BY [name] ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -45,8 +51,11 @@ func TestOrderByDescShortcut(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` ORDER BY `created_at` DESC",
-			types.DialectPostgres: `SELECT * FROM "users" ORDER BY "created_at" DESC`,
+			types.DialectMySql:     "SELECT * FROM `users` ORDER BY `created_at` DESC",
+			types.DialectMariaDB:   "SELECT * FROM `users` ORDER BY `created_at` DESC",
+			types.DialectPostgres:  `SELECT * FROM "users" ORDER BY "created_at" DESC`,
+			types.DialectSQLite:    `SELECT * FROM "users" ORDER BY "created_at" DESC`,
+			types.DialectSQLServer: "SELECT * FROM [users] ORDER BY [created_at] DESC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -61,8 +70,11 @@ func TestOrderByAscShortcut(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` ORDER BY `email` ASC",
-			types.DialectPostgres: `SELECT * FROM "users" ORDER BY "email" ASC`,
+			types.DialectMySql:     "SELECT * FROM `users` ORDER BY `email` ASC",
+			types.DialectMariaDB:   "SELECT * FROM `users` ORDER BY `email` ASC",
+			types.DialectPostgres:  `SELECT * FROM "users" ORDER BY "email" ASC`,
+			types.DialectSQLite:    `SELECT * FROM "users" ORDER BY "email" ASC`,
+			types.DialectSQLServer: "SELECT * FROM [users] ORDER BY [email] ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -78,8 +90,11 @@ func TestOrderByWithRawExpression(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `products` ORDER BY LENGTH(name) DESC",
-			types.DialectPostgres: `SELECT * FROM "products" ORDER BY LENGTH(name) DESC`,
+			types.DialectMySql:     "SELECT * FROM `products` ORDER BY LENGTH(name) DESC",
+			types.DialectMariaDB:   "SELECT * FROM `products` ORDER BY LENGTH(name) DESC",
+			types.DialectPostgres:  `SELECT * FROM "products" ORDER BY LENGTH(name) DESC`,
+			types.DialectSQLite:    `SELECT * FROM "products" ORDER BY LENGTH(name) DESC`,
+			types.DialectSQLServer: "SELECT * FROM [products] ORDER BY LENGTH(name) DESC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -95,8 +110,11 @@ func TestOrderByRawFunction(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `logs` ORDER BY FIELD(status, ?, ?, ?)",
-			types.DialectPostgres: `SELECT * FROM "logs" ORDER BY FIELD(status, $1, $2, $3)`,
+			types.DialectMySql:     "SELECT * FROM `logs` ORDER BY FIELD(status, ?, ?, ?)",
+			types.DialectMariaDB:   "SELECT * FROM `logs` ORDER BY FIELD(status, ?, ?, ?)",
+			types.DialectPostgres:  `SELECT * FROM "logs" ORDER BY FIELD(status, $1, $2, $3)`,
+			types.DialectSQLite:    `SELECT * FROM "logs" ORDER BY FIELD(status, ?, ?, ?)`,
+			types.DialectSQLServer: "SELECT * FROM [logs] ORDER BY FIELD(status, @p1, @p2, @p3)",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -114,8 +132,11 @@ func TestOrderByWithFallbackToString(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `items` ORDER BY 123 ASC",
-			types.DialectPostgres: `SELECT * FROM "items" ORDER BY 123 ASC`,
+			types.DialectMySql:     "SELECT * FROM `items` ORDER BY 123 ASC",
+			types.DialectMariaDB:   "SELECT * FROM `items` ORDER BY 123 ASC",
+			types.DialectPostgres:  `SELECT * FROM "items" ORDER BY 123 ASC`,
+			types.DialectSQLite:    `SELECT * FROM "items" ORDER BY 123 ASC`,
+			types.DialectSQLServer: "SELECT * FROM [items] ORDER BY 123 ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -134,8 +155,11 @@ func TestLatestAndOldest(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `comments` ORDER BY `created_at` DESC, `updated_at` ASC",
-			types.DialectPostgres: `SELECT * FROM "comments" ORDER BY "created_at" DESC, "updated_at" ASC`,
+			types.DialectMySql:     "SELECT * FROM `comments` ORDER BY `created_at` DESC, `updated_at` ASC",
+			types.DialectMariaDB:   "SELECT * FROM `comments` ORDER BY `created_at` DESC, `updated_at` ASC",
+			types.DialectPostgres:  `SELECT * FROM "comments" ORDER BY "created_at" DESC, "updated_at" ASC`,
+			types.DialectSQLite:    `SELECT * FROM "comments" ORDER BY "created_at" DESC, "updated_at" ASC`,
+			types.DialectSQLServer: "SELECT * FROM [comments] ORDER BY [created_at] DESC, [updated_at] ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

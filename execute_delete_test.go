@@ -28,8 +28,11 @@ func Test_DeleteWhere(t *testing.T) {
 		sql, bindings, err := qb.Where("id", "=", 1).DeleteSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "DELETE FROM `users` WHERE `id` = ?",
-			types.DialectPostgres: `DELETE FROM "users" WHERE "id" = $1`,
+			types.DialectMySql:     "DELETE FROM `users` WHERE `id` = ?",
+			types.DialectMariaDB:   "DELETE FROM `users` WHERE `id` = ?",
+			types.DialectPostgres:  `DELETE FROM "users" WHERE "id" = $1`,
+			types.DialectSQLite:    `DELETE FROM "users" WHERE "id" = ?`,
+			types.DialectSQLServer: `DELETE FROM [users] WHERE [id] = @p1`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -47,13 +50,19 @@ func Test_DeleteWithLimit(t *testing.T) {
 		sql, bindings, err := qb.DeleteSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
-			types.DialectPostgres: ``, // PostgreSQL doesn't support LIMIT on DELETE
+			types.DialectMySql:     "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
+			types.DialectMariaDB:   "DELETE FROM `users` WHERE `status` = ? LIMIT 10",
+			types.DialectPostgres:  ``, // PostgreSQL doesn't support LIMIT on DELETE
+			types.DialectSQLite:    ``, // SQLite doesn't support LIMIT on DELETE
+			types.DialectSQLServer: `DELETE TOP (10) FROM [users] WHERE [status] = @p1`,
 		}
 
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    nil,
-			types.DialectPostgres: xqbErr.ErrInvalidQuery,
+			types.DialectMySql:     nil,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  xqbErr.ErrInvalidQuery,
+			types.DialectSQLite:    xqbErr.ErrInvalidQuery,
+			types.DialectSQLServer: nil,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

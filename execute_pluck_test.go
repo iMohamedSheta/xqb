@@ -17,8 +17,11 @@ func Test_PluckSliceSql_WithValueField(t *testing.T) {
 		sql, bindings, err := qb.PluckSliceSql("name")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `name` FROM `users` WHERE `name` LIKE ?",
-			types.DialectPostgres: `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
+			types.DialectMySql:     "SELECT `name` FROM `users` WHERE `name` LIKE ?",
+			types.DialectMariaDB:   "SELECT `name` FROM `users` WHERE `name` LIKE ?",
+			types.DialectPostgres:  `SELECT "name" FROM "users" WHERE "name" LIKE $1`,
+			types.DialectSQLite:    `SELECT "name" FROM "users" WHERE "name" LIKE ?`,
+			types.DialectSQLServer: "SELECT [name] FROM [users] WHERE [name] LIKE @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -34,8 +37,11 @@ func Test_PluckSliceSql_WithComplexQuery(t *testing.T) {
 		sql, bindings, err := qb.PluckSliceSql("email")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `email` FROM `users` WHERE `age` > ? ORDER BY `created_at` DESC LIMIT 10",
-			types.DialectPostgres: `SELECT "email" FROM "users" WHERE "age" > $1 ORDER BY "created_at" DESC LIMIT 10`,
+			types.DialectMySql:     "SELECT `email` FROM `users` WHERE `age` > ? ORDER BY `created_at` DESC LIMIT 10",
+			types.DialectMariaDB:   "SELECT `email` FROM `users` WHERE `age` > ? ORDER BY `created_at` DESC LIMIT 10",
+			types.DialectPostgres:  `SELECT "email" FROM "users" WHERE "age" > $1 ORDER BY "created_at" DESC LIMIT 10`,
+			types.DialectSQLite:    `SELECT "email" FROM "users" WHERE "age" > ? ORDER BY "created_at" DESC LIMIT 10`,
+			types.DialectSQLServer: "SELECT TOP 10 [email] FROM [users] WHERE [age] > @p1 ORDER BY [created_at] DESC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -63,8 +69,11 @@ func Test_PluckSliceSql_OverridesExistingSelect(t *testing.T) {
 		sql, bindings, err := qb.PluckSliceSql("name")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `name` FROM `users` WHERE `active` = ?",
-			types.DialectPostgres: `SELECT "name" FROM "users" WHERE "active" = $1`,
+			types.DialectMySql:     "SELECT `name` FROM `users` WHERE `active` = ?",
+			types.DialectMariaDB:   "SELECT `name` FROM `users` WHERE `active` = ?",
+			types.DialectPostgres:  `SELECT "name" FROM "users" WHERE "active" = $1`,
+			types.DialectSQLite:    `SELECT "name" FROM "users" WHERE "active" = ?`,
+			types.DialectSQLServer: "SELECT [name] FROM [users] WHERE [active] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -81,8 +90,11 @@ func Test_PluckMapSql_WithValueAndKeyFields(t *testing.T) {
 		sql, bindings, err := qb.PluckMapSql("name", "id")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `name`, `id` FROM `users` WHERE `status` = ?",
-			types.DialectPostgres: `SELECT "name", "id" FROM "users" WHERE "status" = $1`,
+			types.DialectMySql:     "SELECT `name`, `id` FROM `users` WHERE `status` = ?",
+			types.DialectMariaDB:   "SELECT `name`, `id` FROM `users` WHERE `status` = ?",
+			types.DialectPostgres:  `SELECT "name", "id" FROM "users" WHERE "status" = $1`,
+			types.DialectSQLite:    `SELECT "name", "id" FROM "users" WHERE "status" = ?`,
+			types.DialectSQLServer: "SELECT [name], [id] FROM [users] WHERE [status] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -98,8 +110,11 @@ func Test_PluckMapSql_WithComplexQuery(t *testing.T) {
 		sql, bindings, err := qb.PluckMapSql("title", "sku")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `title`, `sku` FROM `products` WHERE `category` = ? AND `price` < ? ORDER BY `price` ASC",
-			types.DialectPostgres: `SELECT "title", "sku" FROM "products" WHERE "category" = $1 AND "price" < $2 ORDER BY "price" ASC`,
+			types.DialectMySql:     "SELECT `title`, `sku` FROM `products` WHERE `category` = ? AND `price` < ? ORDER BY `price` ASC",
+			types.DialectMariaDB:   "SELECT `title`, `sku` FROM `products` WHERE `category` = ? AND `price` < ? ORDER BY `price` ASC",
+			types.DialectPostgres:  `SELECT "title", "sku" FROM "products" WHERE "category" = $1 AND "price" < $2 ORDER BY "price" ASC`,
+			types.DialectSQLite:    `SELECT "title", "sku" FROM "products" WHERE "category" = ? AND "price" < ? ORDER BY "price" ASC`,
+			types.DialectSQLServer: "SELECT [title], [sku] FROM [products] WHERE [category] = @p1 AND [price] < @p2 ORDER BY [price] ASC",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -151,8 +166,11 @@ func Test_PluckMapSql_OverridesExistingSelect(t *testing.T) {
 		sql, bindings, err := qb.PluckMapSql("email", "id")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `email`, `id` FROM `users` WHERE `country` = ?",
-			types.DialectPostgres: `SELECT "email", "id" FROM "users" WHERE "country" = $1`,
+			types.DialectMySql:     "SELECT `email`, `id` FROM `users` WHERE `country` = ?",
+			types.DialectMariaDB:   "SELECT `email`, `id` FROM `users` WHERE `country` = ?",
+			types.DialectPostgres:  `SELECT "email", "id" FROM "users" WHERE "country" = $1`,
+			types.DialectSQLite:    `SELECT "email", "id" FROM "users" WHERE "country" = ?`,
+			types.DialectSQLServer: "SELECT [email], [id] FROM [users] WHERE [country] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -205,8 +223,11 @@ func Test_PluckSliceSql_WithJoins(t *testing.T) {
 		sql, bindings, err := qb.PluckSliceSql("users.name")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `users`.`name` FROM `users` JOIN `posts` ON users.id = posts.user_id WHERE `posts`.`published` = ?",
-			types.DialectPostgres: `SELECT "users"."name" FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE "posts"."published" = $1`,
+			types.DialectMySql:     "SELECT `users`.`name` FROM `users` JOIN `posts` ON users.id = posts.user_id WHERE `posts`.`published` = ?",
+			types.DialectMariaDB:   "SELECT `users`.`name` FROM `users` JOIN `posts` ON users.id = posts.user_id WHERE `posts`.`published` = ?",
+			types.DialectPostgres:  `SELECT "users"."name" FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE "posts"."published" = $1`,
+			types.DialectSQLite:    `SELECT "users"."name" FROM "users" JOIN "posts" ON users.id = posts.user_id WHERE "posts"."published" = ?`,
+			types.DialectSQLServer: "SELECT [users].[name] FROM [users] JOIN [posts] ON users.id = posts.user_id WHERE [posts].[published] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -222,8 +243,11 @@ func Test_PluckMapSql_WithGroupBy(t *testing.T) {
 		sql, bindings, err := qb.PluckMapSql("total", "customer_id")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `total`, `customer_id` FROM `orders` GROUP BY `customer_id` HAVING `total` > ?",
-			types.DialectPostgres: `SELECT "total", "customer_id" FROM "orders" GROUP BY "customer_id" HAVING "total" > $1`,
+			types.DialectMySql:     "SELECT `total`, `customer_id` FROM `orders` GROUP BY `customer_id` HAVING `total` > ?",
+			types.DialectMariaDB:   "SELECT `total`, `customer_id` FROM `orders` GROUP BY `customer_id` HAVING `total` > ?",
+			types.DialectPostgres:  `SELECT "total", "customer_id" FROM "orders" GROUP BY "customer_id" HAVING "total" > $1`,
+			types.DialectSQLite:    `SELECT "total", "customer_id" FROM "orders" GROUP BY "customer_id" HAVING "total" > ?`,
+			types.DialectSQLServer: "SELECT [total], [customer_id] FROM [orders] GROUP BY [customer_id] HAVING [total] > @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

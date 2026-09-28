@@ -25,8 +25,11 @@ func Test_CTE_With(t *testing.T) {
 		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT *",
-			types.DialectPostgres: `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT *`,
+			types.DialectMySql:     "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT *",
+			types.DialectMariaDB:   "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT *",
+			types.DialectPostgres:  `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT *`,
+			types.DialectSQLite:    `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT *`,
+			types.DialectSQLServer: `WITH cte_users AS (SELECT [id], [name] FROM [users]) SELECT *`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -51,8 +54,11 @@ func Test_CTE_WithExpression(t *testing.T) {
 
 		sql, bindings, err := mainQB.Select("*").ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte_expr AS (SELECT ?) SELECT *",
-			types.DialectPostgres: `WITH cte_expr AS (SELECT $1) SELECT *`,
+			types.DialectMySql:     "WITH cte_expr AS (SELECT ?) SELECT *",
+			types.DialectMariaDB:   "WITH cte_expr AS (SELECT ?) SELECT *",
+			types.DialectPostgres:  `WITH cte_expr AS (SELECT $1) SELECT *`,
+			types.DialectSQLite:    "WITH cte_expr AS (SELECT ?) SELECT *",
+			types.DialectSQLServer: "WITH cte_expr AS (SELECT @p1) SELECT *",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -73,8 +79,11 @@ func Test_CTE_WithRecursive(t *testing.T) {
 		sql, b, err := mainQB.Select("*").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH RECURSIVE cte_tree AS (SELECT `id`, `parent_id` FROM `tree`) SELECT *",
-			types.DialectPostgres: `WITH RECURSIVE cte_tree AS (SELECT "id", "parent_id" FROM "tree") SELECT *`,
+			types.DialectMySql:     "WITH RECURSIVE cte_tree AS (SELECT `id`, `parent_id` FROM `tree`) SELECT *",
+			types.DialectMariaDB:   "WITH RECURSIVE cte_tree AS (SELECT `id`, `parent_id` FROM `tree`) SELECT *",
+			types.DialectPostgres:  `WITH RECURSIVE cte_tree AS (SELECT "id", "parent_id" FROM "tree") SELECT *`,
+			types.DialectSQLite:    `WITH RECURSIVE cte_tree AS (SELECT "id", "parent_id" FROM "tree") SELECT *`,
+			types.DialectSQLServer: `WITH RECURSIVE cte_tree AS (SELECT [id], [parent_id] FROM [tree]) SELECT *`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -96,8 +105,11 @@ func Test_CTE_WithRaw(t *testing.T) {
 		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte_raw AS (SELECT ? AS col) SELECT *",
-			types.DialectPostgres: `WITH cte_raw AS (SELECT $1 AS col) SELECT *`,
+			types.DialectMySql:     "WITH cte_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectMariaDB:   "WITH cte_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectPostgres:  `WITH cte_raw AS (SELECT $1 AS col) SELECT *`,
+			types.DialectSQLite:    "WITH cte_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectSQLServer: "WITH cte_raw AS (SELECT @p1 AS col) SELECT *",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -117,8 +129,11 @@ func Test_CTE_WithRecursiveRaw(t *testing.T) {
 		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
-			types.DialectPostgres: `WITH RECURSIVE cte_rec_raw AS (SELECT $1 AS col) SELECT *`,
+			types.DialectMySql:     "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectMariaDB:   "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectPostgres:  `WITH RECURSIVE cte_rec_raw AS (SELECT $1 AS col) SELECT *`,
+			types.DialectSQLite:    "WITH RECURSIVE cte_rec_raw AS (SELECT ? AS col) SELECT *",
+			types.DialectSQLServer: "WITH RECURSIVE cte_rec_raw AS (SELECT @p1 AS col) SELECT *",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -150,8 +165,11 @@ func Test_CTE_WithAdvancedExpressions(t *testing.T) {
 
 		sql, bindings, err := mainQB.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte_agg AS (SELECT `status`, SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING `total_amount` > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *",
-			types.DialectPostgres: `WITH cte_agg AS (SELECT "status", SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM "coverage_table" WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING "total_amount" > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *`,
+			types.DialectMySql:     "WITH cte_agg AS (SELECT `status`, SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING `total_amount` > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *",
+			types.DialectMariaDB:   "WITH cte_agg AS (SELECT `status`, SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING `total_amount` > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *",
+			types.DialectPostgres:  `WITH cte_agg AS (SELECT "status", SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM "coverage_table" WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING "total_amount" > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *`,
+			types.DialectSQLite:    `WITH cte_agg AS (SELECT "status", SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM "coverage_table" WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING "total_amount" > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10) SELECT *`,
+			types.DialectSQLServer: `WITH cte_agg AS (SELECT [status], SUM(amount) AS total_amount, LENGTH(bio) AS bio_len FROM [coverage_table] WHERE LOWER(status) = @p1 GROUP BY DATE(created_at), UPPER(region) HAVING [total_amount] > @p2 ORDER BY LENGTH(bio) DESC OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY) SELECT *`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -170,8 +188,11 @@ func Test_CTE_WithMultipleCTEs(t *testing.T) {
 
 		sql, b, err := mainQB.Select("*").ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT `id` FROM `users`) SELECT *",
-			types.DialectPostgres: `WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT "id" FROM "users") SELECT *`,
+			types.DialectMySql:     "WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT `id` FROM `users`) SELECT *",
+			types.DialectMariaDB:   "WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT `id` FROM `users`) SELECT *",
+			types.DialectPostgres:  `WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT "id" FROM "users") SELECT *`,
+			types.DialectSQLite:    `WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT "id" FROM "users") SELECT *`,
+			types.DialectSQLServer: `WITH cte1 AS (SELECT 1 AS one), cte2 AS (SELECT 2 AS two), cte3 AS (SELECT [id] FROM [users]) SELECT *`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -188,8 +209,11 @@ func Test_CTE_WithAliasedExpressions(t *testing.T) {
 		sql, bindings, err := mainQB.Select("*").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *",
-			types.DialectPostgres: `WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *`,
+			types.DialectMySql:     "WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *",
+			types.DialectMariaDB:   "WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *",
+			types.DialectPostgres:  `WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *`,
+			types.DialectSQLite:    `WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *`,
+			types.DialectSQLServer: `WITH agg_stats AS (SELECT COUNT(*) AS total, MAX(score) AS high_score FROM games) SELECT *`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -208,8 +232,11 @@ func Test_CTE_UsageInMainQuery(t *testing.T) {
 
 		sql, bindings, err := mainQB.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?",
-			types.DialectPostgres: `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT * FROM "cte_users" WHERE "id" > $1`,
+			types.DialectMySql:     "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?",
+			types.DialectMariaDB:   "WITH cte_users AS (SELECT `id`, `name` FROM `users`) SELECT * FROM `cte_users` WHERE `id` > ?",
+			types.DialectPostgres:  `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT * FROM "cte_users" WHERE "id" > $1`,
+			types.DialectSQLite:    `WITH cte_users AS (SELECT "id", "name" FROM "users") SELECT * FROM "cte_users" WHERE "id" > ?`,
+			types.DialectSQLServer: `WITH cte_users AS (SELECT [id], [name] FROM [users]) SELECT * FROM [cte_users] WHERE [id] > @p1`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -227,8 +254,11 @@ func Test_CTE_Recursive_Usage(t *testing.T) {
 
 		sql, b, err := mainQB.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL",
-			types.DialectPostgres: `WITH RECURSIVE tree_cte AS (SELECT "id", "parent_id" FROM "tree") SELECT * FROM "tree_cte" WHERE "parent_id" IS NULL`,
+			types.DialectMySql:     "WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL",
+			types.DialectMariaDB:   "WITH RECURSIVE tree_cte AS (SELECT `id`, `parent_id` FROM `tree`) SELECT * FROM `tree_cte` WHERE `parent_id` IS NULL",
+			types.DialectPostgres:  `WITH RECURSIVE tree_cte AS (SELECT "id", "parent_id" FROM "tree") SELECT * FROM "tree_cte" WHERE "parent_id" IS NULL`,
+			types.DialectSQLite:    `WITH RECURSIVE tree_cte AS (SELECT "id", "parent_id" FROM "tree") SELECT * FROM "tree_cte" WHERE "parent_id" IS NULL`,
+			types.DialectSQLServer: `WITH RECURSIVE tree_cte AS (SELECT [id], [parent_id] FROM [tree]) SELECT * FROM [tree_cte] WHERE [parent_id] IS NULL`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -249,8 +279,11 @@ func Test_CTE_BindingsOrder(t *testing.T) {
 
 		sql, bindings, _ := mainQB.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM `cte2` WHERE `two` > ?",
-			types.DialectPostgres: `WITH cte1 AS (SELECT $1 AS one), cte2 AS (SELECT $2 AS two) SELECT * FROM "cte2" WHERE "two" > $3`,
+			types.DialectMySql:     "WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM `cte2` WHERE `two` > ?",
+			types.DialectMariaDB:   "WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM `cte2` WHERE `two` > ?",
+			types.DialectPostgres:  `WITH cte1 AS (SELECT $1 AS one), cte2 AS (SELECT $2 AS two) SELECT * FROM "cte2" WHERE "two" > $3`,
+			types.DialectSQLite:    `WITH cte1 AS (SELECT ? AS one), cte2 AS (SELECT ? AS two) SELECT * FROM "cte2" WHERE "two" > ?`,
+			types.DialectSQLServer: `WITH cte1 AS (SELECT @p1 AS one), cte2 AS (SELECT @p2 AS two) SELECT * FROM [cte2] WHERE [two] > @p3`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -263,8 +296,11 @@ func Test_CTE_EmptyCTEsShouldNotEmitWith(t *testing.T) {
 		qb := xqb.Table("users").SetDialect(dialect).Select("id")
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id` FROM `users`",
-			types.DialectPostgres: `SELECT "id" FROM "users"`,
+			types.DialectMySql:     "SELECT `id` FROM `users`",
+			types.DialectMariaDB:   "SELECT `id` FROM `users`",
+			types.DialectPostgres:  `SELECT "id" FROM "users"`,
+			types.DialectSQLite:    `SELECT "id" FROM "users"`,
+			types.DialectSQLServer: `SELECT [id] FROM [users]`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -305,11 +341,26 @@ func Test_CTE_ComplexThreeLevelChain(t *testing.T) {
 				"user_order_details AS (SELECT `high_value_orders`.`user_id`, `users`.`name` FROM `high_value_orders` JOIN `users` ON users.id = high_value_orders.user_id), " +
 				"user_order_summary AS (SELECT `name`, COUNT(*) AS order_count FROM `user_order_details` GROUP BY `name`) " +
 				"SELECT * FROM `user_order_summary` WHERE `order_count` > ? ORDER BY `order_count` DESC",
+			types.DialectMariaDB: "WITH " +
+				"high_value_orders AS (SELECT `user_id`, `total` FROM `orders` WHERE `total` > ?), " +
+				"user_order_details AS (SELECT `high_value_orders`.`user_id`, `users`.`name` FROM `high_value_orders` JOIN `users` ON users.id = high_value_orders.user_id), " +
+				"user_order_summary AS (SELECT `name`, COUNT(*) AS order_count FROM `user_order_details` GROUP BY `name`) " +
+				"SELECT * FROM `user_order_summary` WHERE `order_count` > ? ORDER BY `order_count` DESC",
 			types.DialectPostgres: `WITH ` +
 				`high_value_orders AS (SELECT "user_id", "total" FROM "orders" WHERE "total" > $1), ` +
 				`user_order_details AS (SELECT "high_value_orders"."user_id", "users"."name" FROM "high_value_orders" JOIN "users" ON users.id = high_value_orders.user_id), ` +
 				`user_order_summary AS (SELECT "name", COUNT(*) AS order_count FROM "user_order_details" GROUP BY "name") ` +
 				`SELECT * FROM "user_order_summary" WHERE "order_count" > $2 ORDER BY "order_count" DESC`,
+			types.DialectSQLite: `WITH ` +
+				`high_value_orders AS (SELECT "user_id", "total" FROM "orders" WHERE "total" > ?), ` +
+				`user_order_details AS (SELECT "high_value_orders"."user_id", "users"."name" FROM "high_value_orders" JOIN "users" ON users.id = high_value_orders.user_id), ` +
+				`user_order_summary AS (SELECT "name", COUNT(*) AS order_count FROM "user_order_details" GROUP BY "name") ` +
+				`SELECT * FROM "user_order_summary" WHERE "order_count" > ? ORDER BY "order_count" DESC`,
+			types.DialectSQLServer: `WITH ` +
+				`high_value_orders AS (SELECT [user_id], [total] FROM [orders] WHERE [total] > @p1), ` +
+				`user_order_details AS (SELECT [high_value_orders].[user_id], [users].[name] FROM [high_value_orders] JOIN [users] ON users.id = high_value_orders.user_id), ` +
+				`user_order_summary AS (SELECT [name], COUNT(*) AS order_count FROM [user_order_details] GROUP BY [name]) ` +
+				`SELECT * FROM [user_order_summary] WHERE [order_count] > @p2 ORDER BY [order_count] DESC`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

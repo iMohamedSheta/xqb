@@ -338,7 +338,7 @@ func (qb *QueryBuilder) GetData() *types.QueryBuilderData {
 }
 
 func (qb *QueryBuilder) SetDialect(dialect types.Dialect) *QueryBuilder {
-	qb.dialect = dialects.GetDialect(dialect)
+	qb.dialect = dialects.GetDialect(dialect.Normalize())
 	return qb
 }
 
@@ -436,8 +436,8 @@ func (qb *QueryBuilder) ToSqlView() (string, error) {
 
 func InjectBindings(dialect types.Dialect, sql string, bindings []any) (string, error) {
 	var finalSql string
-	switch dialect {
-	case types.DialectMySql:
+	switch dialect.Normalize() {
+	case types.DialectMySql, types.DialectMariaDB, types.DialectSQLite:
 		// Replace `?` one by one with corresponding value
 		for _, b := range bindings {
 			sql = strings.Replace(sql, "?", formatBinding(b), 1)
@@ -448,6 +448,14 @@ func InjectBindings(dialect types.Dialect, sql string, bindings []any) (string, 
 		// Replace `$1`, `$2`, ... with corresponding value
 		for i, b := range bindings {
 			placeholder := fmt.Sprintf("$%d", i+1)
+			sql = strings.Replace(sql, placeholder, formatBinding(b), 1)
+		}
+		finalSql = sql
+
+	case types.DialectSQLServer:
+		// Replace `@p1`, `@p2`, ... with corresponding value
+		for i, b := range bindings {
+			placeholder := fmt.Sprintf("@p%d", i+1)
 			sql = strings.Replace(sql, placeholder, formatBinding(b), 1)
 		}
 		finalSql = sql

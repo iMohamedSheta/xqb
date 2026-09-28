@@ -14,8 +14,11 @@ func Test_CountSql(t *testing.T) {
 		sql, bindings, err := qb.CountSql("id")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT COUNT(`id`) AS `count` FROM `users`",
-			types.DialectPostgres: `SELECT COUNT("id") AS "count" FROM "users"`,
+			types.DialectMySql:     "SELECT COUNT(`id`) AS `count` FROM `users`",
+			types.DialectMariaDB:   "SELECT COUNT(`id`) AS `count` FROM `users`",
+			types.DialectPostgres:  `SELECT COUNT("id") AS "count" FROM "users"`,
+			types.DialectSQLite:    `SELECT COUNT("id") AS "count" FROM "users"`,
+			types.DialectSQLServer: "SELECT COUNT([id]) AS [count] FROM [users]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -30,8 +33,11 @@ func Test_AvgSql(t *testing.T) {
 		sql, bindings, err := qb.AvgSql("age")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT AVG(`age`) AS `avg` FROM `users`",
-			types.DialectPostgres: `SELECT AVG("age") AS "avg" FROM "users"`,
+			types.DialectMySql:     "SELECT AVG(`age`) AS `avg` FROM `users`",
+			types.DialectMariaDB:   "SELECT AVG(`age`) AS `avg` FROM `users`",
+			types.DialectPostgres:  `SELECT AVG("age") AS "avg" FROM "users"`,
+			types.DialectSQLite:    `SELECT AVG("age") AS "avg" FROM "users"`,
+			types.DialectSQLServer: "SELECT AVG([age]) AS [avg] FROM [users]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -46,8 +52,11 @@ func Test_SumSql(t *testing.T) {
 		sql, bindings, err := qb.SumSql("points")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT SUM(`points`) AS `sum` FROM `users`",
-			types.DialectPostgres: `SELECT SUM("points") AS "sum" FROM "users"`,
+			types.DialectMySql:     "SELECT SUM(`points`) AS `sum` FROM `users`",
+			types.DialectMariaDB:   "SELECT SUM(`points`) AS `sum` FROM `users`",
+			types.DialectPostgres:  `SELECT SUM("points") AS "sum" FROM "users"`,
+			types.DialectSQLite:    `SELECT SUM("points") AS "sum" FROM "users"`,
+			types.DialectSQLServer: "SELECT SUM([points]) AS [sum] FROM [users]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -62,8 +71,11 @@ func Test_MinSql(t *testing.T) {
 		sql, bindings, err := qb.MinSql("salary")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT MIN(`salary`) AS `min` FROM `users`",
-			types.DialectPostgres: `SELECT MIN("salary") AS "min" FROM "users"`,
+			types.DialectMySql:     "SELECT MIN(`salary`) AS `min` FROM `users`",
+			types.DialectMariaDB:   "SELECT MIN(`salary`) AS `min` FROM `users`",
+			types.DialectPostgres:  `SELECT MIN("salary") AS "min" FROM "users"`,
+			types.DialectSQLite:    `SELECT MIN("salary") AS "min" FROM "users"`,
+			types.DialectSQLServer: "SELECT MIN([salary]) AS [min] FROM [users]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -78,8 +90,11 @@ func Test_MaxSql(t *testing.T) {
 		sql, bindings, err := qb.MaxSql("score")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT MAX(`score`) AS `max` FROM `users`",
-			types.DialectPostgres: `SELECT MAX("score") AS "max" FROM "users"`,
+			types.DialectMySql:     "SELECT MAX(`score`) AS `max` FROM `users`",
+			types.DialectMariaDB:   "SELECT MAX(`score`) AS `max` FROM `users`",
+			types.DialectPostgres:  `SELECT MAX("score") AS "max" FROM "users"`,
+			types.DialectSQLite:    `SELECT MAX("score") AS "max" FROM "users"`,
+			types.DialectSQLServer: "SELECT MAX([score]) AS [max] FROM [users]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -103,8 +118,14 @@ func Test_Count_With_Conditions(t *testing.T) {
 		expected := map[types.Dialect]string{
 			types.DialectMySql: "SELECT COUNT(`id`) AS `count` FROM `users` WHERE " +
 				"`status` = ? AND (`role` = ? OR `created_at` > ?) AND deleted_at IS NULL",
+			types.DialectMariaDB: "SELECT COUNT(`id`) AS `count` FROM `users` WHERE " +
+				"`status` = ? AND (`role` = ? OR `created_at` > ?) AND deleted_at IS NULL",
 			types.DialectPostgres: `SELECT COUNT("id") AS "count" FROM "users" WHERE ` +
 				`"status" = $1 AND ("role" = $2 OR "created_at" > $3) AND deleted_at IS NULL`,
+			types.DialectSQLite: `SELECT COUNT("id") AS "count" FROM "users" WHERE ` +
+				`"status" = ? AND ("role" = ? OR "created_at" > ?) AND deleted_at IS NULL`,
+			types.DialectSQLServer: "SELECT COUNT([id]) AS [count] FROM [users] WHERE " +
+				"[status] = @p1 AND ([role] = @p2 OR [created_at] > @p3) AND deleted_at IS NULL",
 		}
 
 		assert.Equal(t, expected[dialect], sql)

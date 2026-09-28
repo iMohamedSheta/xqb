@@ -38,8 +38,11 @@ func Test_UpdateWhere(t *testing.T) {
 		sql, bindings, err := qb.Where("id", "=", 1).UpdateSql(data)
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
-			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3 WHERE "id" = $4`,
+			types.DialectMySql:     "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
+			types.DialectMariaDB:   "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ? WHERE `id` = ?",
+			types.DialectPostgres:  `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3 WHERE "id" = $4`,
+			types.DialectSQLite:    `UPDATE "users" SET "email" = ?, "first_name" = ?, "last_name" = ? WHERE "id" = ?`,
+			types.DialectSQLServer: `UPDATE [users] SET [email] = @p1, [first_name] = @p2, [last_name] = @p3 WHERE [id] = @p4`,
 		}
 
 		assert.NoError(t, err)
@@ -60,8 +63,11 @@ func Test_Update_AllowDangerous(t *testing.T) {
 		sql, bindings, err := qb.UpdateSql(data)
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
-			types.DialectPostgres: `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3`,
+			types.DialectMySql:     "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
+			types.DialectMariaDB:   "UPDATE `users` SET `email` = ?, `first_name` = ?, `last_name` = ?",
+			types.DialectPostgres:  `UPDATE "users" SET "email" = $1, "first_name" = $2, "last_name" = $3`,
+			types.DialectSQLite:    `UPDATE "users" SET "email" = ?, "first_name" = ?, "last_name" = ?`,
+			types.DialectSQLServer: `UPDATE [users] SET [email] = @p1, [first_name] = @p2, [last_name] = @p3`,
 		}
 
 		assert.NoError(t, err)
@@ -82,8 +88,11 @@ func Test_UpdateWithExpressionValue(t *testing.T) {
 		sql, bindings, err := qb.UpdateSql(data)
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
-			types.DialectPostgres: `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = $1`,
+			types.DialectMySql:     "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
+			types.DialectMariaDB:   "UPDATE `users` SET `login_count` = login_count + 1 WHERE `id` = ?",
+			types.DialectPostgres:  `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = $1`,
+			types.DialectSQLite:    `UPDATE "users" SET "login_count" = login_count + 1 WHERE "id" = ?`,
+			types.DialectSQLServer: `UPDATE [users] SET [login_count] = login_count + 1 WHERE [id] = @p1`,
 		}
 
 		assert.NoError(t, err)
@@ -110,8 +119,11 @@ func Test_Update_MixedFieldsAndComplexWhere(t *testing.T) {
 		sql, bindings, err := qb.UpdateSql(data)
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
-			types.DialectPostgres: `UPDATE "users" SET "active" = $1, "email" = $2, "last_login_at" = NOW() WHERE "status" != $3 AND ("age" > $4 OR "role" = $5) AND "id" = $6`,
+			types.DialectMySql:     `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
+			types.DialectMariaDB:   `UPDATE ` + "`users`" + ` SET ` + "`active`" + ` = ?, ` + "`email`" + ` = ?, ` + "`last_login_at`" + ` = NOW() WHERE ` + "`status`" + ` != ? AND (` + "`age`" + ` > ? OR ` + "`role`" + ` = ?) AND ` + "`id`" + ` = ?`,
+			types.DialectPostgres:  `UPDATE "users" SET "active" = $1, "email" = $2, "last_login_at" = NOW() WHERE "status" != $3 AND ("age" > $4 OR "role" = $5) AND "id" = $6`,
+			types.DialectSQLite:    `UPDATE "users" SET "active" = ?, "email" = ?, "last_login_at" = NOW() WHERE "status" != ? AND ("age" > ? OR "role" = ?) AND "id" = ?`,
+			types.DialectSQLServer: `UPDATE [users] SET [active] = @p1, [email] = @p2, [last_login_at] = NOW() WHERE [status] != @p3 AND ([age] > @p4 OR [role] = @p5) AND [id] = @p6`,
 		}
 
 		assert.NoError(t, err)

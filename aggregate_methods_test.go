@@ -21,8 +21,11 @@ func Test_Aggregate(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT SUM(price) AS total_price, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT SUM(price) AS total_price, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT SUM(price) AS total_price, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT SUM(price) AS total_price, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT SUM(price) AS total_price, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT SUM(price) AS total_price, "username", "email" FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 SUM(price) AS total_price, [username], [email] FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -45,8 +48,11 @@ func Test_DialectExpr(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT SUM(price) AS total_price, DATE_FORMAT(created_at, '%Y-%m-%d') AS created_at, `username`, `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT SUM(price) AS total_price, TO_CHAR(created_at, '%Y-%m-%d') AS created_at, "username", "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT SUM(price) AS total_price, strftime('%Y-%m-%d', created_at) AS created_at, "username", "email" FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 SUM(price) AS total_price, FORMAT(created_at, '%Y-%m-%d') AS created_at, [username], [email] FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -64,8 +70,11 @@ func Test_JsonExtract(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		expr := xqb.JsonExtract("data", "user.name", "username")
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "JSON_EXTRACT(data, '$.user.name') AS username",
-			types.DialectPostgres: "data->'user'->>'name' AS username",
+			types.DialectMySql:     "JSON_EXTRACT(data, '$.user.name') AS username",
+			types.DialectMariaDB:   "JSON_EXTRACT(data, '$.user.name') AS username",
+			types.DialectPostgres:  "data->'user'->>'name' AS username",
+			types.DialectSQLite:    "json_extract(data, '$.user.name') AS username",
+			types.DialectSQLServer: "JSON_VALUE(data, '$.user.name') AS username",
 		}
 		assert.Equal(t, expectedSQL[dialect], expr.Dialects[string(dialect)].Sql)
 	})
@@ -77,8 +86,11 @@ func Test_DateFunctions(t *testing.T) {
 		dialectExpr := xqb.DateDiff("end_date", "start_date", "diff")
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "DATEDIFF(end_date, start_date) AS diff",
-			types.DialectPostgres: "(end_date - start_date) AS diff",
+			types.DialectMySql:     "DATEDIFF(end_date, start_date) AS diff",
+			types.DialectMariaDB:   "DATEDIFF(end_date, start_date) AS diff",
+			types.DialectPostgres:  "(end_date - start_date) AS diff",
+			types.DialectSQLite:    "(julianday(end_date) - julianday(start_date)) AS diff",
+			types.DialectSQLServer: "DATEDIFF(DAY, start_date, end_date) AS diff",
 		}
 		expr := dialectExpr.Dialects[string(dialect)]
 
@@ -112,8 +124,11 @@ func Test_QueryBuilder_LockForUpdate(t *testing.T) {
 		sql, b, err := xqb.Table("users").SetDialect(dialect).LockForUpdate().ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` FOR UPDATE",
-			types.DialectPostgres: `SELECT * FROM "users" FOR UPDATE`,
+			types.DialectMySql:     "SELECT * FROM `users` FOR UPDATE",
+			types.DialectMariaDB:   "SELECT * FROM `users` FOR UPDATE",
+			types.DialectPostgres:  `SELECT * FROM "users" FOR UPDATE`,
+			types.DialectSQLite:    `SELECT * FROM "users"`,
+			types.DialectSQLServer: "SELECT * FROM [users] WITH (ROWLOCK,UPDLOCK,HOLDLOCK)",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -129,8 +144,11 @@ func Test_QueryBuilder_SharedLock(t *testing.T) {
 		sql, b, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` LOCK IN SHARE MODE",
-			types.DialectPostgres: `SELECT * FROM "users" FOR SHARE`,
+			types.DialectMySql:     "SELECT * FROM `users` LOCK IN SHARE MODE",
+			types.DialectMariaDB:   "SELECT * FROM `users` LOCK IN SHARE MODE",
+			types.DialectPostgres:  `SELECT * FROM "users" FOR SHARE`,
+			types.DialectSQLite:    `SELECT * FROM "users"`,
+			types.DialectSQLServer: "SELECT * FROM [users] WITH (ROWLOCK,HOLDLOCK)",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -145,8 +163,11 @@ func Test_QueryBuilder_SharedLock_NoWait(t *testing.T) {
 		sql, b, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` LOCK IN SHARE MODE NOWAIT",
-			types.DialectPostgres: `SELECT * FROM "users" FOR SHARE NOWAIT`,
+			types.DialectMySql:     "SELECT * FROM `users` LOCK IN SHARE MODE NOWAIT",
+			types.DialectMariaDB:   "SELECT * FROM `users` LOCK IN SHARE MODE NOWAIT",
+			types.DialectPostgres:  `SELECT * FROM "users" FOR SHARE NOWAIT`,
+			types.DialectSQLite:    `SELECT * FROM "users"`,
+			types.DialectSQLServer: "SELECT * FROM [users] WITH (ROWLOCK,HOLDLOCK)",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
@@ -161,8 +182,11 @@ func Test_QueryBuilder_LockForUpdate_SkipLocked(t *testing.T) {
 		sql, b, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` FOR UPDATE SKIP LOCKED",
-			types.DialectPostgres: `SELECT * FROM "users" FOR UPDATE SKIP LOCKED`,
+			types.DialectMySql:     "SELECT * FROM `users` FOR UPDATE SKIP LOCKED",
+			types.DialectMariaDB:   "SELECT * FROM `users` FOR UPDATE SKIP LOCKED",
+			types.DialectPostgres:  `SELECT * FROM "users" FOR UPDATE SKIP LOCKED`,
+			types.DialectSQLite:    `SELECT * FROM "users"`,
+			types.DialectSQLServer: "SELECT * FROM [users] WITH (ROWLOCK,UPDLOCK,HOLDLOCK)",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, b)
@@ -180,12 +204,18 @@ func Test_QueryBuilder_NoKeyUpdate_SkipLocked_Postgres(t *testing.T) {
 
 		sql, b, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "",
-			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 FOR NO KEY UPDATE SKIP LOCKED`,
+			types.DialectMySql:     "",
+			types.DialectMariaDB:   "",
+			types.DialectPostgres:  `SELECT * FROM "users" WHERE "id" = $1 FOR NO KEY UPDATE SKIP LOCKED`,
+			types.DialectSQLite:    `SELECT * FROM "users" WHERE "id" = ?`,
+			types.DialectSQLServer: "SELECT * FROM [users] WITH (ROWLOCK,UPDLOCK,HOLDLOCK) WHERE [id] = @p1",
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    xqbErr.ErrInvalidQuery,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     xqbErr.ErrInvalidQuery,
+			types.DialectMariaDB:   xqbErr.ErrInvalidQuery,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -219,8 +249,11 @@ func Test_DateAdd(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		dialectExpr := xqb.DateAdd("created_at", "7", "DAY", "next_week")
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week",
-			types.DialectPostgres: "created_at + INTERVAL '7 day' AS next_week",
+			types.DialectMySql:     "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week",
+			types.DialectMariaDB:   "DATE_ADD(created_at, INTERVAL 7 DAY) AS next_week",
+			types.DialectPostgres:  "created_at + INTERVAL '7 day' AS next_week",
+			types.DialectSQLite:    "datetime(created_at, '+7 day') AS next_week",
+			types.DialectSQLServer: "DATEADD(DAY, 7, created_at) AS next_week",
 		}
 
 		expr := dialectExpr.Dialects[string(dialect)]
@@ -234,8 +267,11 @@ func Test_DateSub(t *testing.T) {
 	forEachDialect(t, func(t *testing.T, dialect types.Dialect) {
 		dialectExpr := xqb.DateSub("created_at", "1", "MONTH", "last_month")
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month",
-			types.DialectPostgres: "created_at - INTERVAL '1 month' AS last_month",
+			types.DialectMySql:     "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month",
+			types.DialectMariaDB:   "DATE_SUB(created_at, INTERVAL 1 MONTH) AS last_month",
+			types.DialectPostgres:  "created_at - INTERVAL '1 month' AS last_month",
+			types.DialectSQLite:    "datetime(created_at, '-1 month') AS last_month",
+			types.DialectSQLServer: "DATEADD(MONTH, -1, created_at) AS last_month",
 		}
 
 		expr := dialectExpr.Dialects[string(dialect)]
@@ -258,8 +294,11 @@ func Test_QueryBuilder_Upper_Length_Trim(t *testing.T) {
 			xqb.Trim("username", "trimmed_username"),
 		).Where("active", "=", true).ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM `users` WHERE `active` = ?",
-			types.DialectPostgres: `SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM "users" WHERE "active" = $1`,
+			types.DialectMySql:     "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM `users` WHERE `active` = ?",
+			types.DialectMariaDB:   "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM `users` WHERE `active` = ?",
+			types.DialectPostgres:  `SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM "users" WHERE "active" = $1`,
+			types.DialectSQLite:    `SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM "users" WHERE "active" = ?`,
+			types.DialectSQLServer: "SELECT UPPER(name) AS upper_name, LENGTH(bio) AS bio_length, TRIM(username) AS trimmed_username FROM [users] WHERE [active] = @p1",
 		}
 
 		assert.NoError(t, err)
@@ -277,8 +316,11 @@ func Test_QueryBuilder_DateAdd_DateSub(t *testing.T) {
 		).Where("status", "=", "open").ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM `events` WHERE `status` = ?",
-			types.DialectPostgres: `SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM "events" WHERE "status" = $1`,
+			types.DialectMySql:     "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM `events` WHERE `status` = ?",
+			types.DialectMariaDB:   "SELECT DATE_ADD(event_date, INTERVAL 1 DAY) AS tomorrow, DATE_SUB(event_date, INTERVAL 7 DAY) AS last_week FROM `events` WHERE `status` = ?",
+			types.DialectPostgres:  `SELECT event_date + INTERVAL '1 day' AS tomorrow, event_date - INTERVAL '7 day' AS last_week FROM "events" WHERE "status" = $1`,
+			types.DialectSQLite:    `SELECT datetime(event_date, '+1 day') AS tomorrow, datetime(event_date, '-7 day') AS last_week FROM "events" WHERE "status" = ?`,
+			types.DialectSQLServer: "SELECT DATEADD(DAY, 1, event_date) AS tomorrow, DATEADD(DAY, -7, event_date) AS last_week FROM [events] WHERE [status] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -321,6 +363,13 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 				"DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
 				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
 				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM `test_table` WHERE `active` = ?",
+			types.DialectMariaDB: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
+				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.email') AS user_email, " +
+				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
+				"DATEDIFF(end_date, start_date) AS days_between, DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, " +
+				"DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
+				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
+				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM `test_table` WHERE `active` = ?",
 			types.DialectPostgres: `SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount,` +
 				` AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, data->'user'->>'email' AS user_email,` +
 				` price * quantity AS total_price, DATE(created_at) AS created_date,` +
@@ -328,6 +377,20 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 				` TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name,` +
 				` LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname,` +
 				` REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM "test_table" WHERE "active" = $1`,
+			types.DialectSQLite: `SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount,` +
+				` AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, json_extract(data, '$.user.email') AS user_email,` +
+				` price * quantity AS total_price, DATE(created_at) AS created_date,` +
+				` (julianday(end_date) - julianday(start_date)) AS days_between, datetime(created_at, '+1 day') AS next_day, datetime(created_at, '-1 month') AS prev_month,` +
+				` strftime('%Y-%m-%d', created_at) AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name,` +
+				` LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname,` +
+				` REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM "test_table" WHERE "active" = ?`,
+			types.DialectSQLServer: "SELECT COUNT(id) AS total_count, SUM(amount) AS total_amount, " +
+				"AVG(score) AS avg_score, MIN(age) AS min_age, MAX(salary) AS max_salary, JSON_VALUE(data, '$.user.email') AS user_email, " +
+				"price * quantity AS total_price, DATE(created_at) AS created_date, " +
+				"DATEDIFF(DAY, start_date, end_date) AS days_between, DATEADD(DAY, 1, created_at) AS next_day, DATEADD(MONTH, -1, created_at) AS prev_month, " +
+				"FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name) AS full_name, " +
+				"LOWER(email) AS lower_email, UPPER(username) AS upper_username, LENGTH(bio) AS bio_length, TRIM(nickname) AS trimmed_nickname, " +
+				"REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10) AS short_desc FROM [test_table] WHERE [active] = @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -336,8 +399,11 @@ func Test_QueryBuilder_AggregateMethods(t *testing.T) {
 
 		dialectExprDateFormat := xqb.DateFormat("created_at", "%Y-%m-%d", "formatted_date")
 		expectedSQL = map[types.Dialect]string{
-			types.DialectMySql:    "DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
-			types.DialectPostgres: "TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date",
+			types.DialectMySql:     "DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
+			types.DialectMariaDB:   "DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
+			types.DialectPostgres:  "TO_CHAR(created_at, '%Y-%m-%d') AS formatted_date",
+			types.DialectSQLite:    "strftime('%Y-%m-%d', created_at) AS formatted_date",
+			types.DialectSQLServer: "FORMAT(created_at, '%Y-%m-%d') AS formatted_date",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], dialectExprDateFormat.Dialects[string(dialect)].Sql)
@@ -409,6 +475,14 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 				"CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, " +
 				"TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), " +
 				"SUBSTRING(description, 1, 10) AS short_desc FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10",
+			types.DialectMariaDB: "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), " +
+				"MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, JSON_EXTRACT(data, '$.user.name'), JSON_EXTRACT(data, '$.user.name') AS user_name, price * quantity, " +
+				"price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, DATEDIFF(end_date, start_date), DATEDIFF(end_date, start_date) AS days_between, " +
+				"DATE_ADD(created_at, INTERVAL 1 DAY), DATE_ADD(created_at, INTERVAL 1 DAY) AS next_day, DATE_SUB(created_at, INTERVAL 1 MONTH), DATE_SUB(created_at, INTERVAL 1 MONTH) AS prev_month, " +
+				"DATE_FORMAT(created_at, '%Y-%m-%d'), DATE_FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), " +
+				"CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, " +
+				"TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), " +
+				"SUBSTRING(description, 1, 10) AS short_desc FROM `coverage_table` WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10",
 			types.DialectPostgres: `SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), ` +
 				`MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, data->'user'->>'name', data->'user'->>'name' AS user_name, price * quantity, ` +
 				`price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, (end_date - start_date), (end_date - start_date) AS days_between, ` +
@@ -417,6 +491,22 @@ func Test_QueryBuilder_AggregateMethods_2(t *testing.T) {
 				`CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, ` +
 				`TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), ` +
 				`SUBSTRING(description, 1, 10) AS short_desc FROM "coverage_table" WHERE LOWER(status) = $1 GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > $2 ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10`,
+			types.DialectSQLite: `SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), ` +
+				`MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, json_extract(data, '$.user.name'), json_extract(data, '$.user.name') AS user_name, price * quantity, ` +
+				`price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, (julianday(end_date) - julianday(start_date)), (julianday(end_date) - julianday(start_date)) AS days_between, ` +
+				`datetime(created_at, '+1 day'), datetime(created_at, '+1 day') AS next_day, datetime(created_at, '-1 month'), datetime(created_at, '-1 month') AS prev_month, ` +
+				`strftime('%Y-%m-%d', created_at), strftime('%Y-%m-%d', created_at) AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), ` +
+				`CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, ` +
+				`TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), ` +
+				`SUBSTRING(description, 1, 10) AS short_desc FROM "coverage_table" WHERE LOWER(status) = ? GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > ? ORDER BY LENGTH(bio) DESC LIMIT 5 OFFSET 10`,
+			types.DialectSQLServer: "SELECT COUNT(*), COUNT(id) AS cnt, SUM(amount), SUM(amount) AS total_amount, AVG(score), AVG(score) AS avg_score, MIN(age), " +
+				"MIN(age) AS min_age, MAX(salary), MAX(salary) AS max_salary, JSON_VALUE(data, '$.user.name'), JSON_VALUE(data, '$.user.name') AS user_name, price * quantity, " +
+				"price * quantity + tax AS total_price, DATE(created_at), DATE(created_at) AS created_date, DATEDIFF(DAY, start_date, end_date), DATEDIFF(DAY, start_date, end_date) AS days_between, " +
+				"DATEADD(DAY, 1, created_at), DATEADD(DAY, 1, created_at) AS next_day, DATEADD(MONTH, -1, created_at), DATEADD(MONTH, -1, created_at) AS prev_month, " +
+				"FORMAT(created_at, '%Y-%m-%d'), FORMAT(created_at, '%Y-%m-%d') AS formatted_date, COALESCE(middle_name, 'N/A'), COALESCE(middle_name, 'N/A') AS coalesced_name, CONCAT(first_name, ' ', last_name), " +
+				"CONCAT(first_name, ' ', last_name) AS full_name, LOWER(email), LOWER(email) AS lower_email, UPPER(username), UPPER(username) AS upper_username, LENGTH(bio), LENGTH(bio) AS bio_length, " +
+				"TRIM(nickname), TRIM(nickname) AS trimmed_nickname, REPLACE(title, 'foo', 'bar'), REPLACE(title, 'foo', 'bar') AS replaced_title, SUBSTRING(description, 1, 10), " +
+				"SUBSTRING(description, 1, 10) AS short_desc FROM [coverage_table] WHERE LOWER(status) = @p1 GROUP BY DATE(created_at), UPPER(region) HAVING SUM(amount) > @p2 ORDER BY LENGTH(bio) DESC OFFSET 10 ROWS FETCH NEXT 5 ROWS ONLY",
 		}
 
 		assert.NoError(t, err)

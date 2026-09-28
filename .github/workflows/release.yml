@@ -1,0 +1,230 @@
+name: Release
+
+# Every push to main publishes a new version — but only if the shipped
+# library changed (Go code outside scripts/). Docs-only, CI/workflow, or
+# script-only pushes are skipped and batch up into the next library release
+# instead.
+#   feat: / feat(scope):            -> minor bump (x.Y.0)
+#   fix:  / fix(scope):             -> patch bump (x.y.Z)
+#   "BREAKING CHANGE" or "type!:"   -> major bump (X.0.0)
+#   anything else (docs, chore...)  -> patch bump
+# Add "[skip release]" to the HEAD commit message to skip publishing.
+#
+# A release is just a version tag (this is a Go module — `go get` resolves
+# tags), published only after the full gates pass: unit tests, the
+# integration suite on every database, and security scans.
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      skip: ${{ steps.version.outputs.skip }}
+      next: ${{ steps.version.outputs.next }}
+      bump: ${{ steps.version.outputs.bump }}
+      changelog: ${{ steps.version.outputs.changelog }}
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version from conventional commits
+        id: version
+        shell: pwsh
+        run: ./scripts/next-version.ps1
+
+  unit:
+    needs: version
+    if: needs.version.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Tests
+        run: go test ./... -count=1
+
+      - name: Vet (static analysis, root + integration)
+        run: |
+          go vet ./...
+          cd integration
+          go vet ./...
+
+  integration:
+    needs: version
+    if: needs.version.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_xqb_db
+          MYSQL_USER: test
+          MYSQL_PASSWORD: test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: test_xqb_db
+          MARIADB_USER: test
+          MARIADB_PASSWORD: test
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_xqb_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U test -d test_xqb_db"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: Strong!Pass123
+          MSSQL_PID: Developer
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Strong!Pass123' -C -Q 'SELECT 1'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      XQB_MYSQL_DSN: test:test@tcp(127.0.0.1:3306)/test_xqb_db?parseTime=true&multiStatements=true&charset=utf8mb4
+      XQB_MARIADB_DSN: test:test@tcp(127.0.0.1:3307)/test_xqb_db?parseTime=true&multiStatements=true&charset=utf8mb4
+      XQB_POSTGRES_DSN: postgres://test:test@127.0.0.1:5432/test_xqb_db?sslmode=disable
+      # master avoids a CREATE DATABASE step; tables are test-prefixed (xqb_*).
+      XQB_SQLSERVER_DSN: sqlserver://sa:Strong!Pass123@127.0.0.1:1433?database=master
+      XQB_REQUIRE_ALL: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install DB clients (for readiness probes)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y mysql-client postgresql-client
+
+      - name: Wait for databases
+        run: |
+          until mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; do echo "Waiting for MySQL..."; sleep 2; done
+          until mysqladmin ping -h 127.0.0.1 -P 3307 -u root -proot --silent; do echo "Waiting for MariaDB..."; sleep 2; done
+          until pg_isready -h 127.0.0.1 -p 5432 -U test; do echo "Waiting for Postgres..."; sleep 2; done
+          for i in $(seq 1 60); do
+            if (echo > /dev/tcp/127.0.0.1/1433) >/dev/null 2>&1; then echo "SQL Server TCP is up"; break; fi
+            echo "Waiting for SQL Server..."; sleep 2
+          done
+
+      - name: Run integration tests (all dialects)
+        working-directory: integration
+        run: go test -v -count=1 ./...
+
+  security:
+    needs: version
+    if: needs.version.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Gosec Security Checker
+        uses: securego/gosec@v2.22.4
+
+      - name: Run govulncheck (root + integration)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+          cd integration
+          govulncheck ./...
+
+  publish:
+    needs: [version, unit, integration, security]
+    if: needs.version.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.next }}
+          name: ${{ needs.version.outputs.next }}
+          body: |
+            ## What's changed (${{ needs.version.outputs.bump }})
+
+            ${{ needs.version.outputs.changelog }}
+
+            ---
+
+            **Install:**
+
+            ```bash
+            go get github.com/iMohamedSheta/xqb@${{ needs.version.outputs.next }}
+            ```

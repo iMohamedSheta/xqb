@@ -15,8 +15,11 @@ func Test_Select(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name`, `email` FROM `users`",
-			types.DialectPostgres: `SELECT "id", "name", "email" FROM "users"`,
+			types.DialectMySql:     "SELECT `id`, `name`, `email` FROM `users`",
+			types.DialectMariaDB:   "SELECT `id`, `name`, `email` FROM `users`",
+			types.DialectPostgres:  `SELECT "id", "name", "email" FROM "users"`,
+			types.DialectSQLite:    `SELECT "id", "name", "email" FROM "users"`,
+			types.DialectSQLServer: `SELECT [id], [name], [email] FROM [users]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -31,8 +34,11 @@ func Test_Select_WithWhere(t *testing.T) {
 		qb.Where("age", ">", 18)
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `age` > ?",
-			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "age" > $1`,
+			types.DialectMySql:     "SELECT `id`, `name` FROM `users` WHERE `age` > ?",
+			types.DialectMariaDB:   "SELECT `id`, `name` FROM `users` WHERE `age` > ?",
+			types.DialectPostgres:  `SELECT "id", "name" FROM "users" WHERE "age" > $1`,
+			types.DialectSQLite:    `SELECT "id", "name" FROM "users" WHERE "age" > ?`,
+			types.DialectSQLServer: `SELECT [id], [name] FROM [users] WHERE [age] > @p1`,
 		}
 		expectedBindings := []any{18}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -48,8 +54,11 @@ func Test_Select_WithJoins(t *testing.T) {
 		qb.Join("orders", "users.id = orders.user_id")
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id",
-			types.DialectPostgres: `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id`,
+			types.DialectMySql:     "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id",
+			types.DialectMariaDB:   "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id",
+			types.DialectPostgres:  `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id`,
+			types.DialectSQLite:    `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id`,
+			types.DialectSQLServer: `SELECT [users].[id], [users].[name], [orders].[id] AS [order_id] FROM [users] JOIN [orders] ON users.id = orders.user_id`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -65,8 +74,11 @@ func Test_Select_WithLeftJoins(t *testing.T) {
 		qb.LeftJoin("products", "orders.product_id = products.id")
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id LEFT JOIN `products` ON orders.product_id = products.id WHERE `users`.`id` > ? AND `orders`.`id` > ?",
-			types.DialectPostgres: `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id LEFT JOIN "products" ON orders.product_id = products.id WHERE "users"."id" > $1 AND "orders"."id" > $2`,
+			types.DialectMySql:     "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id LEFT JOIN `products` ON orders.product_id = products.id WHERE `users`.`id` > ? AND `orders`.`id` > ?",
+			types.DialectMariaDB:   "SELECT `users`.`id`, `users`.`name`, `orders`.`id` AS `order_id` FROM `users` JOIN `orders` ON users.id = orders.user_id LEFT JOIN `products` ON orders.product_id = products.id WHERE `users`.`id` > ? AND `orders`.`id` > ?",
+			types.DialectPostgres:  `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id LEFT JOIN "products" ON orders.product_id = products.id WHERE "users"."id" > $1 AND "orders"."id" > $2`,
+			types.DialectSQLite:    `SELECT "users"."id", "users"."name", "orders"."id" AS "order_id" FROM "users" JOIN "orders" ON users.id = orders.user_id LEFT JOIN "products" ON orders.product_id = products.id WHERE "users"."id" > ? AND "orders"."id" > ?`,
+			types.DialectSQLServer: `SELECT [users].[id], [users].[name], [orders].[id] AS [order_id] FROM [users] JOIN [orders] ON users.id = orders.user_id LEFT JOIN [products] ON orders.product_id = products.id WHERE [users].[id] > @p1 AND [orders].[id] > @p2`,
 		}
 		expectedBindings := []any{55, 11}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -82,8 +94,11 @@ func Test_Select_WithGroupBy(t *testing.T) {
 		qb.GroupBy("user_id")
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id`",
-			types.DialectPostgres: `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id"`,
+			types.DialectMySql:     "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id`",
+			types.DialectMariaDB:   "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id`",
+			types.DialectPostgres:  `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id"`,
+			types.DialectSQLite:    `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id"`,
+			types.DialectSQLServer: `SELECT [user_id], COUNT(*) AS [order_count] FROM [orders] GROUP BY [user_id]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -99,8 +114,11 @@ func Test_Select_WithHaving(t *testing.T) {
 		qb.Having("order_count", ">", 5)
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id` HAVING `order_count` > ?",
-			types.DialectPostgres: `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id" HAVING "order_count" > $1`,
+			types.DialectMySql:     "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id` HAVING `order_count` > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, COUNT(*) AS `order_count` FROM `orders` GROUP BY `user_id` HAVING `order_count` > ?",
+			types.DialectPostgres:  `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id" HAVING "order_count" > $1`,
+			types.DialectSQLite:    `SELECT "user_id", COUNT(*) AS "order_count" FROM "orders" GROUP BY "user_id" HAVING "order_count" > ?`,
+			types.DialectSQLServer: `SELECT [user_id], COUNT(*) AS [order_count] FROM [orders] GROUP BY [user_id] HAVING [order_count] > @p1`,
 		}
 		expectedBindings := []any{5}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -116,8 +134,11 @@ func Test_Select_WithOrderBy(t *testing.T) {
 		qb.OrderBy("name", "ASC")
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name` FROM `users` ORDER BY `name` ASC",
-			types.DialectPostgres: `SELECT "id", "name" FROM "users" ORDER BY "name" ASC`,
+			types.DialectMySql:     "SELECT `id`, `name` FROM `users` ORDER BY `name` ASC",
+			types.DialectMariaDB:   "SELECT `id`, `name` FROM `users` ORDER BY `name` ASC",
+			types.DialectPostgres:  `SELECT "id", "name" FROM "users" ORDER BY "name" ASC`,
+			types.DialectSQLite:    `SELECT "id", "name" FROM "users" ORDER BY "name" ASC`,
+			types.DialectSQLServer: `SELECT [id], [name] FROM [users] ORDER BY [name] ASC`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -133,8 +154,11 @@ func Test_Select_WithLimitOffset(t *testing.T) {
 		qb.Offset(20)
 		sql, bindings, err := qb.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name` FROM `users` LIMIT 10 OFFSET 20",
-			types.DialectPostgres: `SELECT "id", "name" FROM "users" LIMIT 10 OFFSET 20`,
+			types.DialectMySql:     "SELECT `id`, `name` FROM `users` LIMIT 10 OFFSET 20",
+			types.DialectMariaDB:   "SELECT `id`, `name` FROM `users` LIMIT 10 OFFSET 20",
+			types.DialectPostgres:  `SELECT "id", "name" FROM "users" LIMIT 10 OFFSET 20`,
+			types.DialectSQLite:    `SELECT "id", "name" FROM "users" LIMIT 10 OFFSET 20`,
+			types.DialectSQLServer: `SELECT [id], [name] FROM [users] ORDER BY (SELECT 0) OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -154,8 +178,11 @@ func Test_Select_WithAggregateFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM `orders`",
-			types.DialectPostgres: `SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM "orders"`,
+			types.DialectMySql:     "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM `orders`",
+			types.DialectMariaDB:   "SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM `orders`",
+			types.DialectPostgres:  `SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM "orders"`,
+			types.DialectSQLite:    `SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM "orders"`,
+			types.DialectSQLServer: `SELECT SUM(amount) AS total_amount, AVG(amount) AS average_amount, COUNT(id) AS order_count FROM [orders]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -174,8 +201,14 @@ func Test_Select_WithCTE(t *testing.T) {
 		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) " +
 				"SELECT `users`.`id`, `users`.`name`, `user_totals`.`total_spent` FROM `users` JOIN `user_totals` ON users.id = user_totals.user_id",
+			types.DialectMariaDB: "WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) " +
+				"SELECT `users`.`id`, `users`.`name`, `user_totals`.`total_spent` FROM `users` JOIN `user_totals` ON users.id = user_totals.user_id",
 			types.DialectPostgres: `WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) ` +
 				`SELECT "users"."id", "users"."name", "user_totals"."total_spent" FROM "users" JOIN "user_totals" ON users.id = user_totals.user_id`,
+			types.DialectSQLite: `WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) ` +
+				`SELECT "users"."id", "users"."name", "user_totals"."total_spent" FROM "users" JOIN "user_totals" ON users.id = user_totals.user_id`,
+			types.DialectSQLServer: `WITH user_totals AS (SELECT user_id, SUM(amount) as total_spent FROM orders GROUP BY user_id) ` +
+				`SELECT [users].[id], [users].[name], [user_totals].[total_spent] FROM [users] JOIN [user_totals] ON users.id = user_totals.user_id`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -198,9 +231,18 @@ func Test_Select_WithComplexCTE(t *testing.T) {
 			types.DialectMySql: "WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) " +
 				"SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) " +
 				"SELECT `products`.`id`, `products`.`name`, `active_users`.`name` AS `buyer` FROM `products` JOIN `active_users` ON products.id = active_users.id",
+			types.DialectMariaDB: "WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) " +
+				"SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) " +
+				"SELECT `products`.`id`, `products`.`name`, `active_users`.`name` AS `buyer` FROM `products` JOIN `active_users` ON products.id = active_users.id",
 			types.DialectPostgres: `WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) ` +
 				`SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) ` +
 				`SELECT "products"."id", "products"."name", "active_users"."name" AS "buyer" FROM "products" JOIN "active_users" ON products.id = active_users.id`,
+			types.DialectSQLite: `WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) ` +
+				`SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) ` +
+				`SELECT "products"."id", "products"."name", "active_users"."name" AS "buyer" FROM "products" JOIN "active_users" ON products.id = active_users.id`,
+			types.DialectSQLServer: `WITH active_users AS (WITH user_orders AS (SELECT user_id, COUNT(*) as order_count FROM orders GROUP BY user_id) ` +
+				`SELECT users.id, users.name, user_orders.order_count FROM users JOIN user_orders ON users.id = user_orders.user_id) ` +
+				`SELECT [products].[id], [products].[name], [active_users].[name] AS [buyer] FROM [products] JOIN [active_users] ON products.id = active_users.id`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -219,8 +261,11 @@ func Test_Select_WithJSONExpressions(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name`, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM `users`",
-			types.DialectPostgres: `SELECT "id", "name", metadata->'preferences'->>'theme' AS theme FROM "users"`,
+			types.DialectMySql:     "SELECT `id`, `name`, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM `users`",
+			types.DialectMariaDB:   "SELECT `id`, `name`, JSON_EXTRACT(metadata, '$.preferences.theme') AS theme FROM `users`",
+			types.DialectPostgres:  `SELECT "id", "name", metadata->'preferences'->>'theme' AS theme FROM "users"`,
+			types.DialectSQLite:    `SELECT "id", "name", json_extract(metadata, '$.preferences.theme') AS theme FROM "users"`,
+			types.DialectSQLServer: `SELECT [id], [name], JSON_VALUE(metadata, '$.preferences.theme') AS theme FROM [users]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -242,8 +287,11 @@ func Test_Select_WithStringFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, CONCAT(first_name, ' ', last_name) AS full_name FROM `users`",
-			types.DialectPostgres: `SELECT "id", CONCAT(first_name, ' ', last_name) AS full_name FROM "users"`,
+			types.DialectMySql:     "SELECT `id`, CONCAT(first_name, ' ', last_name) AS full_name FROM `users`",
+			types.DialectMariaDB:   "SELECT `id`, CONCAT(first_name, ' ', last_name) AS full_name FROM `users`",
+			types.DialectPostgres:  `SELECT "id", CONCAT(first_name, ' ', last_name) AS full_name FROM "users"`,
+			types.DialectSQLite:    `SELECT "id", CONCAT(first_name, ' ', last_name) AS full_name FROM "users"`,
+			types.DialectSQLServer: `SELECT [id], CONCAT(first_name, ' ', last_name) AS full_name FROM [users]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any(nil), bindings)
@@ -261,8 +309,11 @@ func Test_Select_WithDateFunctions(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM `orders`",
-			types.DialectPostgres: `SELECT "id", TO_CHAR(created_at, '%Y-%m-%d') AS order_date FROM "orders"`,
+			types.DialectMySql:     "SELECT `id`, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM `orders`",
+			types.DialectMariaDB:   "SELECT `id`, DATE_FORMAT(created_at, '%Y-%m-%d') AS order_date FROM `orders`",
+			types.DialectPostgres:  `SELECT "id", TO_CHAR(created_at, '%Y-%m-%d') AS order_date FROM "orders"`,
+			types.DialectSQLite:    `SELECT "id", strftime('%Y-%m-%d', created_at) AS order_date FROM "orders"`,
+			types.DialectSQLServer: `SELECT [id], FORMAT(created_at, '%Y-%m-%d') AS order_date FROM [orders]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any(nil), bindings)
@@ -280,8 +331,11 @@ func Test_Select_WithMathExpressions(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, amount * 1.1 AS total_with_tax FROM `orders`",
-			types.DialectPostgres: `SELECT "id", amount * 1.1 AS total_with_tax FROM "orders"`,
+			types.DialectMySql:     "SELECT `id`, amount * 1.1 AS total_with_tax FROM `orders`",
+			types.DialectMariaDB:   "SELECT `id`, amount * 1.1 AS total_with_tax FROM `orders`",
+			types.DialectPostgres:  `SELECT "id", amount * 1.1 AS total_with_tax FROM "orders"`,
+			types.DialectSQLite:    `SELECT "id", amount * 1.1 AS total_with_tax FROM "orders"`,
+			types.DialectSQLServer: `SELECT [id], amount * 1.1 AS total_with_tax FROM [orders]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -297,8 +351,11 @@ func Test_Select_WithLocking(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name` FROM `users` FOR UPDATE",
-			types.DialectPostgres: `SELECT "id", "name" FROM "users" FOR UPDATE`,
+			types.DialectMySql:     "SELECT `id`, `name` FROM `users` FOR UPDATE",
+			types.DialectMariaDB:   "SELECT `id`, `name` FROM `users` FOR UPDATE",
+			types.DialectPostgres:  `SELECT "id", "name" FROM "users" FOR UPDATE`,
+			types.DialectSQLite:    `SELECT "id", "name" FROM "users"`,
+			types.DialectSQLServer: `SELECT [id], [name] FROM [users] WITH (ROWLOCK,UPDLOCK,HOLDLOCK)`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -316,8 +373,11 @@ func Test_Select_WithUnion(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)",
-			types.DialectPostgres: `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)`,
+			types.DialectMySql:     "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)",
+			types.DialectMariaDB:   "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)",
+			types.DialectPostgres:  `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)`,
+			types.DialectSQLite:    `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM users WHERE type = $1) UNION (SELECT id, name FROM users WHERE type = $2) UNION (SELECT id, name FROM users WHERE type = $3)`,
+			types.DialectSQLServer: `(SELECT [id], [name] FROM [users]) UNION (SELECT id, name FROM users WHERE type = @p1) UNION (SELECT id, name FROM users WHERE type = @p2) UNION (SELECT id, name FROM users WHERE type = @p3)`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -335,8 +395,11 @@ func Test_Select_WithDistinct(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT DISTINCT `name` FROM `users`",
-			types.DialectPostgres: `SELECT DISTINCT "name" FROM "users"`,
+			types.DialectMySql:     "SELECT DISTINCT `name` FROM `users`",
+			types.DialectMariaDB:   "SELECT DISTINCT `name` FROM `users`",
+			types.DialectPostgres:  `SELECT DISTINCT "name" FROM "users"`,
+			types.DialectSQLite:    `SELECT DISTINCT "name" FROM "users"`,
+			types.DialectSQLServer: `SELECT DISTINCT [name] FROM [users]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -354,8 +417,11 @@ func Test_Select_WithRawExpressions(t *testing.T) {
 		).ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT COUNT(*) as total, `name`, CONCAT(first_name, ' ', last_name) as full_name FROM `users`",
-			types.DialectPostgres: `SELECT COUNT(*) as total, "name", CONCAT(first_name, ' ', last_name) as full_name FROM "users"`,
+			types.DialectMySql:     "SELECT COUNT(*) as total, `name`, CONCAT(first_name, ' ', last_name) as full_name FROM `users`",
+			types.DialectMariaDB:   "SELECT COUNT(*) as total, `name`, CONCAT(first_name, ' ', last_name) as full_name FROM `users`",
+			types.DialectPostgres:  `SELECT COUNT(*) as total, "name", CONCAT(first_name, ' ', last_name) as full_name FROM "users"`,
+			types.DialectSQLite:    `SELECT COUNT(*) as total, "name", CONCAT(first_name, ' ', last_name) as full_name FROM "users"`,
+			types.DialectSQLServer: `SELECT COUNT(*) as total, [name], CONCAT(first_name, ' ', last_name) as full_name FROM [users]`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -376,8 +442,11 @@ func Test_Select_WithDateExpressions(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM `orders` GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC",
-			types.DialectPostgres: `SELECT TO_CHAR(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM "orders" GROUP BY TO_CHAR(created_at, '%Y-%m') ORDER BY TO_CHAR(created_at, '%Y-%m') ASC`,
+			types.DialectMySql:     "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM `orders` GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC",
+			types.DialectMariaDB:   "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM `orders` GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY DATE_FORMAT(created_at, '%Y-%m') ASC",
+			types.DialectPostgres:  `SELECT TO_CHAR(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM "orders" GROUP BY TO_CHAR(created_at, '%Y-%m') ORDER BY TO_CHAR(created_at, '%Y-%m') ASC`,
+			types.DialectSQLite:    `SELECT strftime('%Y-%m', created_at) AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM "orders" GROUP BY strftime('%Y-%m', created_at) ORDER BY strftime('%Y-%m', created_at) ASC`,
+			types.DialectSQLServer: `SELECT FORMAT(created_at, '%Y-%m') AS month, COUNT(*) as total_orders, SUM(amount) as total_amount FROM [orders] GROUP BY FORMAT(created_at, '%Y-%m') ORDER BY FORMAT(created_at, '%Y-%m') ASC`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -401,8 +470,11 @@ func Test_Select_WithExpressions(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM `users` WHERE LOWER(email) LIKE ? GROUP BY `id`, `first_name`, `last_name` HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
-			types.DialectPostgres: `SELECT "id", CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM "users" WHERE LOWER(email) LIKE $1 GROUP BY "id", "first_name", "last_name" HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > $2 ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC`,
+			types.DialectMySql:     "SELECT `id`, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM `users` WHERE LOWER(email) LIKE ? GROUP BY `id`, `first_name`, `last_name` HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
+			types.DialectMariaDB:   "SELECT `id`, CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM `users` WHERE LOWER(email) LIKE ? GROUP BY `id`, `first_name`, `last_name` HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC",
+			types.DialectPostgres:  `SELECT "id", CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM "users" WHERE LOWER(email) LIKE $1 GROUP BY "id", "first_name", "last_name" HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > $2 ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC`,
+			types.DialectSQLite:    `SELECT "id", CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM "users" WHERE LOWER(email) LIKE ? GROUP BY "id", "first_name", "last_name" HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > ? ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC`,
+			types.DialectSQLServer: `SELECT [id], CONCAT(first_name, ' ', last_name) as full_name, (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) as order_count FROM [users] WHERE LOWER(email) LIKE @p1 GROUP BY [id], [first_name], [last_name] HAVING (SELECT COUNT(*) FROM orders WHERE orders.user_id = users.id) > @p2 ORDER BY (SELECT SUM(amount) FROM orders WHERE orders.user_id = users.id) DESC`,
 		}
 		expectedBindings := []any{"%@example.com", 5}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -425,8 +497,11 @@ func Test_Select_WithSubQuery(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments FROM `users` WHERE `id` = ?",
-			types.DialectPostgres: `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments FROM "users" WHERE "id" = $2`,
+			types.DialectMySql:     "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments FROM `users` WHERE `id` = ?",
+			types.DialectMariaDB:   "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments FROM `users` WHERE `id` = ?",
+			types.DialectPostgres:  `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments FROM "users" WHERE "id" = $2`,
+			types.DialectSQLite:    `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = ?) AS payments FROM "users" WHERE "id" = ?`,
+			types.DialectSQLServer: `SELECT [id], [name], (SELECT [id], [amount], [created_at] FROM [payments] WHERE [payments].[user_id] = @p1) AS payments FROM [users] WHERE [id] = @p2`,
 		}
 		expectedBindings := []any{15, 15}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -454,8 +529,11 @@ func Test_Select_WithSubQuery_(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments, (SELECT `id`, `amount`, `created_at` FROM `admins` WHERE `admins`.`user_id` = ?) AS admins FROM `users` WHERE `id` = ?",
-			types.DialectPostgres: `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments, (SELECT "id", "amount", "created_at" FROM "admins" WHERE "admins"."user_id" = $2) AS admins FROM "users" WHERE "id" = $3`,
+			types.DialectMySql:     "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments, (SELECT `id`, `amount`, `created_at` FROM `admins` WHERE `admins`.`user_id` = ?) AS admins FROM `users` WHERE `id` = ?",
+			types.DialectMariaDB:   "SELECT `id`, `name`, (SELECT `id`, `amount`, `created_at` FROM `payments` WHERE `payments`.`user_id` = ?) AS payments, (SELECT `id`, `amount`, `created_at` FROM `admins` WHERE `admins`.`user_id` = ?) AS admins FROM `users` WHERE `id` = ?",
+			types.DialectPostgres:  `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = $1) AS payments, (SELECT "id", "amount", "created_at" FROM "admins" WHERE "admins"."user_id" = $2) AS admins FROM "users" WHERE "id" = $3`,
+			types.DialectSQLite:    `SELECT "id", "name", (SELECT "id", "amount", "created_at" FROM "payments" WHERE "payments"."user_id" = ?) AS payments, (SELECT "id", "amount", "created_at" FROM "admins" WHERE "admins"."user_id" = ?) AS admins FROM "users" WHERE "id" = ?`,
+			types.DialectSQLServer: `SELECT [id], [name], (SELECT [id], [amount], [created_at] FROM [payments] WHERE [payments].[user_id] = @p1) AS payments, (SELECT [id], [amount], [created_at] FROM [admins] WHERE [admins].[user_id] = @p2) AS admins FROM [users] WHERE [id] = @p3`,
 		}
 		expectedBindings := []any{15, 15, 15}
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -479,8 +557,11 @@ func Test_FromSubquery(t *testing.T) {
 		sql, bindings, err := qb.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `u`.`id`, `u`.`name`, `o`.`order_count` FROM (SELECT `user_id`, COUNT(*) AS order_count FROM `orders` WHERE `user_id` = ? GROUP BY `user_id`) AS o JOIN `users` `u` ON u.id = o.user_id WHERE `u`.`id` = ?",
-			types.DialectPostgres: `SELECT "u"."id", "u"."name", "o"."order_count" FROM (SELECT "user_id", COUNT(*) AS order_count FROM "orders" WHERE "user_id" = $1 GROUP BY "user_id") AS o JOIN "users" "u" ON u.id = o.user_id WHERE "u"."id" = $2`,
+			types.DialectMySql:     "SELECT `u`.`id`, `u`.`name`, `o`.`order_count` FROM (SELECT `user_id`, COUNT(*) AS order_count FROM `orders` WHERE `user_id` = ? GROUP BY `user_id`) AS o JOIN `users` `u` ON u.id = o.user_id WHERE `u`.`id` = ?",
+			types.DialectMariaDB:   "SELECT `u`.`id`, `u`.`name`, `o`.`order_count` FROM (SELECT `user_id`, COUNT(*) AS order_count FROM `orders` WHERE `user_id` = ? GROUP BY `user_id`) AS o JOIN `users` `u` ON u.id = o.user_id WHERE `u`.`id` = ?",
+			types.DialectPostgres:  `SELECT "u"."id", "u"."name", "o"."order_count" FROM (SELECT "user_id", COUNT(*) AS order_count FROM "orders" WHERE "user_id" = $1 GROUP BY "user_id") AS o JOIN "users" "u" ON u.id = o.user_id WHERE "u"."id" = $2`,
+			types.DialectSQLite:    `SELECT "u"."id", "u"."name", "o"."order_count" FROM (SELECT "user_id", COUNT(*) AS order_count FROM "orders" WHERE "user_id" = ? GROUP BY "user_id") AS o JOIN "users" "u" ON u.id = o.user_id WHERE "u"."id" = ?`,
+			types.DialectSQLServer: `SELECT [u].[id], [u].[name], [o].[order_count] FROM (SELECT [user_id], COUNT(*) AS order_count FROM [orders] WHERE [user_id] = @p1 GROUP BY [user_id]) AS o JOIN [users] [u] ON u.id = o.user_id WHERE [u].[id] = @p2`,
 		}
 		expectedBindings := []any{25, 25}
 		assert.Equal(t, expectedSQL[dialect], sql)

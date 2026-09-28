@@ -36,8 +36,11 @@ func Test_InsertSql_ConsistentOrder(t *testing.T) {
 		sql, bindings, err := qb.InsertSql(values)
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
-			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
+			types.DialectMySql:     "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
+			types.DialectMariaDB:   "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)",
+			types.DialectPostgres:  `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12)`,
+			types.DialectSQLite:    `INSERT INTO "users" ("age", "email", "name", "password") VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?)`,
+			types.DialectSQLServer: `INSERT INTO [users] ([age], [email], [name], [password]) VALUES (@p1, @p2, @p3, @p4), (@p5, @p6, @p7, @p8), (@p9, @p10, @p11, @p12)`,
 		}
 		expectedBindings := []any{
 			20, "mohamed@gmail.com", "mohamed", "hashed_password",
@@ -64,8 +67,11 @@ func Test_InsertSql_TakesInsertedColumnsFromFirstRow(t *testing.T) {
 		})
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "INSERT INTO `users` (`name`) VALUES (?), (?)",
-			types.DialectPostgres: `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
+			types.DialectMySql:     "INSERT INTO `users` (`name`) VALUES (?), (?)",
+			types.DialectMariaDB:   "INSERT INTO `users` (`name`) VALUES (?), (?)",
+			types.DialectPostgres:  `INSERT INTO "users" ("name") VALUES ($1), ($2)`,
+			types.DialectSQLite:    `INSERT INTO "users" ("name") VALUES (?), (?)`,
+			types.DialectSQLServer: `INSERT INTO [users] ([name]) VALUES (@p1), (@p2)`,
 		}
 		expectedBindings := []any{
 			"mohamed",
@@ -95,8 +101,11 @@ func Test_InsertSql_NullableColumns(t *testing.T) {
 		})
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
-			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
+			types.DialectMySql:     "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
+			types.DialectMariaDB:   "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?), (?, ?, ?)",
+			types.DialectPostgres:  `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3), ($4, $5, $6)`,
+			types.DialectSQLite:    `INSERT INTO "users" ("age", "email", "name") VALUES (?, ?, ?), (?, ?, ?)`,
+			types.DialectSQLServer: `INSERT INTO [users] ([age], [email], [name]) VALUES (@p1, @p2, @p3), (@p4, @p5, @p6)`,
 		}
 
 		expectedBindings := []any{
@@ -140,8 +149,20 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 		expectedSQL := map[types.Dialect]string{
 			types.DialectMySql: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
 				"ON DUPLICATE KEY UPDATE `age` = VALUES(`age`), `password` = VALUES(`password`)",
+			types.DialectMariaDB: "INSERT INTO `users` (`age`, `email`, `name`, `password`) VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) " +
+				"ON DUPLICATE KEY UPDATE `age` = VALUES(`age`), `password` = VALUES(`password`)",
 			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name", "password") VALUES ($1, $2, $3, $4), ($5, $6, $7, $8), ($9, $10, $11, $12) ` +
 				`ON CONFLICT ("email", "name") DO UPDATE SET "age" = EXCLUDED."age", "password" = EXCLUDED."password"`,
+			types.DialectSQLite: `INSERT INTO "users" ("age", "email", "name", "password") VALUES (?, ?, ?, ?), (?, ?, ?, ?), (?, ?, ?, ?) ` +
+				`ON CONFLICT ("email", "name") DO UPDATE SET "age" = EXCLUDED."age", "password" = EXCLUDED."password"`,
+			types.DialectSQLServer: "",
+		}
+		expectedErr := map[types.Dialect]error{
+			types.DialectMySql:     nil,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: xqbErr.ErrUnsupportedFeature,
 		}
 		expectedBindings := []any{
 			20, "mohamed@gmail.com", "mohamed", "hashed_password",
@@ -149,8 +170,13 @@ func Test_UpsertSql_WithTwoUniqueByColumns(t *testing.T) {
 			22, "ahmed@gmail.com", "ahmed", "hashed_password",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
-		assert.Equal(t, expectedBindings, bindings)
-		assert.NoError(t, err)
+		if expectedErr[dialect] != nil {
+			assert.Empty(t, bindings)
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.Equal(t, expectedBindings, bindings)
+			assert.NoError(t, err)
+		}
 	})
 }
 func Test_UpsertSql_ErrorOnMissingUpdateColumns(t *testing.T) {
@@ -223,15 +249,30 @@ func Test_UpsertSql_SkipUniqueByInUpdate(t *testing.T) {
 		sql, bindings, err := qb.UpsertSql(values, []string{"email"}, []string{"email", "age"})
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
-			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
+			types.DialectMySql:     "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
+			types.DialectMariaDB:   "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE `age` = VALUES(`age`)",
+			types.DialectPostgres:  `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
+			types.DialectSQLite:    `INSERT INTO "users" ("age", "email", "name") VALUES (?, ?, ?) ON CONFLICT ("email") DO UPDATE SET "age" = EXCLUDED."age"`,
+			types.DialectSQLServer: "",
+		}
+		expectedErr := map[types.Dialect]error{
+			types.DialectMySql:     nil,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: xqbErr.ErrUnsupportedFeature,
 		}
 		expectedBindings := []any{
 			30, "mohamed@gmail.com", "mohamed",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
-		assert.Equal(t, expectedBindings, bindings)
-		assert.NoError(t, err)
+		if expectedErr[dialect] != nil {
+			assert.Empty(t, bindings)
+			assert.ErrorIs(t, err, expectedErr[dialect])
+		} else {
+			assert.Equal(t, expectedBindings, bindings)
+			assert.NoError(t, err)
+		}
 	})
 }
 
@@ -247,8 +288,11 @@ func Test_Insert_GetId(t *testing.T) {
 		})
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?)",
-			types.DialectPostgres: `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) RETURNING id`,
+			types.DialectMySql:     "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?)",
+			types.DialectMariaDB:   "INSERT INTO `users` (`age`, `email`, `name`) VALUES (?, ?, ?)",
+			types.DialectPostgres:  `INSERT INTO "users" ("age", "email", "name") VALUES ($1, $2, $3) RETURNING id`,
+			types.DialectSQLite:    `INSERT INTO "users" ("age", "email", "name") VALUES (?, ?, ?) RETURNING id`,
+			types.DialectSQLServer: `INSERT INTO [users] ([age], [email], [name]) OUTPUT INSERTED.[id] VALUES (@p1, @p2, @p3)`,
 		}
 		expectedBindings := []any{
 			20, "mohamed@gmail.com", "mohamed",

@@ -35,8 +35,11 @@ func Test_Query_WithModelQ(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
-			types.DialectPostgres: `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = $1 OR "username" = $2 ORDER BY "created_at" DESC LIMIT 1`,
+			types.DialectMySql:     "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
+			types.DialectMariaDB:   "SELECT `id`, `name`, `email`, `active`, `created_at`, `password` FROM `users` WHERE `username` = ? OR `username` = ? ORDER BY `created_at` DESC LIMIT 1",
+			types.DialectPostgres:  `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = $1 OR "username" = $2 ORDER BY "created_at" DESC LIMIT 1`,
+			types.DialectSQLite:    `SELECT "id", "name", "email", "active", "created_at", "password" FROM "users" WHERE "username" = ? OR "username" = ? ORDER BY "created_at" DESC LIMIT 1`,
+			types.DialectSQLServer: `SELECT TOP 1 [id], [name], [email], [active], [created_at], [password] FROM [users] WHERE [username] = @p1 OR [username] = @p2 ORDER BY [created_at] DESC`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

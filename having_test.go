@@ -17,8 +17,11 @@ func Test_Having_WithRawExpressions(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -36,8 +39,11 @@ func Test_Having_Simple(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{500}, bindings)
@@ -55,8 +61,11 @@ func Test_Having_Raw(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
@@ -74,8 +83,11 @@ func Test_OrHaving_WithExpressions(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ? OR SUM(discount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1 OR SUM(discount) > @p2",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000, 200}, bindings)
@@ -93,8 +105,11 @@ func Test_OrHaving_WithRaw(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? OR SUM(discount) > ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 OR SUM(discount) > $2`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ? OR SUM(discount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1 OR SUM(discount) > @p2",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000, 200}, bindings)
@@ -112,8 +127,11 @@ func Test_Having_WithMultiple(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? AND SUM(discount) < ?",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 AND SUM(discount) < $2`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? AND SUM(discount) < ?",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ? AND SUM(discount) < ?",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1 AND SUM(discount) < $2`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ? AND SUM(discount) < ?`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1 AND SUM(discount) < @p2",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000, 100}, bindings)
@@ -133,8 +151,11 @@ func Test_Having_WithExpressionToExpression(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > SUM(discount)",
-			types.DialectPostgres: `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > SUM(discount)`,
+			types.DialectMySql:     "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > SUM(discount)",
+			types.DialectMariaDB:   "SELECT `user_id`, SUM(amount) AS total FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > SUM(discount)",
+			types.DialectPostgres:  `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > SUM(discount)`,
+			types.DialectSQLite:    `SELECT "user_id", SUM(amount) AS total FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > SUM(discount)`,
+			types.DialectSQLServer: "SELECT [user_id], SUM(amount) AS total FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > SUM(discount)",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -151,8 +172,11 @@ func Test_Having_WithIsNull(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, COUNT(*) AS cnt FROM `orders` GROUP BY `user_id` HAVING COUNT(*) IS NULL",
-			types.DialectPostgres: `SELECT "user_id", COUNT(*) AS cnt FROM "orders" GROUP BY "user_id" HAVING COUNT(*) IS NULL`,
+			types.DialectMySql:     "SELECT `user_id`, COUNT(*) AS cnt FROM `orders` GROUP BY `user_id` HAVING COUNT(*) IS NULL",
+			types.DialectMariaDB:   "SELECT `user_id`, COUNT(*) AS cnt FROM `orders` GROUP BY `user_id` HAVING COUNT(*) IS NULL",
+			types.DialectPostgres:  `SELECT "user_id", COUNT(*) AS cnt FROM "orders" GROUP BY "user_id" HAVING COUNT(*) IS NULL`,
+			types.DialectSQLite:    `SELECT "user_id", COUNT(*) AS cnt FROM "orders" GROUP BY "user_id" HAVING COUNT(*) IS NULL`,
+			types.DialectSQLServer: "SELECT [user_id], COUNT(*) AS cnt FROM [orders] GROUP BY [user_id] HAVING COUNT(*) IS NULL",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -169,8 +193,11 @@ func Test_Having_WithExpressionValue(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > AVG(amount)",
-			types.DialectPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > AVG(amount)`,
+			types.DialectMySql:     "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > AVG(amount)",
+			types.DialectMariaDB:   "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > AVG(amount)",
+			types.DialectPostgres:  `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > AVG(amount)`,
+			types.DialectSQLite:    `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > AVG(amount)`,
+			types.DialectSQLServer: "SELECT [user_id] FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > AVG(amount)",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -187,8 +214,11 @@ func Test_Having_WithExpressionAndBoundValue(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
-			types.DialectPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectMySql:     "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectMariaDB:   "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING SUM(amount) > ?",
+			types.DialectPostgres:  `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > $1`,
+			types.DialectSQLite:    `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING SUM(amount) > ?`,
+			types.DialectSQLServer: "SELECT [user_id] FROM [orders] GROUP BY [user_id] HAVING SUM(amount) > @p1",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -206,8 +236,11 @@ func Test_Having_WithExpressionValueAndBindings(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING COALESCE(SUM(amount), ?) = ?",
-			types.DialectPostgres: `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING COALESCE(SUM(amount), $1) = $2`,
+			types.DialectMySql:     "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING COALESCE(SUM(amount), ?) = ?",
+			types.DialectMariaDB:   "SELECT `user_id` FROM `orders` GROUP BY `user_id` HAVING COALESCE(SUM(amount), ?) = ?",
+			types.DialectPostgres:  `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING COALESCE(SUM(amount), $1) = $2`,
+			types.DialectSQLite:    `SELECT "user_id" FROM "orders" GROUP BY "user_id" HAVING COALESCE(SUM(amount), ?) = ?`,
+			types.DialectSQLServer: "SELECT [user_id] FROM [orders] GROUP BY [user_id] HAVING COALESCE(SUM(amount), @p1) = @p2",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

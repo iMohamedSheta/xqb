@@ -23,8 +23,11 @@ func Test_Union(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT `id`, `username` FROM `admins` WHERE `username` = ? LIMIT 1)",
-			types.DialectPostgres: `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM admins WHERE active = $1) UNION (SELECT "id", "username" FROM "admins" WHERE "username" = $2 LIMIT 1)`,
+			types.DialectMySql:     "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT `id`, `username` FROM `admins` WHERE `username` = ? LIMIT 1)",
+			types.DialectMariaDB:   "(SELECT `id`, `name` FROM `users`) UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT `id`, `username` FROM `admins` WHERE `username` = ? LIMIT 1)",
+			types.DialectPostgres:  `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM admins WHERE active = $1) UNION (SELECT "id", "username" FROM "admins" WHERE "username" = $2 LIMIT 1)`,
+			types.DialectSQLite:    `(SELECT "id", "name" FROM "users") UNION (SELECT id, name FROM admins WHERE active = ?) UNION (SELECT "id", "username" FROM "admins" WHERE "username" = ? LIMIT 1)`,
+			types.DialectSQLServer: `(SELECT [id], [name] FROM [users]) UNION (SELECT id, name FROM admins WHERE active = @p1) UNION (SELECT TOP 1 [id], [username] FROM [admins] WHERE [username] = @p2)`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -42,8 +45,11 @@ func Test_UnionAll(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
-			types.DialectPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM guests WHERE banned = $1)`,
+			types.DialectMySql:     "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM guests WHERE banned = ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM guests WHERE banned = $1)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM guests WHERE banned = ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) UNION ALL (SELECT id FROM guests WHERE banned = @p1)`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -61,12 +67,18 @@ func Test_ExceptUnion(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") EXCEPT (SELECT id FROM banned_users)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) EXCEPT (SELECT id FROM banned_users)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") EXCEPT (SELECT id FROM banned_users)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") EXCEPT (SELECT id FROM banned_users)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) EXCEPT (SELECT id FROM banned_users)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -86,12 +98,18 @@ func Test_ExceptUnion_All(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) EXCEPT ALL (SELECT id FROM banned_users)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) EXCEPT ALL (SELECT id FROM banned_users)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -111,12 +129,18 @@ func Test_IntersectUnion(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") INTERSECT ALL (SELECT id FROM employees WHERE active = $1)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) INTERSECT ALL (SELECT id FROM employees WHERE active = ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") INTERSECT ALL (SELECT id FROM employees WHERE active = $1)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") INTERSECT ALL (SELECT id FROM employees WHERE active = ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) INTERSECT ALL (SELECT id FROM employees WHERE active = @p1)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -139,8 +163,11 @@ func Test_Union_WithMultipleQueries(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id` FROM `users`) UNION (SELECT `id` FROM `admins`) UNION (SELECT `id` FROM `guests`)",
-			types.DialectPostgres: `(SELECT "id" FROM "users") UNION (SELECT "id" FROM "admins") UNION (SELECT "id" FROM "guests")`,
+			types.DialectMySql:     "(SELECT `id` FROM `users`) UNION (SELECT `id` FROM `admins`) UNION (SELECT `id` FROM `guests`)",
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) UNION (SELECT `id` FROM `admins`) UNION (SELECT `id` FROM `guests`)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") UNION (SELECT "id" FROM "admins") UNION (SELECT "id" FROM "guests")`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") UNION (SELECT "id" FROM "admins") UNION (SELECT "id" FROM "guests")`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) UNION (SELECT [id] FROM [admins]) UNION (SELECT [id] FROM [guests])`,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -158,8 +185,11 @@ func Test_UnionAll_WithMultipleQueries(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id` FROM `users`) UNION ALL (SELECT `id` FROM `admins`) UNION ALL (SELECT `id` FROM `guests`)",
-			types.DialectPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT "id" FROM "admins") UNION ALL (SELECT "id" FROM "guests")`,
+			types.DialectMySql:     "(SELECT `id` FROM `users`) UNION ALL (SELECT `id` FROM `admins`) UNION ALL (SELECT `id` FROM `guests`)",
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) UNION ALL (SELECT `id` FROM `admins`) UNION ALL (SELECT `id` FROM `guests`)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") UNION ALL (SELECT "id" FROM "admins") UNION ALL (SELECT "id" FROM "guests")`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") UNION ALL (SELECT "id" FROM "admins") UNION ALL (SELECT "id" FROM "guests")`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) UNION ALL (SELECT [id] FROM [admins]) UNION ALL (SELECT [id] FROM [guests])`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -176,8 +206,11 @@ func Test_Union_MixedRawAndBuilder(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id` FROM `users`) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT `id` FROM `admins` WHERE `id` > ?)",
-			types.DialectPostgres: `(SELECT "id" FROM "users") UNION (SELECT id FROM guests WHERE active = $1) UNION (SELECT "id" FROM "admins" WHERE "id" > $2)`,
+			types.DialectMySql:     "(SELECT `id` FROM `users`) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT `id` FROM `admins` WHERE `id` > ?)",
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT `id` FROM `admins` WHERE `id` > ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") UNION (SELECT id FROM guests WHERE active = $1) UNION (SELECT "id" FROM "admins" WHERE "id" > $2)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") UNION (SELECT id FROM guests WHERE active = ?) UNION (SELECT "id" FROM "admins" WHERE "id" > ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) UNION (SELECT id FROM guests WHERE active = @p1) UNION (SELECT [id] FROM [admins] WHERE [id] > @p2)`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -195,8 +228,11 @@ func Test_UnionAllRaw_WithBindings(t *testing.T) {
 		sql, bindings, err := q.ToSql()
 		assert.NoError(t, err)
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
-			types.DialectPostgres: `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM banned_users WHERE reason = $1)`,
+			types.DialectMySql:     "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) UNION ALL (SELECT id FROM banned_users WHERE reason = ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM banned_users WHERE reason = $1)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") UNION ALL (SELECT id FROM banned_users WHERE reason = ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) UNION ALL (SELECT id FROM banned_users WHERE reason = @p1)`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -213,12 +249,18 @@ func Test_ExceptUnion_Unsupported(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") EXCEPT (SELECT "id" FROM "banned_users")`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) EXCEPT (SELECT `id` FROM `banned_users`)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") EXCEPT (SELECT "id" FROM "banned_users")`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") EXCEPT (SELECT "id" FROM "banned_users")`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) EXCEPT (SELECT [id] FROM [banned_users])`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -238,13 +280,19 @@ func Test_ExceptUnionAll_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT "id" FROM "banned_users")`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) EXCEPT ALL (SELECT `id` FROM `banned_users`)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") EXCEPT ALL (SELECT "id" FROM "banned_users")`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") EXCEPT ALL (SELECT "id" FROM "banned_users")`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) EXCEPT ALL (SELECT [id] FROM [banned_users])`,
 		}
 
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 
@@ -266,13 +314,19 @@ func Test_ExceptUnionRaw_Unsupported(t *testing.T) {
 		sql, bindings, err := q.ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) EXCEPT ALL (SELECT id FROM banned_users)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") EXCEPT ALL (SELECT id FROM banned_users)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) EXCEPT ALL (SELECT id FROM banned_users)`,
 		}
 
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -294,12 +348,18 @@ func Test_IntersectUnion_Unsupported(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") INTERSECT (SELECT "id" FROM "employees" WHERE "active" = $1)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) INTERSECT (SELECT `id` FROM `employees` WHERE `active` = ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") INTERSECT (SELECT "id" FROM "employees" WHERE "active" = $1)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") INTERSECT (SELECT "id" FROM "employees" WHERE "active" = ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) INTERSECT (SELECT [id] FROM [employees] WHERE [active] = @p1)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -319,12 +379,18 @@ func Test_IntersectUnionAll_Unsupported(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") INTERSECT ALL (SELECT "id" FROM "employees" WHERE "active" = $1)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) INTERSECT ALL (SELECT `id` FROM `employees` WHERE `active` = ?)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") INTERSECT ALL (SELECT "id" FROM "employees" WHERE "active" = $1)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") INTERSECT ALL (SELECT "id" FROM "employees" WHERE "active" = ?)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) INTERSECT ALL (SELECT [id] FROM [employees] WHERE [active] = @p1)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		if expectedErr[dialect] != nil {
@@ -344,12 +410,18 @@ func Test_IntersectUnionRaw_Unsupported(t *testing.T) {
 
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "", // not Supported by MySql
-			types.DialectPostgres: `(SELECT "id" FROM "users") INTERSECT (SELECT id FROM employees)`,
+			types.DialectMySql:     "", // not Supported by MySql
+			types.DialectMariaDB:   "(SELECT `id` FROM `users`) INTERSECT (SELECT id FROM employees)",
+			types.DialectPostgres:  `(SELECT "id" FROM "users") INTERSECT (SELECT id FROM employees)`,
+			types.DialectSQLite:    `(SELECT "id" FROM "users") INTERSECT (SELECT id FROM employees)`,
+			types.DialectSQLServer: `(SELECT [id] FROM [users]) INTERSECT (SELECT id FROM employees)`,
 		}
 		expectedErr := map[types.Dialect]error{
-			types.DialectMySql:    errors.ErrUnsupportedFeature,
-			types.DialectPostgres: nil,
+			types.DialectMySql:     errors.ErrUnsupportedFeature,
+			types.DialectMariaDB:   nil,
+			types.DialectPostgres:  nil,
+			types.DialectSQLite:    nil,
+			types.DialectSQLServer: nil,
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 
@@ -368,8 +440,11 @@ func Test_Union_WithEmptyUnionList(t *testing.T) {
 		q := xqb.Table("users").SetDialect(dialect).Select("id")
 		sql, bindings, err := q.ToSql()
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id` FROM `users`",
-			types.DialectPostgres: `SELECT "id" FROM "users"`,
+			types.DialectMySql:     "SELECT `id` FROM `users`",
+			types.DialectMariaDB:   "SELECT `id` FROM `users`",
+			types.DialectPostgres:  `SELECT "id" FROM "users"`,
+			types.DialectSQLite:    `SELECT "id" FROM "users"`,
+			types.DialectSQLServer: `SELECT [id] FROM [users]`,
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)

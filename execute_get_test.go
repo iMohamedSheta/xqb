@@ -19,8 +19,11 @@ func Test_QueryBuilder_GetSql(t *testing.T) {
 		sql, bindings, err := qb.GetSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id`, `name` FROM `users` WHERE `status` = ? ORDER BY `created_at` DESC",
-			types.DialectPostgres: `SELECT "id", "name" FROM "users" WHERE "status" = $1 ORDER BY "created_at" DESC`,
+			types.DialectMySql:     "SELECT `id`, `name` FROM `users` WHERE `status` = ? ORDER BY `created_at` DESC",
+			types.DialectMariaDB:   "SELECT `id`, `name` FROM `users` WHERE `status` = ? ORDER BY `created_at` DESC",
+			types.DialectPostgres:  `SELECT "id", "name" FROM "users" WHERE "status" = $1 ORDER BY "created_at" DESC`,
+			types.DialectSQLite:    `SELECT "id", "name" FROM "users" WHERE "status" = ? ORDER BY "created_at" DESC`,
+			types.DialectSQLServer: "SELECT [id], [name] FROM [users] WHERE [status] = @p1 ORDER BY [created_at] DESC",
 		}
 
 		assert.NoError(t, err)
@@ -36,8 +39,11 @@ func Test_FirstSql(t *testing.T) {
 		sql, bindings, err := qb.FirstSql()
 
 		expected := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT * FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 * FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.NoError(t, err)
@@ -53,8 +59,11 @@ func Test_ValueSql(t *testing.T) {
 		sql, bindings, err := qb.ValueSql("email")
 
 		expected := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `email` FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT `email` FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT "email" FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT "email" FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 [email] FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.NoError(t, err)
@@ -70,8 +79,11 @@ func Test_FindSql(t *testing.T) {
 		sql, bindings, err := qb.FindSql(42)
 
 		expected := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT * FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT * FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT * FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 * FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.NoError(t, err)
@@ -87,8 +99,11 @@ func Test_PaginateSql(t *testing.T) {
 		sql, bindings, err := qb.PaginateSql(10, 3)
 
 		expected := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT * FROM `users` WHERE `active` = ? LIMIT 10 OFFSET 20",
-			types.DialectPostgres: `SELECT * FROM "users" WHERE "active" = $1 LIMIT 10 OFFSET 20`,
+			types.DialectMySql:     "SELECT * FROM `users` WHERE `active` = ? LIMIT 10 OFFSET 20",
+			types.DialectMariaDB:   "SELECT * FROM `users` WHERE `active` = ? LIMIT 10 OFFSET 20",
+			types.DialectPostgres:  `SELECT * FROM "users" WHERE "active" = $1 LIMIT 10 OFFSET 20`,
+			types.DialectSQLite:    `SELECT * FROM "users" WHERE "active" = ? LIMIT 10 OFFSET 20`,
+			types.DialectSQLServer: "SELECT * FROM [users] WHERE [active] = @p1 ORDER BY (SELECT 0) OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY",
 		}
 
 		assert.NoError(t, err)
@@ -104,8 +119,11 @@ func Test_ExistsSql(t *testing.T) {
 		sql, bindings, err := qb.Where("id", "=", 42).ExistsSql()
 
 		expected := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT 1 FROM `users` WHERE `id` = ? LIMIT 1",
-			types.DialectPostgres: `SELECT 1 FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectMySql:     "SELECT 1 FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectMariaDB:   "SELECT 1 FROM `users` WHERE `id` = ? LIMIT 1",
+			types.DialectPostgres:  `SELECT 1 FROM "users" WHERE "id" = $1 LIMIT 1`,
+			types.DialectSQLite:    `SELECT 1 FROM "users" WHERE "id" = ? LIMIT 1`,
+			types.DialectSQLServer: "SELECT TOP 1 1 FROM [users] WHERE [id] = @p1",
 		}
 
 		assert.NoError(t, err)

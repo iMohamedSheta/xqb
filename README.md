@@ -1,6 +1,40 @@
 # XQB — SQL Query Builder for Go
 
-A fluent, dialect-aware SQL query builder for Go. Build complex queries without writing raw SQL, and generate correct output for **MySQL** and **PostgreSQL** automatically.
+[![CI](https://github.com/iMohamedSheta/xqb/actions/workflows/ci.yml/badge.svg)](https://github.com/iMohamedSheta/xqb/actions/workflows/ci.yml)
+[![Release](https://github.com/iMohamedSheta/xqb/actions/workflows/release.yml/badge.svg)](https://github.com/iMohamedSheta/xqb/releases/latest)
+
+A fluent, dialect-aware SQL query builder for Go. Build complex queries without writing raw SQL, and generate correct output for **MySQL, MariaDB, PostgreSQL, SQLite, and SQL Server** automatically.
+
+## Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Dialects](#dialects)
+- [Connection Management](#connection-management)
+- [Building SQL Without Executing](#building-sql-without-executing)
+- [SELECT](#select)
+- [WHERE](#where)
+- [JOINS](#joins)
+- [GROUP BY, HAVING](#group-by-having)
+- [ORDER BY, LIMIT, OFFSET](#order-by-limit-offset)
+- [UNION / EXCEPT / INTERSECT](#union--except--intersect)
+- [Common Table Expressions (CTE)](#common-table-expressions-cte)
+- [Raw SQL Expressions](#raw-sql-expressions)
+- [CASE WHEN](#case-when)
+- [Aggregate Functions](#aggregate-functions)
+- [String, Date, Math & JSON Functions](#string-date-math--json-functions)
+- [Locking](#locking)
+- [Query Execution](#query-execution)
+- [INSERT, UPDATE, DELETE](#insert-update-delete)
+- [Raw SQL Execution](#raw-sql-execution)
+- [Transactions](#transactions)
+- [Model Binding](#model-binding)
+- [Query Hooks](#query-hooks)
+- [Per-Request Query Tracking (Dev Tooling)](#per-request-query-tracking-dev-tooling)
+- [Development](#development)
+- [Releasing](#releasing)
+- [Project layout](#project-layout)
+- [License](#license)
 
 ## Installation
 
@@ -41,7 +75,15 @@ func main() {
 
 ## Dialects
 
-XQB supports **MySQL** and **PostgreSQL**. Column and table quoting, parameter placeholders (`?` vs `$1, $2…`), and dialect-specific features are handled automatically.
+XQB supports **MySQL, MariaDB, PostgreSQL, SQLite, and SQL Server** - Column and table quoting, parameter placeholders, and dialect-specific features are handled automatically.
+
+| Dialect | Identifier | Placeholder | Pagination | Lock |
+|---|---|---|---|---|
+| MySQL | `` ` `` | `?` | `LIMIT x OFFSET y` | `FOR UPDATE` / `LOCK IN SHARE MODE` (+ `NOWAIT` / `SKIP LOCKED`) |
+| MariaDB | `` ` `` | `?` | `LIMIT x OFFSET y` | `FOR UPDATE` / `LOCK IN SHARE MODE` (+ `NOWAIT` / `SKIP LOCKED`) |
+| PostgreSQL (`postgres`, `pgsql`) | `"` | `$1, $2…` | `LIMIT x OFFSET y` | `FOR UPDATE` / `FOR SHARE` / `FOR NO KEY UPDATE` / `FOR KEY SHARE` (+ `NOWAIT` / `SKIP LOCKED`) |
+| SQLite | `"` | `?` | `LIMIT x OFFSET y` | none (locks ignored) |
+| SQL Server (`sqlserver`, `sqlsrv`, `mssql`) | `[]` | `@p1, @p2…` | `TOP n` (limit only) / `OFFSET x ROWS FETCH NEXT y ROWS ONLY` | `WITH (ROWLOCK,UPDLOCK,HOLDLOCK)` / `WITH (ROWLOCK,HOLDLOCK)` on `FROM` |
 
 ```go
 // Set dialect per query (useful when building SQL without a connection)
@@ -49,11 +91,17 @@ sql, bindings, err := xqb.Table("users").
     SetDialect(xqb.DialectMySql).
     Where("id", "=", 1).
     ToSql()
-// MySQL:    SELECT * FROM `users` WHERE `id` = ?
-// Postgres: SELECT * FROM "users" WHERE "id" = $1
+// MySQL/MariaDB: SELECT * FROM `users` WHERE `id` = ?
+// Postgres:      SELECT * FROM "users" WHERE "id" = $1
+// SQLite:        SELECT * FROM "users" WHERE "id" = ?
+// SQL Server:    SELECT * FROM [users] WHERE [id] = @p1
 ```
 
-> **Note:** `FullJoin`, `EXCEPT`, and `INTERSECT` are PostgreSQL-only. Calling them on MySQL returns `ErrUnsupportedFeature`.
+> **Notes**
+> - `EXCEPT` and `INTERSECT` are supported on PostgreSQL, MariaDB, SQLite, and SQL Server. MySQL supports `UNION` only.
+> - `FullJoin` is supported on PostgreSQL and SQL Server. MySQL, MariaDB, and SQLite return `ErrUnsupportedFeature`.
+> - Upserts use `ON DUPLICATE KEY UPDATE` (MySQL/MariaDB) and `ON CONFLICT … DO UPDATE` (PostgreSQL/SQLite). SQL Server upsert needs a raw `MERGE` and returns `ErrUnsupportedFeature`.
+> - `InsertGetId` uses `RETURNING id` (PostgreSQL/SQLite) and `OUTPUT INSERTED.[id]` (SQL Server).
 
 ---
 
@@ -218,7 +266,7 @@ xqb.Table("users").LeftJoin("comments", "users.id = comments.user_id")
 xqb.Table("users").RightJoin("logins", "users.id = logins.user_id")
 xqb.Table("users").CrossJoin("roles")
 
-// PostgreSQL only:
+// PostgreSQL and SQL Server only:
 xqb.Table("users").FullJoin("sessions", "users.id = sessions.user_id")
 ```
 
@@ -345,7 +393,7 @@ xqb.Table("users").Select("id").UnionAll(xqb.Table("guests").Select("id"))
 xqb.Table("users").Select("id").UnionRaw("SELECT id FROM admins WHERE active = ?", true)
 xqb.Table("users").Select("id").UnionAllRaw("SELECT id FROM guests WHERE banned = ?", false)
 
-// PostgreSQL only: EXCEPT, INTERSECT
+// PostgreSQL/SQLite/SQL Server only: EXCEPT, INTERSECT
 xqb.Table("users").Select("id").ExceptUnion(xqb.Table("banned_users").Select("id"))
 xqb.Table("users").Select("id").ExceptUnionAll(xqb.Table("banned_users").Select("id"))
 xqb.Table("users").Select("id").IntersectUnion(xqb.Table("employees").Select("id"))
@@ -407,12 +455,17 @@ Use `RawDialect` to define expressions that resolve differently per dialect:
 
 ```go
 expr := xqb.RawDialect("mysql", map[string]*xqb.Expression{
-    "mysql":    xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
-    "postgres": xqb.Raw("TO_CHAR(created_at, 'YYYY-MM-DD')"),
+    "mysql":     xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
+    "mariadb":   xqb.Raw("DATE_FORMAT(created_at, '%Y-%m-%d')"),
+    "postgres":  xqb.Raw("TO_CHAR(created_at, 'YYYY-MM-DD')"),
+    "sqlite":    xqb.Raw("strftime('%Y-%m-%d', created_at)"),
+    "sqlserver": xqb.Raw("FORMAT(created_at, 'yyyy-MM-dd')"),
 })
 xqb.Table("users").Select(expr)
-// MySQL:    SELECT DATE_FORMAT(created_at, '%Y-%m-%d') FROM `users`
-// Postgres: SELECT TO_CHAR(created_at, 'YYYY-MM-DD') FROM "users"
+// MySQL/MariaDB: SELECT DATE_FORMAT(created_at, '%Y-%m-%d') FROM `users`
+// Postgres:      SELECT TO_CHAR(created_at, 'YYYY-MM-DD') FROM "users"
+// SQLite:        SELECT strftime('%Y-%m-%d', created_at) FROM "users"
+// SQL Server:    SELECT FORMAT(created_at, 'yyyy-MM-dd') FROM [users]
 ```
 
 ---
@@ -489,10 +542,13 @@ xqb.DateSub("created_at", "1", "MONTH", "prev_month")
 xqb.Math("amount * 1.1", "total_with_tax")
 xqb.Coalesce([]string{"middle_name", "'N/A'"}, "display_name")
 
-// JSON (dialect-aware: JSON_EXTRACT on MySQL, -> / ->> on Postgres)
+// JSON (dialect-aware: JSON_EXTRACT on MySQL/MariaDB, -> / ->> on Postgres,
+// json_extract on SQLite, JSON_VALUE on SQL Server)
 xqb.JsonExtract("metadata", "preferences.theme", "theme")
-// MySQL:    JSON_EXTRACT(metadata, '$.preferences.theme') AS theme
-// Postgres: metadata->'preferences'->>'theme' AS theme
+// MySQL/MariaDB: JSON_EXTRACT(metadata, '$.preferences.theme') AS theme
+// Postgres:      metadata->'preferences'->>'theme' AS theme
+// SQLite:        json_extract(metadata, '$.preferences.theme') AS theme
+// SQL Server:    JSON_VALUE(metadata, '$.preferences.theme') AS theme
 
 xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone")
 ```
@@ -503,10 +559,15 @@ xqb.JSONFunc("JSON_UNQUOTE", []string{"data", "'$.phone'"}, "phone")
 
 ```go
 xqb.Table("users").Select("id", "balance").LockForUpdate()
-// SELECT `id`, `balance` FROM `users` FOR UPDATE
+ // MySQL/MariaDB: SELECT `id`, `balance` FROM `users` FOR UPDATE
+ // Postgres:      SELECT "id", "balance" FROM "users" FOR UPDATE
+ // SQLite:        SELECT "id", "balance" FROM "users" (no lock clause)
+ // SQL Server:    SELECT [id], [balance] FROM [users] WITH (ROWLOCK,UPDLOCK,HOLDLOCK)
 
 xqb.Table("users").Select("id").SharedLock()
-// SELECT `id` FROM `users` LOCK IN SHARE MODE
+ // MySQL/MariaDB: SELECT `id` FROM `users` LOCK IN SHARE MODE
+ // Postgres:      SELECT "id" FROM "users" FOR SHARE
+ // SQL Server:    SELECT [id] FROM [users] WITH (ROWLOCK,HOLDLOCK)
 ```
 
 ---
@@ -882,6 +943,103 @@ Each entry in the log contains:
 ![Per-request query panel showing SQL, build/exec times, source location, and bindings](examples/request_queries.png)
 
 > **Tip:** Gate the entire hook registration behind a build tag (`//go:build dev`) so none of this overhead ships to production.
+
+---
+
+## Development
+
+### Unit tests (SQL generation, no database needed)
+
+```bash
+go test ./... -count=1
+go vet ./...
+gofmt -s -l .
+```
+
+### Integration tests (every database)
+
+The same suite in [`integration/`](integration/) runs against **MySQL,
+MariaDB, PostgreSQL, SQLite, and SQL Server**:
+
+```bash
+# 1) start databases (sqlite needs nothing)
+docker compose -f integration/docker-compose.yml up -d
+
+# 2) run the matrix
+cd integration && go test -v ./... -count=1
+
+# 3) run a subset, e.g. sqlite only
+XQB_DIALECTS=sqlite go test -v ./...
+```
+
+Unreachable databases are **skipped** locally; CI sets `XQB_REQUIRE_ALL=1`
+so a missing database fails the run instead. DSNs are overridable per
+database (`XQB_MYSQL_DSN`, `XQB_MARIADB_DSN`, `XQB_POSTGRES_DSN`,
+`XQB_SQLITE_DSN`, `XQB_SQLSERVER_DSN`) — see
+[`integration/README.md`](integration/README.md).
+
+### Lint
+
+CI runs `go vet`, a `gofmt -s` check, `staticcheck` (bug detection) plus
+`staticcheck -checks "all"` (style lint) on Windows, and `gosec` +
+`govulncheck` scans. A `.golangci.yml` config ships for local runs:
+
+```bash
+golangci-lint run ./...
+staticcheck ./...
+staticcheck -checks "all" ./...
+```
+
+Pull requests and pushes run `CI` instead of releasing: multi-OS
+(Windows/macOS/Linux) build + unit tests + vet, the full integration
+matrix, and the security scans.
+
+---
+
+## Releasing
+
+Every push to `main` publishes a new GitHub Release automatically
+(`.github/workflows/release.yml`): the next version is computed from
+[Conventional Commits](https://www.conventionalcommits.org/) by
+`scripts/next-version.ps1`, the full gates pass (unit tests, integration
+on every database, security scans), and the version tag is published with
+a generated changelog. A release is just a tag — this is a Go module:
+
+```bash
+go get github.com/iMohamedSheta/xqb@v0.8.0
+```
+
+The version bump follows [Conventional Commits](https://www.conventionalcommits.org/):
+
+| Commit message | Bump |
+|---|---|
+| `feat: ...` / `feat(scope): ...` | minor (`x.Y.0`) |
+| `fix: ...` / `fix(scope): ...` | patch (`x.y.Z`) |
+| `...!:` / `BREAKING CHANGE` in body | major (`X.0.0`) |
+| anything else (`docs:`, `chore:`, …) | patch |
+
+Add `[skip release]` to the HEAD commit message to skip publishing.
+Pushes that don't touch the shipped library (docs, `.github/`, `scripts/`)
+are skipped automatically — they batch up into the next library release instead.
+
+---
+
+## Project layout
+
+```
+xqb/
+  builder.go / connection.go     # entry points: Table(), New(), connections
+  select.go where.go join*.go    # fluent clauses
+  group.go having.go order.go limit.go union.go cte.go locks.go
+  case_when.go expression.go aggregate_methods.go
+  execute_*.go                   # Get/First/Paginate/Insert/Update/Delete/…
+  model*.go                      # ModelQ(), Bind(), struct mapping
+  dialects/mysql|mariadb|postgres|sqlite|sqlserver/
+  shared/types|errors|enums|wrap/
+  integration/                   # DB matrix (own module)
+  scripts/next-version.ps1       # conventional-commit version calculator
+  examples/                      # screenshots for the docs
+```
 
 ---
 

@@ -106,35 +106,45 @@ func (qb *QueryBuilder) insert(values []map[string]any, getId bool) (sql.Result,
 		return nil, err
 	}
 
-	if getId && qb.dialect.Getdialect().String() == types.DialectPostgres.String() {
-		rows, err := Sql(query, args...).
-			WithContext(qb.ctx).
-			WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
-			Connection(qb.connection).
-			WithTx(qb.tx).
-			Query()
+	if getId {
+		switch qb.dialect.Getdialect().Normalize() {
+		case types.DialectPostgres, types.DialectSQLite, types.DialectSQLServer:
+			rows, err := Sql(query, args...).
+				WithContext(qb.ctx).
+				WithAfterExec(qb.settings.GetOnAfterQueryExecution()).
+				Connection(qb.connection).
+				WithTx(qb.tx).
+				Query()
 
-		if err != nil {
-			return nil, err
-		}
-
-		defer rows.Close()
-
-		var ids []int64
-		for rows.Next() {
-			var id int64
-			if err := rows.Scan(&id); err != nil {
+			if err != nil {
 				return nil, err
 			}
-			ids = append(ids, id)
+
+			defer rows.Close()
+
+			var ids []int64
+			for rows.Next() {
+				var id int64
+				if err := rows.Scan(&id); err != nil {
+					return nil, err
+				}
+				ids = append(ids, id)
+			}
+
+			affectedRows := int64(len(ids))
+
+			if len(ids) == 0 {
+				return &QuerResult{
+					lastInsertId: 0,
+					affectedRows: affectedRows,
+				}, nil
+			}
+
+			return &QuerResult{
+				lastInsertId: ids[0], // Return the first inserted ID
+				affectedRows: affectedRows,
+			}, nil
 		}
-
-		affectedRows := int64(len(ids))
-
-		return &QuerResult{
-			lastInsertId: ids[0], // Return the first inserted ID
-			affectedRows: affectedRows,
-		}, nil
 	}
 
 	return Sql(query, args...).

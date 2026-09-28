@@ -74,16 +74,26 @@ func JsonExtract(column string, path string, alias string) *types.DialectExpress
 	pgExpr = fmt.Sprintf("%s->>'%s'", pgExpr, lastKey)
 	pg := Raw(pgExpr)
 
+	// SQLite uses json_extract (same path syntax as MySQL)
+	sqlite := Raw(fmt.Sprintf("json_extract(%s, '%s')", column, path))
+	// SQL Server uses JSON_VALUE for scalar extraction
+	mssql := Raw(fmt.Sprintf("JSON_VALUE(%s, '%s')", column, path))
+
 	if alias != "" {
 		mysql = Raw(fmt.Sprintf("%s AS %s", mysql.Sql, alias))
 		pg = Raw(fmt.Sprintf("%s AS %s", pg.Sql, alias))
+		sqlite = Raw(fmt.Sprintf("%s AS %s", sqlite.Sql, alias))
+		mssql = Raw(fmt.Sprintf("%s AS %s", mssql.Sql, alias))
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    mysql,
-			"postgres": pg,
+			"mysql":     mysql,
+			"mariadb":   mysql,
+			"postgres":  pg,
+			"sqlite":    sqlite,
+			"sqlserver": mssql,
 		},
 	}
 }
@@ -109,17 +119,24 @@ func Date(column string, alias string) *types.Expression {
 func DateDiff(a, b, alias string) *types.DialectExpression {
 	mysql := fmt.Sprintf("DATEDIFF(%s, %s)", a, b)
 	pg := fmt.Sprintf("(%s - %s)", a, b) // This returns an interval
+	sqlite := fmt.Sprintf("(julianday(%s) - julianday(%s))", a, b)
+	mssql := fmt.Sprintf("DATEDIFF(DAY, %s, %s)", b, a)
 
 	if alias != "" {
 		mysql = fmt.Sprintf("%s AS %s", mysql, alias)
 		pg = fmt.Sprintf("%s AS %s", pg, alias)
+		sqlite = fmt.Sprintf("%s AS %s", sqlite, alias)
+		mssql = fmt.Sprintf("%s AS %s", mssql, alias)
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    Raw(mysql),
-			"postgres": Raw(pg),
+			"mysql":     Raw(mysql),
+			"mariadb":   Raw(mysql),
+			"postgres":  Raw(pg),
+			"sqlite":    Raw(sqlite),
+			"sqlserver": Raw(mssql),
 		},
 	}
 }
@@ -128,17 +145,24 @@ func DateDiff(a, b, alias string) *types.DialectExpression {
 func DateAdd(date, interval, unit, alias string) *types.DialectExpression {
 	mysqlSql := fmt.Sprintf("DATE_ADD(%s, INTERVAL %s %s)", date, interval, unit)
 	pgSql := fmt.Sprintf("%s + INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+	sqliteSql := fmt.Sprintf("datetime(%s, '+%s %s')", date, interval, strings.ToLower(unit))
+	mssqlSql := fmt.Sprintf("DATEADD(%s, %s, %s)", unit, interval, date)
 
 	if alias != "" {
 		mysqlSql = fmt.Sprintf("%s AS %s", mysqlSql, alias)
 		pgSql = fmt.Sprintf("%s AS %s", pgSql, alias)
+		sqliteSql = fmt.Sprintf("%s AS %s", sqliteSql, alias)
+		mssqlSql = fmt.Sprintf("%s AS %s", mssqlSql, alias)
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    Raw(mysqlSql),
-			"postgres": Raw(pgSql),
+			"mysql":     Raw(mysqlSql),
+			"mariadb":   Raw(mysqlSql),
+			"postgres":  Raw(pgSql),
+			"sqlite":    Raw(sqliteSql),
+			"sqlserver": Raw(mssqlSql),
 		},
 	}
 }
@@ -147,17 +171,24 @@ func DateAdd(date, interval, unit, alias string) *types.DialectExpression {
 func DateSub(date, interval, unit, alias string) *types.DialectExpression {
 	mysqlSql := fmt.Sprintf("DATE_SUB(%s, INTERVAL %s %s)", date, interval, unit)
 	pgSql := fmt.Sprintf("%s - INTERVAL '%s %s'", date, interval, strings.ToLower(unit))
+	sqliteSql := fmt.Sprintf("datetime(%s, '-%s %s')", date, interval, strings.ToLower(unit))
+	mssqlSql := fmt.Sprintf("DATEADD(%s, -%s, %s)", unit, interval, date)
 
 	if alias != "" {
 		mysqlSql = fmt.Sprintf("%s AS %s", mysqlSql, alias)
 		pgSql = fmt.Sprintf("%s AS %s", pgSql, alias)
+		sqliteSql = fmt.Sprintf("%s AS %s", sqliteSql, alias)
+		mssqlSql = fmt.Sprintf("%s AS %s", mssqlSql, alias)
 	}
 
 	return &types.DialectExpression{
 		Default: "mysql",
 		Dialects: map[string]*types.Expression{
-			"mysql":    Raw(mysqlSql),
-			"postgres": Raw(pgSql),
+			"mysql":     Raw(mysqlSql),
+			"mariadb":   Raw(mysqlSql),
+			"postgres":  Raw(pgSql),
+			"sqlite":    Raw(sqliteSql),
+			"sqlserver": Raw(mssqlSql),
 		},
 	}
 }
@@ -166,15 +197,22 @@ func DateSub(date, interval, unit, alias string) *types.DialectExpression {
 func DateFormat(column, format, alias string) *types.DialectExpression {
 	mysqlExpr := Raw(fmt.Sprintf("DATE_FORMAT(%s, '%s')", column, format))
 	pgExpr := Raw(fmt.Sprintf("TO_CHAR(%s, '%s')", column, format)) // PostgreSql
+	sqliteExpr := Raw(fmt.Sprintf("strftime('%s', %s)", format, column))
+	mssqlExpr := Raw(fmt.Sprintf("FORMAT(%s, '%s')", column, format))
 
 	if alias != "" {
 		mysqlExpr = Raw(fmt.Sprintf("%s AS %s", mysqlExpr.Sql, alias))
 		pgExpr = Raw(fmt.Sprintf("%s AS %s", pgExpr.Sql, alias))
+		sqliteExpr = Raw(fmt.Sprintf("%s AS %s", sqliteExpr.Sql, alias))
+		mssqlExpr = Raw(fmt.Sprintf("%s AS %s", mssqlExpr.Sql, alias))
 	}
 
 	dialects := map[string]*types.Expression{
-		"mysql":    mysqlExpr,
-		"postgres": pgExpr,
+		"mysql":     mysqlExpr,
+		"mariadb":   mysqlExpr,
+		"postgres":  pgExpr,
+		"sqlite":    sqliteExpr,
+		"sqlserver": mssqlExpr,
 	}
 
 	return RawDialect("mysql", dialects)

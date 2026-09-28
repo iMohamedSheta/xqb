@@ -17,8 +17,11 @@ func TestGroupByWithRawExpressions(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT YEAR(created_at) as year, SUM(amount) as total FROM `orders` GROUP BY YEAR(created_at)",
-			types.DialectPostgres: `SELECT YEAR(created_at) as year, SUM(amount) as total FROM "orders" GROUP BY YEAR(created_at)`,
+			types.DialectMySql:     "SELECT YEAR(created_at) as year, SUM(amount) as total FROM `orders` GROUP BY YEAR(created_at)",
+			types.DialectMariaDB:   "SELECT YEAR(created_at) as year, SUM(amount) as total FROM `orders` GROUP BY YEAR(created_at)",
+			types.DialectPostgres:  `SELECT YEAR(created_at) as year, SUM(amount) as total FROM "orders" GROUP BY YEAR(created_at)`,
+			types.DialectSQLite:    `SELECT YEAR(created_at) as year, SUM(amount) as total FROM "orders" GROUP BY YEAR(created_at)`,
+			types.DialectSQLServer: "SELECT YEAR(created_at) as year, SUM(amount) as total FROM [orders] GROUP BY YEAR(created_at)",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)
@@ -34,8 +37,11 @@ func TestGroupByMultipleColumns(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, `product_id` FROM `orders` GROUP BY `user_id`, `product_id`",
-			types.DialectPostgres: `SELECT "user_id", "product_id" FROM "orders" GROUP BY "user_id", "product_id"`,
+			types.DialectMySql:     "SELECT `user_id`, `product_id` FROM `orders` GROUP BY `user_id`, `product_id`",
+			types.DialectMariaDB:   "SELECT `user_id`, `product_id` FROM `orders` GROUP BY `user_id`, `product_id`",
+			types.DialectPostgres:  `SELECT "user_id", "product_id" FROM "orders" GROUP BY "user_id", "product_id"`,
+			types.DialectSQLite:    `SELECT "user_id", "product_id" FROM "orders" GROUP BY "user_id", "product_id"`,
+			types.DialectSQLServer: "SELECT [user_id], [product_id] FROM [orders] GROUP BY [user_id], [product_id]",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -52,8 +58,11 @@ func TestGroupByRawShortcut(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `id` FROM `orders` GROUP BY DATE(created_at)",
-			types.DialectPostgres: `SELECT "id" FROM "orders" GROUP BY DATE(created_at)`,
+			types.DialectMySql:     "SELECT `id` FROM `orders` GROUP BY DATE(created_at)",
+			types.DialectMariaDB:   "SELECT `id` FROM `orders` GROUP BY DATE(created_at)",
+			types.DialectPostgres:  `SELECT "id" FROM "orders" GROUP BY DATE(created_at)`,
+			types.DialectSQLite:    `SELECT "id" FROM "orders" GROUP BY DATE(created_at)`,
+			types.DialectSQLServer: "SELECT [id] FROM [orders] GROUP BY DATE(created_at)",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -72,8 +81,11 @@ func TestGroupByWithHaving(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `region`, SUM(amount) as total FROM `sales` GROUP BY `region` HAVING SUM(amount) > ?",
-			types.DialectPostgres: `SELECT "region", SUM(amount) as total FROM "sales" GROUP BY "region" HAVING SUM(amount) > $1`,
+			types.DialectMySql:     "SELECT `region`, SUM(amount) as total FROM `sales` GROUP BY `region` HAVING SUM(amount) > ?",
+			types.DialectMariaDB:   "SELECT `region`, SUM(amount) as total FROM `sales` GROUP BY `region` HAVING SUM(amount) > ?",
+			types.DialectPostgres:  `SELECT "region", SUM(amount) as total FROM "sales" GROUP BY "region" HAVING SUM(amount) > $1`,
+			types.DialectSQLite:    `SELECT "region", SUM(amount) as total FROM "sales" GROUP BY "region" HAVING SUM(amount) > ?`,
+			types.DialectSQLServer: "SELECT [region], SUM(amount) as total FROM [sales] GROUP BY [region] HAVING SUM(amount) > @p1",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Equal(t, []any{1000}, bindings)
@@ -90,8 +102,11 @@ func TestGroupByWithMultipleRawAndColumns(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `type`, DATE(created_at) as day FROM `events` GROUP BY `type`, DATE(created_at)",
-			types.DialectPostgres: `SELECT "type", DATE(created_at) as day FROM "events" GROUP BY "type", DATE(created_at)`,
+			types.DialectMySql:     "SELECT `type`, DATE(created_at) as day FROM `events` GROUP BY `type`, DATE(created_at)",
+			types.DialectMariaDB:   "SELECT `type`, DATE(created_at) as day FROM `events` GROUP BY `type`, DATE(created_at)",
+			types.DialectPostgres:  `SELECT "type", DATE(created_at) as day FROM "events" GROUP BY "type", DATE(created_at)`,
+			types.DialectSQLite:    `SELECT "type", DATE(created_at) as day FROM "events" GROUP BY "type", DATE(created_at)`,
+			types.DialectSQLServer: "SELECT [type], DATE(created_at) as day FROM [events] GROUP BY [type], DATE(created_at)",
 		}
 
 		assert.Equal(t, expectedSQL[dialect], sql)
@@ -124,8 +139,11 @@ func TestGroupByWithOrderBy(t *testing.T) {
 			ToSql()
 
 		expectedSQL := map[types.Dialect]string{
-			types.DialectMySql:    "SELECT `user_id`, COUNT(*) as count FROM `sessions` GROUP BY `user_id` ORDER BY `count` DESC",
-			types.DialectPostgres: `SELECT "user_id", COUNT(*) as count FROM "sessions" GROUP BY "user_id" ORDER BY "count" DESC`,
+			types.DialectMySql:     "SELECT `user_id`, COUNT(*) as count FROM `sessions` GROUP BY `user_id` ORDER BY `count` DESC",
+			types.DialectMariaDB:   "SELECT `user_id`, COUNT(*) as count FROM `sessions` GROUP BY `user_id` ORDER BY `count` DESC",
+			types.DialectPostgres:  `SELECT "user_id", COUNT(*) as count FROM "sessions" GROUP BY "user_id" ORDER BY "count" DESC`,
+			types.DialectSQLite:    `SELECT "user_id", COUNT(*) as count FROM "sessions" GROUP BY "user_id" ORDER BY "count" DESC`,
+			types.DialectSQLServer: "SELECT [user_id], COUNT(*) as count FROM [sessions] GROUP BY [user_id] ORDER BY [count] DESC",
 		}
 		assert.Equal(t, expectedSQL[dialect], sql)
 		assert.Empty(t, bindings)

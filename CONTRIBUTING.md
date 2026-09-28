@@ -94,8 +94,6 @@ If you find a bug, open an issue with:
 
 * Describe the use case.
 * Include an example query or fluent chain.
-* Mention if this feature exists in Laravel’s query builder.
-
 ---
 
 ## 💬 Discussions
