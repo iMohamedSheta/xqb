@@ -149,12 +149,15 @@ func TestSelect_DistinctOrderLimit(t *testing.T) {
 
 		rows, err = QB(conn, "xqb_users").
 			Select("name").
+			WhereNotNull("age").
 			OrderBy("age", "DESC").
 			Limit(2).
 			Get()
 		require.NoError(t, err)
 		require.Len(t, rows, 2)
-		// Carol (35) then Alice (30); NULL ages sort last on most DBs.
+		// Carol (35) then Alice (30); NULL ages are excluded because
+		// NULL ordering under ORDER BY .. DESC is dialect-specific
+		// (postgres sorts NULLS FIRST, others sort them last).
 		assert.Equal(t, "Carol", asString(rows[0]["name"]))
 
 		rows, err = QB(conn, "xqb_users").
