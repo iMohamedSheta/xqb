@@ -106,6 +106,9 @@ type QueryBuilder struct {
 }
 
 func (qb *QueryBuilder) GetDialect() dialects.DialectInterface {
+	if qb.dialect == nil {
+		return dialects.GetDialect(types.DialectMySql)
+	}
 	return qb.dialect
 }
 
@@ -176,6 +179,7 @@ func New() *QueryBuilder {
 	defaultConnection, err := DBManager().GetDefaultConnection()
 	if err != nil {
 		qb.appendError(err)
+		qb.dialect = dialects.GetDialect(types.DialectMySql)
 		return qb
 	}
 
@@ -217,9 +221,10 @@ func (qb *QueryBuilder) Reset() {
 	defaultConnection, err := DBManager().GetDefaultConnection()
 	if err != nil {
 		qb.appendError(err)
+	} else if defaultConnection != nil {
+		qb.connection = defaultConnection.Name
+		qb.dialect = dialects.GetDialect(defaultConnection.Dialect.MappedDialect())
 	}
-	qb.connection = defaultConnection.Name
-	qb.dialect = dialects.GetDialect(defaultConnection.Dialect.MappedDialect())
 	qb.queryType = enums.SELECT
 	qb.table = nil
 	qb.columns = nil
@@ -400,6 +405,9 @@ func (qb *QueryBuilder) WithTx(tx *sql.Tx) *QueryBuilder {
 
 func (qb *QueryBuilder) Connection(connection string) *QueryBuilder {
 	qb.connection = connection
+	if conn, err := DBManager().Connection(connection); err == nil && conn != nil {
+		qb.dialect = dialects.GetDialect(conn.Dialect.MappedDialect())
+	}
 	return qb
 }
 

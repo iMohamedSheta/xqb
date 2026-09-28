@@ -1,7 +1,10 @@
 package xqb
 
 import (
+	"fmt"
+
 	"github.com/iMohamedSheta/xqb/shared/enums"
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
 	"github.com/iMohamedSheta/xqb/shared/types"
 )
 
@@ -52,6 +55,10 @@ func (qb *QueryBuilder) From(table string) *QueryBuilder {
 // FromSubquery uses a subquery as the FROM clause
 func (qb *QueryBuilder) FromSubquery(subQuery *QueryBuilder, alias string) *QueryBuilder {
 	raw := subQuery.SetDialect(qb.GetDialect().Getdialect()).ToRawExpr()
+	if raw == nil {
+		qb.appendError(fmt.Errorf("%w: FromSubquery() failed to build subquery", xqbErr.ErrInvalidQuery))
+		return qb
+	}
 	raw.Sql = "(" + raw.Sql + ")" + " AS " + alias
 	qb.table = &types.Table{Raw: raw}
 	return qb

@@ -1,6 +1,11 @@
 package xqb
 
-import "github.com/iMohamedSheta/xqb/shared/types"
+import (
+	"fmt"
+
+	xqbErr "github.com/iMohamedSheta/xqb/shared/errors"
+	"github.com/iMohamedSheta/xqb/shared/types"
+)
 
 func (qb *QueryBuilder) Union(secondaryQuery ...*QueryBuilder) *QueryBuilder {
 	qb.addUnions(types.UnionTypeUnion, false, secondaryQuery)
@@ -76,8 +81,13 @@ func (qb *QueryBuilder) IntersectUnionRaw(sql string, all bool, bindings ...any)
 
 func (qb *QueryBuilder) addUnions(unionType types.UnionType, all bool, secondaryQuery []*QueryBuilder) {
 	for _, sub := range secondaryQuery {
+		expr := sub.SetDialect(qb.GetDialect().Getdialect()).ToRawExpr()
+		if expr == nil {
+			qb.appendError(fmt.Errorf("%w: Union() failed to build subquery", xqbErr.ErrInvalidQuery))
+			continue
+		}
 		qb.unions = append(qb.unions, &types.Union{
-			Expression: sub.SetDialect(qb.GetDialect().Getdialect()).ToRawExpr(),
+			Expression: expr,
 			All:        all,
 			Type:       unionType,
 		})
