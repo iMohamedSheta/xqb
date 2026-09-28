@@ -1,0 +1,5 @@
+# Normalize line endings to LF on checkout.
+# Windows runners default to CRLF, which makes `gofmt -s -l` flag every
+# Go file as unformatted. Forcing LF keeps `gofmt` clean on all OSes.
+* text=auto eol=lf
+*.go text eol=lf

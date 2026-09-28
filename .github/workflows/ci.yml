@@ -46,9 +46,9 @@ jobs:
       - name: gofmt check (root + integration)
         run: |
           set -e
-          if [ -n "$(gofmt -s -l . | grep -v '^integration/')" ]; then
+          if [ -n "$(gofmt -s -l . | grep -v '^integration[/\\]')" ]; then
             echo "Unformatted files in root module:"
-            gofmt -s -l . | grep -v '^integration/' || true
+            gofmt -s -l . | grep -v '^integration[/\\]' || true
             exit 1
           fi
           if [ -n "$(gofmt -s -l integration/)" ]; then
